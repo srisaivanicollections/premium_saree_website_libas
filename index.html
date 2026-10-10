@@ -9603,6 +9603,7 @@ function getSavedGithubToken(){
    This also protects older cached page instances from a missing global binding. */
 window.getSavedGithubToken=getSavedGithubToken;
 let products=[],settings={},category="All",adminPassword="",githubOriginalIds=new Set();
+let settingsFormBaseline={};
 let catalogPage=0;
 const CATALOG_PAGE_SIZE=20;
 function $(s){return document.querySelector(s)} function all(s){return document.querySelectorAll(s)}
@@ -10288,6 +10289,11 @@ function showView(v){
       '<details class="admin-settings-group"><summary>Section Visibility</summary><div class="admin-settings-toggles">'+
       toggle('Show customer reviews section','showReviews')+toggle('Show Visual Journal section','showJournal')+toggle('Show store details section','showStore')+
       '</div></details><button type="button" class="btn dark" id="saveSettings">SAVE ALL WEBSITE SETTINGS</button></div>';
+    settingsFormBaseline={};
+    all("#studioBody [data-setting-key]").forEach(input=>{settingsFormBaseline[input.dataset.settingKey]=input.type==="checkbox"?input.checked:input.value.trim();});
+    settingsFormBaseline.name=$("#setName")?.value.trim()||"SRI SAI VANI";
+    settingsFormBaseline.whatsapp=$("#setWa")?.value.replace(/\\D/g,"")||"";
+    settingsFormBaseline.instagram=$("#setIg")?.value.trim()||"";
   }
 }
 function edit(id){
@@ -10917,6 +10923,8 @@ document.addEventListener("click",async e=>{const t=e.target.closest("[data-tab]
     else nextSettings[key]=input.value.trim();
   });
   delete nextSettings.githubToken;
+  const hasChanges=Object.entries(nextSettings).some(([key,value])=>JSON.stringify(value)!==JSON.stringify(settingsFormBaseline[key]));
+  if(!hasChanges){showAdminToast("No changes to save.","success");return;}
   const btn=e.target;
   const oldText=btn.textContent;
   btn.disabled=true;
@@ -10930,7 +10938,7 @@ document.addEventListener("click",async e=>{const t=e.target.closest("[data-tab]
     apply();
     render();
     showView("settings");
-    showAdminToast("Website settings saved successfully.","success");
+    showAdminToast("Settings updated successfully.","success");
   }catch(err){
     showAdminToast(err?.message||"Settings could not be saved.","error");
   }finally{
