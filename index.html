@@ -13341,5 +13341,15 @@ if ("serviceWorker" in navigator) {
 }
 </style>
 
+
+<style id="ssv-admin-logout-auth-visibility-fix">
+/* Keep the header logout action hidden on the login/OTP screen.
+   More-specific legacy header CSS sets #logoutBtn to display:inline-flex!important,
+   which otherwise overrides the generic .hidden utility class. */
+#admin .admin-header-actions #logoutBtn.hidden {
+  display: none !important;
+}
+</style>
+
 </body>
 </html>
