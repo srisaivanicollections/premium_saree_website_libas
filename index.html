@@ -9132,6 +9132,21 @@ body:not(#admin) [style*="font-size:7px"]{font-size:8px!important}
   }
 }
 </style>
+<style id="reduce-product-card-row-gap">
+/* Desktop / Tablet: reduce vertical gap between product rows */
+#shop .lux-product-grid,
+#shop .products {
+  row-gap: 18px !important;
+}
+
+/* Mobile: compact vertical gap between cards */
+@media (max-width: 600px) {
+  #shop .lux-product-grid,
+  #shop .products {
+    row-gap: 8px !important;
+  }
+}
+</style>
 </head>
 <script id="store-hours-auto-status">
 (function(){
