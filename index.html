@@ -9147,6 +9147,71 @@ body:not(#admin) [style*="font-size:7px"]{font-size:8px!important}
   }
 }
 </style>
+<style id="catalog-spacing-and-discount-fix">
+/* --- 1. TOP VERTICAL SPACING --- */
+#shop.lux-catalog-section,
+#shop.catalog,
+#shop {
+  padding-top: 16px !important;
+}
+
+#shop .lux-catalog-container {
+  padding-top: 0 !important;
+}
+
+#shop .lux-tools,
+#shop .tools {
+  margin-top: 8px !important;
+}
+
+#shop .lux-catalog-toolbar,
+#shop .toolbar {
+  margin-bottom: 14px !important;
+}
+
+/* --- 2. PROMINENT DISCOUNT DISPLAY --- */
+#shop .lux-pricing-block {
+  display: flex !important;
+  align-items: baseline !important;
+  flex-wrap: wrap !important;
+  gap: 6px !important;
+}
+
+#shop .lux-price-discount {
+  display: inline-block !important;
+  color: #B91C1C !important; /* Bold, readable deep red */
+  font-family: "Inter", "Montserrat", Arial, sans-serif !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  line-height: 1 !important;
+  letter-spacing: 0.02em !important;
+  white-space: nowrap !important;
+  margin-left: 2px !important;
+}
+
+/* Mobile Adjustments (<=600px) */
+@media (max-width: 600px) {
+  #shop.lux-catalog-section,
+  #shop.catalog,
+  #shop {
+    padding-top: 10px !important;
+  }
+
+  #shop .lux-tools,
+  #shop .tools {
+    margin-top: 6px !important;
+  }
+
+  #shop .lux-catalog-toolbar,
+  #shop .toolbar {
+    margin-bottom: 10px !important;
+  }
+
+  #shop .lux-price-discount {
+    font-size: 10px !important;
+  }
+}
+</style>
 </head>
 <script id="store-hours-auto-status">
 (function(){
