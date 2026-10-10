@@ -10292,7 +10292,7 @@ function showView(v){
     settingsFormBaseline={};
     all("#studioBody [data-setting-key]").forEach(input=>{settingsFormBaseline[input.dataset.settingKey]=input.type==="checkbox"?input.checked:input.value.trim();});
     settingsFormBaseline.name=$("#setName")?.value.trim()||"SRI SAI VANI";
-    settingsFormBaseline.whatsapp=$("#setWa")?.value.replace(/\\D/g,"")||"";
+    settingsFormBaseline.whatsapp=$("#setWa")?.value.replace(/\D/g,"")||"";
     settingsFormBaseline.instagram=$("#setIg")?.value.trim()||"";
   }
 }
