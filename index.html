@@ -12953,10 +12953,18 @@ if ("serviceWorker" in navigator) {
     column-gap: 8px !important;
   }
   #shop .lux-item-body,
-  #shop .lux-item-footer,
   #shop .lux-pricing-block {
     min-width: 0 !important;
     overflow: visible !important;
+  }
+
+  /* Let the price/discount row grow instead of clipping its second line. */
+  #shop .lux-item-footer {
+    height: auto !important;
+    min-height: 0 !important;
+    padding-bottom: 4px !important;
+    overflow: visible !important;
+    align-items: flex-start !important;
   }
 }
 
