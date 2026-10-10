@@ -10524,6 +10524,7 @@ function normalizeAdminEmail(email){
 function updateAdminView(){
   const loginSection=$("#login");
   const studioSection=$("#studio");
+  const logoutButton=$("#logoutBtn");
   const active=adminSessionActive===true;
   if(loginSection){
     loginSection.classList.toggle("hidden",active);
@@ -10532,6 +10533,9 @@ function updateAdminView(){
   if(studioSection){
     studioSection.classList.toggle("hidden",!active);
     studioSection.style.setProperty("display",active?"flex":"none","important");
+  }
+  if(logoutButton){
+    logoutButton.classList.toggle("hidden",!active);
   }
 }
 
