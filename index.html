@@ -9147,71 +9147,6 @@ body:not(#admin) [style*="font-size:7px"]{font-size:8px!important}
   }
 }
 </style>
-<style id="catalog-spacing-and-discount-fix">
-/* --- 1. TOP VERTICAL SPACING --- */
-#shop.lux-catalog-section,
-#shop.catalog,
-#shop {
-  padding-top: 16px !important;
-}
-
-#shop .lux-catalog-container {
-  padding-top: 0 !important;
-}
-
-#shop .lux-tools,
-#shop .tools {
-  margin-top: 8px !important;
-}
-
-#shop .lux-catalog-toolbar,
-#shop .toolbar {
-  margin-bottom: 14px !important;
-}
-
-/* --- 2. PROMINENT DISCOUNT DISPLAY --- */
-#shop .lux-pricing-block {
-  display: flex !important;
-  align-items: baseline !important;
-  flex-wrap: wrap !important;
-  gap: 6px !important;
-}
-
-#shop .lux-price-discount {
-  display: inline-block !important;
-  color: #B91C1C !important; /* Bold, readable deep red */
-  font-family: "Inter", "Montserrat", Arial, sans-serif !important;
-  font-size: 11px !important;
-  font-weight: 700 !important;
-  line-height: 1 !important;
-  letter-spacing: 0.02em !important;
-  white-space: nowrap !important;
-  margin-left: 2px !important;
-}
-
-/* Mobile Adjustments (<=600px) */
-@media (max-width: 600px) {
-  #shop.lux-catalog-section,
-  #shop.catalog,
-  #shop {
-    padding-top: 10px !important;
-  }
-
-  #shop .lux-tools,
-  #shop .tools {
-    margin-top: 6px !important;
-  }
-
-  #shop .lux-catalog-toolbar,
-  #shop .toolbar {
-    margin-bottom: 10px !important;
-  }
-
-  #shop .lux-price-discount {
-    font-size: 10px !important;
-  }
-}
-</style>
 </head>
 <script id="store-hours-auto-status">
 (function(){
@@ -12971,7 +12906,43 @@ if ("serviceWorker" in navigator) {
 
 
 <style id="ssv-storefront-discount-rowgap16-20261010">
-/* Final desktop storefront correction: exact 16px row gap and legible discount. */
+/* Catalog spacing and price layout: final storefront overrides after legacy styles. */
+#shop.lux-catalog-section,
+#shop.catalog,
+#shop {
+  padding-top: 16px !important;
+}
+#shop .lux-catalog-container { padding-top: 0 !important; }
+#shop .lux-tools,
+#shop .tools { margin-top: 8px !important; }
+#shop .lux-catalog-toolbar,
+#shop .toolbar { margin-bottom: 14px !important; }
+
+/* Keep price, original price, and discount together without displacing WhatsApp. */
+#shop .lux-pricing-block {
+  display: flex !important;
+  flex-flow: row wrap !important;
+  align-items: baseline !important;
+  column-gap: 6px !important;
+  row-gap: 4px !important;
+  min-width: 0 !important;
+}
+#shop .lux-price-discount {
+  display: inline-block !important;
+  flex: 0 0 auto !important;
+  width: auto !important;
+  margin: 0 0 0 2px !important;
+  padding: 0 !important;
+  color: #B91C1C !important;
+  font-family: "Inter", "Montserrat", Arial, sans-serif !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  line-height: 1.15 !important;
+  letter-spacing: 0.01em !important;
+  white-space: nowrap !important;
+}
+
+/* Preserve the existing desktop grid dimensions and column gap. */
 @media (min-width: 1101px) {
   #shop #products.products.lux-product-grid,
   #shop #products.lux-product-grid,
@@ -12981,41 +12952,27 @@ if ("serviceWorker" in navigator) {
     grid-row-gap: 16px !important;
     column-gap: 18px !important;
   }
-  #shop .lux-item-body {
-    min-width: 0 !important;
-    overflow: visible !important;
-  }
+  #shop .lux-item-body,
   #shop .lux-item-footer,
   #shop .lux-pricing-block {
     min-width: 0 !important;
     overflow: visible !important;
   }
-  #shop .lux-pricing-block {
-    display: flex !important;
-    flex-flow: row wrap !important;
-    align-items: baseline !important;
-    column-gap: 9px !important;
-    row-gap: 4px !important;
-  }
-  #shop .lux-price-current,
-  #shop .lux-price-original {
-    flex: 0 0 auto !important;
-    white-space: nowrap !important;
-  }
-  #shop .lux-price-discount {
-    display: block !important;
-    flex: 0 0 100% !important;
-    width: fit-content !important;
-    margin: 3px 0 0 !important;
-    padding: 0 !important;
-    color: #C2185B !important;
-    font-family: "Inter", Arial, sans-serif !important;
-    font-size: 10px !important;
-    font-weight: 600 !important;
-    line-height: 1.25 !important;
-    white-space: nowrap !important;
-    overflow: visible !important;
-  }
+}
+
+/* Mobile */
+@media (max-width: 600px) {
+  #shop.lux-catalog-section,
+  #shop.catalog,
+  #shop { padding-top: 10px !important; }
+
+  #shop .lux-tools,
+  #shop .tools { margin-top: 6px !important; }
+
+  #shop .lux-catalog-toolbar,
+  #shop .toolbar { margin-bottom: 10px !important; }
+
+  #shop .lux-price-discount { font-size: 10px !important; }
 }
 </style>
 
