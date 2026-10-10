@@ -9770,18 +9770,31 @@ async function localApi(body){
       if(String(incoming.whatsapp??"").trim()===""&&String(existing.whatsapp??"").trim()!=="") merged.whatsapp=existing.whatsapp;
       try{
         await githubWriteJson("data/settings.json",merged,current.sha,attempt===0?"Update shop settings":"Retry shop settings update");
-        const verified=await githubReadJsonFresh("data/settings.json");
-        for(const [key,value] of Object.entries(incoming)){
-          if(JSON.stringify(verified.value?.[key])!==JSON.stringify(value)){
-            throw new Error("Settings were saved but could not be verified. Refresh the page before trying again.");
-          }
-        }
-        return {ok:true,settings:verified.value};
       }catch(writeError){
         lastError=writeError;
         if(!isGithubShaConflict(writeError)||attempt===4)throw writeError;
         await new Promise(resolve=>setTimeout(resolve,150*(attempt+1)+Math.floor(Math.random()*120)));
+        continue;
       }
+
+      // Verification must compare against the merged payload actually written.
+      // For example, an intentionally blank WhatsApp field preserves the
+      // existing number above, so comparing against incoming would falsely fail.
+      let verified;
+      try{
+        verified=await githubReadJsonFresh("data/settings.json");
+      }catch(verifyError){
+        const error=new Error("Settings may have been saved, but we couldn't verify the changes. Refresh and check your settings before trying again.");
+        error.verificationInconclusive=true;
+        error.cause=verifyError;
+        throw error;
+      }
+      for(const [key,value] of Object.entries(merged)){
+        if(JSON.stringify(verified.value?.[key])!==JSON.stringify(value)){
+          throw new Error("Settings may have been saved, but we couldn't verify the changes. Refresh and check your settings before trying again.");
+        }
+      }
+      return {ok:true,settings:verified.value};
     }
     throw lastError||new Error("Shop settings could not be saved.");
   }
