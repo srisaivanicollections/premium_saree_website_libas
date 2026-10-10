@@ -12942,8 +12942,9 @@ if ("serviceWorker" in navigator) {
   white-space: nowrap !important;
 }
 
-/* Preserve the existing desktop grid dimensions and column gap. */
-@media (min-width: 1101px) {
+/* Compact grid spacing for desktop and desktop-site mode on mobile.
+   The 601px floor keeps the normal small-mobile layout and spacing unchanged. */
+@media (min-width: 601px) {
   #shop #products.products.lux-product-grid,
   #shop #products.lux-product-grid,
   #shop .lux-product-grid {
