@@ -10289,7 +10289,7 @@ function showView(v){
     b.innerHTML='<div class="admin-customize"><p class="admin-settings-intro">Customize your storefront content and links. Save changes to publish them to the website.</p>'+
       '<details class="admin-settings-group"><summary>Brand & Contact</summary><div class="admin-settings-grid">'+
       field('Boutique name','name','SRI SAI VANI')+
-      '<label class="admin-setting-field"><span>WhatsApp number (country code included)</span><input id="setWa" inputmode="tel" maxlength="15" value="'+esc(settings.whatsapp||'')+'"></label>'+
+      '<label class="admin-setting-field"><span>WhatsApp number</span><span class="admin-wa-number-input"><span class="admin-wa-country-code" aria-label="India country code, fixed">+91</span><input id="setWa" type="tel" inputmode="numeric" autocomplete="tel-national" maxlength="10" pattern="[0-9]{10}" placeholder="10-digit mobile number" value="'+esc(String(settings.whatsapp||'').replace(/\\D/g,'').replace(/^91(?=\\d{10}$)/,'').slice(-10))+'"></span><small class="admin-wa-number-help">India country code +91 is fixed and cannot be changed.</small></label>'+
       '<label class="admin-setting-field"><span>Instagram profile URL</span><input id="setIg" type="url" value="'+esc(settings.instagram||'https://www.instagram.com/sri_sai_vani_collections/')+'"></label>'+
       field('Google Reviews URL','googleReviewsUrl','https://www.google.com/search?q=Sri+Sai+Vani+Collections+Kamareddy+Google+reviews','url')+
       field('Google Maps directions URL','mapsUrl','https://www.google.com/maps/search/?api=1&query=Sri%20Sai%20Vani%20Collections%2C%20Opp.%20Indian%20Oil%20Petrol%20Pump%2C%20Nizamsagar%20Rd%2C%20Kamareddy%2C%20Telangana%20503111','url')+'</div></details>'+
@@ -10344,7 +10344,7 @@ function showView(v){
     settingsFormBaseline={};
     all("#studioBody [data-setting-key]").forEach(input=>{settingsFormBaseline[input.dataset.settingKey]=input.type==="checkbox"?input.checked:input.value.trim();});
     settingsFormBaseline.name=$("#setName")?.value.trim()||"SRI SAI VANI";
-    settingsFormBaseline.whatsapp=$("#setWa")?.value.replace(/\D/g,"")||"";
+    {const digits=String(settings.whatsapp||"").replace(/\D/g,"").replace(/^91(?=\d{10}$)/,"").slice(-10);settingsFormBaseline.whatsapp=digits.length===10?"91"+digits:"";}
     settingsFormBaseline.instagram=$("#setIg")?.value.trim()||"";
   }
 }
@@ -10965,7 +10965,7 @@ document.addEventListener("click",async e=>{const t=e.target.closest("[data-tab]
   e.preventDefault();
   const nextSettings={
     name:$("#setName").value.trim()||"SRI SAI VANI",
-    whatsapp:$("#setWa").value.replace(/\D/g,""),
+    whatsapp:(()=>{const digits=$("#setWa").value.replace(/\D/g,"").slice(0,10);return digits.length===10?"91"+digits:"";})(),
     instagram:$("#setIg").value.trim()
   };
   all("#studioBody [data-setting-key]").forEach(input=>{
@@ -11303,6 +11303,10 @@ $("#search").oninput=()=>{catalogPage=0;render()};$("#price").onchange=()=>{cata
 .admin-setting-field{display:flex;flex-direction:column;gap:6px;min-width:0;color:#51463d;font-size:13px;font-weight:600}
 .admin-setting-field input,.admin-setting-field textarea{box-sizing:border-box;width:100%;min-width:0;border:1px solid #d9cec2;border-radius:8px;padding:10px 11px;background:#fff;color:#2f2924;font:inherit;font-weight:400}
 .admin-setting-field textarea{resize:vertical;line-height:1.45}
+.admin-wa-number-input{display:flex;align-items:stretch;min-width:0}
+.admin-wa-country-code{display:flex;align-items:center;justify-content:center;padding:0 13px;border:1px solid #d9cec2;border-right:0;border-radius:8px 0 0 8px;background:#f5f1eb;color:#51463d;font-weight:600}
+.admin-setting-field .admin-wa-number-input input{border-radius:0 8px 8px 0}
+.admin-wa-number-help{font-size:11px;font-weight:400;color:#766d64}
 .admin-setting-field input:focus,.admin-setting-field textarea:focus{outline:2px solid #b9956b;outline-offset:1px}
 .admin-settings-toggles{display:grid;gap:12px;padding:0 16px 16px}
 .admin-setting-toggle{display:flex;align-items:center;gap:10px;font-size:14px;color:#51463d}
