@@ -9249,6 +9249,21 @@ body:not(#admin) [style*="font-size:7px"]{font-size:8px!important}
     </div>
   </div>
 </section>
+<section class="ssv-shipping-marquee" aria-label="Shipping information">
+  <span class="ssv-shipping-marquee__sr-only">Shipping available. No cash on delivery.</span>
+  <div class="ssv-shipping-marquee__viewport" aria-hidden="true">
+    <div class="ssv-shipping-marquee__track">
+      <span class="ssv-shipping-marquee__message">SHIPPING AVAILABLE <span class="ssv-shipping-marquee__separator">·</span> NO CASH ON DELIVERY</span>
+      <span class="ssv-shipping-marquee__message">SHIPPING AVAILABLE <span class="ssv-shipping-marquee__separator">·</span> NO CASH ON DELIVERY</span>
+      <span class="ssv-shipping-marquee__message">SHIPPING AVAILABLE <span class="ssv-shipping-marquee__separator">·</span> NO CASH ON DELIVERY</span>
+      <span class="ssv-shipping-marquee__message">SHIPPING AVAILABLE <span class="ssv-shipping-marquee__separator">·</span> NO CASH ON DELIVERY</span>
+      <span class="ssv-shipping-marquee__message">SHIPPING AVAILABLE <span class="ssv-shipping-marquee__separator">·</span> NO CASH ON DELIVERY</span>
+      <span class="ssv-shipping-marquee__message">SHIPPING AVAILABLE <span class="ssv-shipping-marquee__separator">·</span> NO CASH ON DELIVERY</span>
+      <span class="ssv-shipping-marquee__message">SHIPPING AVAILABLE <span class="ssv-shipping-marquee__separator">·</span> NO CASH ON DELIVERY</span>
+      <span class="ssv-shipping-marquee__message">SHIPPING AVAILABLE <span class="ssv-shipping-marquee__separator">·</span> NO CASH ON DELIVERY</span>
+    </div>
+  </div>
+</section>
 <section id="shop" class="lux-catalog-section" aria-label="Curated Catalog">
 <div class="lux-catalog-container">
     <div class="lux-catalog-toolbar">
@@ -13370,6 +13385,18 @@ if ("serviceWorker" in navigator) {
 #admin .admin-header-actions #logoutBtn.hidden {
   display: none !important;
 }
+</style>
+
+<style id="ssv-shipping-marquee-styles">
+.ssv-shipping-marquee{height:33px;display:flex;align-items:center;overflow:hidden;background:#FAF7F2;border-top:1px solid #E4D8C5;border-bottom:1px solid #E4D8C5;color:#1C1917;font-family:"Montserrat","Inter",Arial,sans-serif}
+.ssv-shipping-marquee__viewport{width:100%;min-width:0;overflow:hidden}
+.ssv-shipping-marquee__track{display:flex;width:max-content;align-items:center;animation:ssv-shipping-marquee-scroll 54s linear infinite;will-change:transform}
+.ssv-shipping-marquee__message{display:flex;align-items:center;flex:none;white-space:nowrap;padding-right:46px;font-size:10px;font-weight:500;letter-spacing:.17em;line-height:1;text-transform:uppercase}
+.ssv-shipping-marquee__separator{padding:0 13px;color:#C8B28A}
+.ssv-shipping-marquee__sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+@keyframes ssv-shipping-marquee-scroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+@media(max-width:600px){.ssv-shipping-marquee{height:30px}.ssv-shipping-marquee__message{font-size:9px;letter-spacing:.12em;padding-right:34px}.ssv-shipping-marquee__separator{padding-inline:10px}}
+@media(prefers-reduced-motion:reduce){.ssv-shipping-marquee__track{animation:none;transform:none}.ssv-shipping-marquee__message:not(:first-child){display:none}.ssv-shipping-marquee__track{width:100%;justify-content:center}.ssv-shipping-marquee__message:first-child{padding:0;text-align:center;justify-content:center;white-space:normal;line-height:1.3}}
 </style>
 
 </body>
