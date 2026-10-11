@@ -12976,6 +12976,42 @@ if ("serviceWorker" in navigator) {
   }
 }
 
+
+/* Keep the WhatsApp action visible on every product card on narrow screens. */
+@media (max-width: 600px) {
+  #shop .lux-item-footer {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    align-items: flex-start !important;
+    justify-content: space-between !important;
+    gap: 4px !important;
+    min-width: 0 !important;
+    overflow: visible !important;
+  }
+  #shop .lux-pricing-block {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    max-width: calc(100% - 24px) !important;
+  }
+  #shop .lux-wa-action {
+    display: inline-flex !important;
+    flex: 0 0 20px !important;
+    width: 20px !important;
+    min-width: 20px !important;
+    height: 20px !important;
+    min-height: 20px !important;
+    margin: 1px 0 0 !important;
+    padding: 0 !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+  #shop .lux-wa-action svg {
+    display: block !important;
+    width: 15px !important;
+    height: 15px !important;
+  }
+}
+
 /* Mobile */
 @media (max-width: 600px) {
   #shop.lux-catalog-section,
