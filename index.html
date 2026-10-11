@@ -10823,7 +10823,39 @@ document.addEventListener("click",async e=>{const t=e.target.closest("[data-tab]
     btn.textContent=oldText;
   }
 }});
-const catalogSearch=$("#search"),catalogSort=$("#price"),catalogClear=$("#clearCatalogSearch"),catalogReset=$("#resetCatalog");const syncCatalogClear=()=>{if(catalogClear)catalogClear.hidden=!(catalogSearch&&catalogSearch.value.trim().length>0);};const syncCatalogPlaceholder=()=>{if(catalogSearch)catalogSearch.placeholder=window.matchMedia("(max-width: 768px)").matches?"Search collection...":"Search collection";};syncCatalogPlaceholder();if(window.matchMedia){const mobileControlsQuery=window.matchMedia("(max-width: 768px)");if(mobileControlsQuery.addEventListener)mobileControlsQuery.addEventListener("change",syncCatalogPlaceholder);else if(mobileControlsQuery.addListener)mobileControlsQuery.addListener(syncCatalogPlaceholder);}if(catalogSearch){catalogSearch.oninput=()=>{syncCatalogClear();catalogPage=0;render()};catalogSearch.addEventListener("input",syncCatalogClear);syncCatalogClear();}if(catalogSort)catalogSort.onchange=()=>{catalogPage=0;render()};if(catalogClear)catalogClear.onclick=()=>{if(!catalogSearch)return;catalogSearch.value="";catalogSearch.dispatchEvent(new Event("input",{bubbles:true}));catalogSearch.focus()};if(catalogReset)catalogReset.onclick=()=>{category="All";catalogSearch.value="";catalogSort.value="";syncCatalogClear();catalogPage=0;render()};load();
+const catalogSearch=$("#search"),catalogSort=$("#price"),catalogClear=$("#clearCatalogSearch"),catalogReset=$("#resetCatalog");const syncCatalogClear=()=>{if(catalogClear)catalogClear.hidden=!(catalogSearch&&catalogSearch.value.trim().length>0);};const syncCatalogPlaceholder=()=>{if(catalogSearch)catalogSearch.placeholder=window.matchMedia("(max-width: 768px)").matches?"Search collection...":"Search collection";};syncCatalogPlaceholder();if(window.matchMedia){const mobileControlsQuery=window.matchMedia("(max-width: 768px)");if(mobileControlsQuery.addEventListener)mobileControlsQuery.addEventListener("change",syncCatalogPlaceholder);else if(mobileControlsQuery.addListener)mobileControlsQuery.addListener(syncCatalogPlaceholder);}if(catalogSearch){catalogSearch.oninput=()=>{syncCatalogClear();catalogPage=0;render()};catalogSearch.addEventListener("input",syncCatalogClear);syncCatalogClear();}if(catalogSort)catalogSort.onchange=()=>{catalogPage=0;render()};if(catalogClear)catalogClear.onclick=()=>{if(!catalogSearch)return;catalogSearch.value="";catalogSearch.dispatchEvent(new Event("input",{bubbles:true}));catalogSearch.focus()};let catalogResetPulseTimer=0;
+if(catalogReset)catalogReset.onclick=()=>{
+  category="All";
+  if(catalogSearch)catalogSearch.value="";
+  if(catalogSort)catalogSort.value="";
+  syncCatalogClear();
+  catalogPage=0;
+
+  const resetIcon=catalogReset.querySelector("svg");
+  if(resetIcon){
+    resetIcon.classList.remove("reset-spin-active");
+    void resetIcon.getBoundingClientRect();
+    resetIcon.classList.add("reset-spin-active");
+  }
+
+  if(typeof navigator!=="undefined"&&typeof navigator.vibrate==="function"){
+    try{navigator.vibrate(25)}catch(_){}
+  }
+
+  const catalogGrid=$("#products");
+  if(catalogGrid){
+    window.clearTimeout(catalogResetPulseTimer);
+    catalogGrid.classList.remove("catalog-grid-refreshing");
+    void catalogGrid.getBoundingClientRect();
+    catalogGrid.classList.add("catalog-grid-refreshing");
+    catalogResetPulseTimer=window.setTimeout(()=>{
+      render();
+      requestAnimationFrame(()=>catalogGrid.classList.remove("catalog-grid-refreshing"));
+    },190);
+  }else{
+    render();
+  }
+};load();
 
 </script>
 
@@ -13612,5 +13644,36 @@ if ("serviceWorker" in navigator) {
     stroke: currentColor !important;
     stroke-width: 1.6 !important;
   }
+}
+
+
+/* Catalog reset feedback: animation-only additions, scoped to the shop. */
+@keyframes ssvCatalogResetSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+#shop .lux-reset-button svg.reset-spin-active {
+  animation: ssvCatalogResetSpin 560ms cubic-bezier(.22,.68,0,1.02) both;
+  transform-origin: 50% 50%;
+}
+#shop #products.catalog-grid-refreshing {
+  opacity: .35;
+  filter: blur(1px);
+  transform: translateY(1px);
+  transition:
+    opacity 190ms cubic-bezier(.22,.61,.36,1),
+    filter 190ms cubic-bezier(.22,.61,.36,1),
+    transform 190ms cubic-bezier(.22,.61,.36,1);
+}
+#shop #products {
+  transition:
+    opacity 190ms cubic-bezier(.22,.61,.36,1),
+    filter 190ms cubic-bezier(.22,.61,.36,1),
+    transform 190ms cubic-bezier(.22,.61,.36,1);
+}
+@media (prefers-reduced-motion: reduce) {
+  #shop .lux-reset-button svg.reset-spin-active { animation-duration: 1ms; }
+  #shop #products,
+  #shop #products.catalog-grid-refreshing { transition-duration: 1ms; }
 }
 </style>
