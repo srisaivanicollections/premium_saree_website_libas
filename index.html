@@ -9031,9 +9031,11 @@ body:not(#admin) [style*="font-size:7px"]{font-size:8px!important}
           <button id="clearCatalogSearch" class="lux-search-clear" type="button" aria-label="Clear search" hidden>×</button>
         </div>
         <div class="lux-mobile-sort" aria-label="Sort collection">
-          <span class="lux-mobile-sort-icon" aria-hidden="true" hidden>⇅</span>
-          <select id="price" class="lux-price-select" aria-label="Sort by">
-            <option value="" selected disabled>Sort by</option>
+          <svg class="lux-mobile-sort-icon" viewBox="0 0 42 42" aria-hidden="true" focusable="false">
+            <path d="M14 9v24m0-24-4 4m4-4 4 4M28 33V9m0 24-4-4m4 4 4-4"></path>
+          </svg>
+          <select id="price" class="lux-price-select" aria-label="Sort by price">
+            <option value="" selected>Default order</option>
             <option value="low-high">Price: Low to High</option>
             <option value="high-low">Price: High to Low</option>
           </select>
@@ -10823,11 +10825,27 @@ document.addEventListener("click",async e=>{const t=e.target.closest("[data-tab]
     btn.textContent=oldText;
   }
 }});
-const catalogSearch=$("#search"),catalogSort=$("#price"),catalogClear=$("#clearCatalogSearch"),catalogReset=$("#resetCatalog");const syncCatalogClear=()=>{if(catalogClear)catalogClear.hidden=!(catalogSearch&&catalogSearch.value.trim().length>0);};const syncCatalogPlaceholder=()=>{if(catalogSearch)catalogSearch.placeholder=window.matchMedia("(max-width: 768px)").matches?"Search collection...":"Search collection";};syncCatalogPlaceholder();if(window.matchMedia){const mobileControlsQuery=window.matchMedia("(max-width: 768px)");if(mobileControlsQuery.addEventListener)mobileControlsQuery.addEventListener("change",syncCatalogPlaceholder);else if(mobileControlsQuery.addListener)mobileControlsQuery.addListener(syncCatalogPlaceholder);}if(catalogSearch){catalogSearch.oninput=()=>{syncCatalogClear();catalogPage=0;render()};catalogSearch.addEventListener("input",syncCatalogClear);syncCatalogClear();}if(catalogSort)catalogSort.onchange=()=>{catalogPage=0;render()};if(catalogClear)catalogClear.onclick=()=>{if(!catalogSearch)return;catalogSearch.value="";catalogSearch.dispatchEvent(new Event("input",{bubbles:true}));catalogSearch.focus()};let catalogResetPulseTimer=0;
+const catalogSearch=$("#search"),catalogSort=$("#price"),catalogClear=$("#clearCatalogSearch"),catalogReset=$("#resetCatalog");const syncCatalogClear=()=>{if(catalogClear)catalogClear.hidden=!(catalogSearch&&catalogSearch.value.trim().length>0);};const syncCatalogPlaceholder=()=>{if(catalogSearch)catalogSearch.placeholder=window.matchMedia("(max-width: 768px)").matches?"Search collection...":"Search collection";};syncCatalogPlaceholder();if(window.matchMedia){const mobileControlsQuery=window.matchMedia("(max-width: 768px)");if(mobileControlsQuery.addEventListener)mobileControlsQuery.addEventListener("change",syncCatalogPlaceholder);else if(mobileControlsQuery.addListener)mobileControlsQuery.addListener(syncCatalogPlaceholder);}if(catalogSearch){catalogSearch.oninput=()=>{syncCatalogClear();catalogPage=0;render()};catalogSearch.addEventListener("input",syncCatalogClear);syncCatalogClear();}const catalogSortBox=catalogSort?catalogSort.closest(".lux-mobile-sort"):null;
+const syncCatalogSortIcon=()=>{
+  if(!catalogSort||!catalogSortBox)return;
+  const icon=catalogSortBox.querySelector(".lux-mobile-sort-icon");
+  const direction=catalogSort.value;
+  catalogSortBox.classList.toggle("is-active",direction==="low-high"||direction==="high-low");
+  if(!icon)return;
+  if(direction==="low-high"){
+    icon.innerHTML='<path d="M10 25V8m0 0-4 4m4-4 4 4"></path><text x="17" y="27" fill="currentColor" stroke="none" font-family="Arial,sans-serif" font-size="17" font-weight="600">₹</text>';
+  }else if(direction==="high-low"){
+    icon.innerHTML='<path d="M10 8v17m0 0-4-4m4 4 4-4"></path><text x="17" y="27" fill="currentColor" stroke="none" font-family="Arial,sans-serif" font-size="17" font-weight="600">₹</text>';
+  }else{
+    icon.innerHTML='<path d="M14 9v24m0-24-4 4m4-4 4 4M28 33V9m0 24-4-4m4 4 4-4"></path>';
+  }
+};
+syncCatalogSortIcon();
+if(catalogSort)catalogSort.onchange=()=>{syncCatalogSortIcon();catalogPage=0;render()};if(catalogClear)catalogClear.onclick=()=>{if(!catalogSearch)return;catalogSearch.value="";catalogSearch.dispatchEvent(new Event("input",{bubbles:true}));catalogSearch.focus()};let catalogResetPulseTimer=0;
 if(catalogReset)catalogReset.onclick=()=>{
   category="All";
   if(catalogSearch)catalogSearch.value="";
-  if(catalogSort)catalogSort.value="";
+  if(catalogSort){catalogSort.value="";syncCatalogSortIcon();}
   syncCatalogClear();
   catalogPage=0;
 
@@ -13556,10 +13574,10 @@ if ("serviceWorker" in navigator) {
     flex: 1 1 70% !important;
     width: auto !important;
     min-width: 0 !important;
-    height: 44px !important;
+    height: 48px !important;
     padding: 0 8px !important;
     border: 1px solid #C5A67C !important;
-    border-radius: 0 !important;
+    border-radius: 6px !important;
     background: #FCFAF6 !important;
     color: #2C2523 !important;
     box-shadow: none !important;
@@ -13578,7 +13596,7 @@ if ("serviceWorker" in navigator) {
     height: 100% !important;
     padding: 0 !important;
     border: 0 !important;
-    border-radius: 0 !important;
+    border-radius: 5px !important;
     outline: 0 !important;
     background: transparent !important;
     color: #2C2523 !important;
@@ -13597,23 +13615,49 @@ if ("serviceWorker" in navigator) {
   #shop .lux-tools#mobileCollectionControls > .lux-reset-button {
     position: relative !important;
     display: flex !important;
-    flex: 0 0 44px !important;
+    flex: 0 0 48px !important;
     align-items: center !important;
     justify-content: center !important;
-    width: 44px !important;
-    min-width: 44px !important;
-    height: 44px !important;
-    min-height: 44px !important;
+    width: 48px !important;
+    min-width: 48px !important;
+    height: 48px !important;
+    min-height: 48px !important;
     box-sizing: border-box !important;
     padding: 0 !important;
     border: 1px solid #C5A67C !important;
-    border-radius: 0 !important;
+    border-radius: 6px !important;
     background: #FCFAF6 !important;
     color: #C5A67C !important;
     box-shadow: none !important;
   }
-  #shop .lux-tools#mobileCollectionControls .lux-mobile-sort { overflow: hidden !important; }
-  #shop .lux-mobile-sort-icon { display: inline-block !important; font: 23px/1 Arial, sans-serif !important; color: #C5A67C !important; pointer-events: none !important; }
+  #shop .lux-tools#mobileCollectionControls .lux-mobile-sort {
+    flex: 0 0 48px !important;
+    width: 48px !important;
+    min-width: 48px !important;
+    height: 48px !important;
+    min-height: 48px !important;
+    overflow: hidden !important;
+  }
+  #shop .lux-tools#mobileCollectionControls .lux-mobile-sort.is-active {
+    border-color: #B08D55 !important;
+    background: #F6EFE2 !important;
+  }
+  #shop .lux-tools#mobileCollectionControls .lux-mobile-sort-icon {
+    display: block !important;
+    width: 26px !important;
+    height: 26px !important;
+    overflow: visible !important;
+    fill: none !important;
+    stroke: #C5A67C !important;
+    stroke-width: 1.7 !important;
+    stroke-linecap: round !important;
+    stroke-linejoin: round !important;
+    color: #C5A67C !important;
+    pointer-events: none !important;
+  }
+  #shop .lux-tools#mobileCollectionControls .lux-mobile-sort.is-active .lux-mobile-sort-icon {
+    stroke: #B08D55 !important;
+  }
   #shop .lux-tools#mobileCollectionControls .lux-mobile-sort .lux-price-select {
     position: absolute !important;
     inset: 0 !important;
@@ -13624,7 +13668,7 @@ if ("serviceWorker" in navigator) {
     margin: 0 !important;
     padding: 0 !important;
     border: 0 !important;
-    border-radius: 0 !important;
+    border-radius: 6px !important;
     opacity: 0 !important;
     cursor: pointer !important;
     font-size: 16px !important;
