@@ -11173,9 +11173,9 @@ if(catalogReset)catalogReset.onclick=()=>{
 #catalog-pagination.catalog-pagination{display:flex;align-items:center;justify-content:center;gap:14px;margin:28px auto 8px;padding:8px 0;color:#332b24}
 #catalog-pagination[hidden]{display:none!important}
 @media(max-width:600px){
-  /* The section's padding is overridden by later storefront CSS. Put the breathing room on its inner container too. */
-  #shop.catalog-no-pagination > .lux-catalog-container{padding-bottom:40px!important}
-  #shop.catalog-no-pagination{padding-bottom:40px!important}
+  /* Keep only a small catalog-to-reviews gap when pagination is absent. */
+  #shop.catalog-no-pagination{padding-bottom:24px!important}
+  #shop.catalog-no-pagination > .lux-catalog-container{padding-bottom:0!important}
 }
 #catalog-pagination .catalog-page-progress{width:84px;height:3px;overflow:hidden;border-radius:999px;background:#E8DED1}
 #catalog-pagination .catalog-page-progress span{display:block;height:100%;border-radius:inherit;background:#A77B45;transition:width .25s ease}
