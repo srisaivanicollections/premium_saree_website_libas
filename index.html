@@ -9434,6 +9434,35 @@ body:not(#admin) [style*="font-size:7px"]{font-size:8px!important}
 }
 </style>
 
+
+<style id="ssv-admin-wa-control-final-20261011">
+/* Unified fixed-country-code + mobile-number control; Admin-only styling. */
+#admin .admin-wa-number-input{
+  display:flex!important;align-items:stretch!important;gap:0!important;width:100%!important;min-width:0!important;
+}
+#admin .admin-wa-number-input .admin-wa-country-code{
+  display:flex!important;align-items:center!important;justify-content:center!important;
+  flex:0 0 80px!important;width:80px!important;min-width:80px!important;max-width:80px!important;
+  min-height:48px!important;height:48px!important;box-sizing:border-box!important;
+  padding:0 8px!important;white-space:nowrap!important;overflow-wrap:normal!important;word-break:keep-all!important;
+  border:1px solid #d9cec2!important;border-right:0!important;border-radius:8px 0 0 8px!important;
+  line-height:1!important;text-align:center!important;
+}
+#admin .admin-setting-field .admin-wa-number-input input# setWa{
+  flex:1 1 0!important;width:0!important;min-width:0!important;max-width:none!important;
+  height:48px!important;min-height:48px!important;box-sizing:border-box!important;
+  margin:0!important;border:1px solid #d9cec2!important;border-radius:0 8px 8px 0!important;
+  padding:0 12px!important;white-space:nowrap!important;overflow-x:auto!important;text-overflow:clip!important;
+}
+#admin .admin-setting-field .admin-wa-number-input input#setWa:focus{
+  position:relative;z-index:1;outline:2px solid #b9956b!important;outline-offset:0!important;
+}
+#admin .admin-settings-grid input[type=url]{overflow-x:auto!important;text-overflow:clip!important;white-space:nowrap!important;}
+@media(max-width:360px){
+  #admin .admin-wa-number-input .admin-wa-country-code{flex-basis:72px!important;width:72px!important;min-width:72px!important;max-width:72px!important;}
+}
+</style>
+
 <!-- pages-deploy-sync-20261008-store-final -->
 <script>
 
