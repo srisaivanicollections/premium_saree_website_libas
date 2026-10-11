@@ -9249,18 +9249,18 @@ body:not(#admin) [style*="font-size:7px"]{font-size:8px!important}
     </div>
   </div>
 </section>
-<section class="ssv-shipping-marquee" aria-label="SHIPPING AVAILABLE · NO CASH ON DELIVERY">
-  <span class="ssv-shipping-marquee__sr-only">SHIPPING AVAILABLE · NO CASH ON DELIVERY</span>
+<section class="ssv-shipping-marquee" aria-label="SHIPPING AVAILABLE • NO CASH ON DELIVERY">
+  <span class="ssv-shipping-marquee__sr-only">SHIPPING AVAILABLE • NO CASH ON DELIVERY</span>
   <div class="ssv-shipping-marquee__viewport" aria-hidden="true">
     <div class="ssv-shipping-marquee__track">
-      <span class="ssv-shipping-marquee__message">SHIPPING AVAILABLE <span class="ssv-shipping-marquee__separator">·</span> NO CASH ON DELIVERY</span>
-      <span class="ssv-shipping-marquee__message">SHIPPING AVAILABLE <span class="ssv-shipping-marquee__separator">·</span> NO CASH ON DELIVERY</span>
-      <span class="ssv-shipping-marquee__message">SHIPPING AVAILABLE <span class="ssv-shipping-marquee__separator">·</span> NO CASH ON DELIVERY</span>
-      <span class="ssv-shipping-marquee__message">SHIPPING AVAILABLE <span class="ssv-shipping-marquee__separator">·</span> NO CASH ON DELIVERY</span>
-      <span class="ssv-shipping-marquee__message">SHIPPING AVAILABLE <span class="ssv-shipping-marquee__separator">·</span> NO CASH ON DELIVERY</span>
-      <span class="ssv-shipping-marquee__message">SHIPPING AVAILABLE <span class="ssv-shipping-marquee__separator">·</span> NO CASH ON DELIVERY</span>
-      <span class="ssv-shipping-marquee__message">SHIPPING AVAILABLE <span class="ssv-shipping-marquee__separator">·</span> NO CASH ON DELIVERY</span>
-      <span class="ssv-shipping-marquee__message">SHIPPING AVAILABLE <span class="ssv-shipping-marquee__separator">·</span> NO CASH ON DELIVERY</span>
+      <span class="ssv-shipping-marquee__message">SHIPPING AVAILABLE <span class="ssv-shipping-marquee__separator">✦</span> NO CASH ON DELIVERY</span>
+      <span class="ssv-shipping-marquee__message">SHIPPING AVAILABLE <span class="ssv-shipping-marquee__separator">✦</span> NO CASH ON DELIVERY</span>
+      <span class="ssv-shipping-marquee__message">SHIPPING AVAILABLE <span class="ssv-shipping-marquee__separator">✦</span> NO CASH ON DELIVERY</span>
+      <span class="ssv-shipping-marquee__message">SHIPPING AVAILABLE <span class="ssv-shipping-marquee__separator">✦</span> NO CASH ON DELIVERY</span>
+      <span class="ssv-shipping-marquee__message">SHIPPING AVAILABLE <span class="ssv-shipping-marquee__separator">✦</span> NO CASH ON DELIVERY</span>
+      <span class="ssv-shipping-marquee__message">SHIPPING AVAILABLE <span class="ssv-shipping-marquee__separator">✦</span> NO CASH ON DELIVERY</span>
+      <span class="ssv-shipping-marquee__message">SHIPPING AVAILABLE <span class="ssv-shipping-marquee__separator">✦</span> NO CASH ON DELIVERY</span>
+      <span class="ssv-shipping-marquee__message">SHIPPING AVAILABLE <span class="ssv-shipping-marquee__separator">✦</span> NO CASH ON DELIVERY</span>
     </div>
   </div>
 </section>
@@ -9993,7 +9993,7 @@ function apply(){
   setText(".hero-primary-btn","heroButtonText","Explore Collection");
   const shippingMarquee=$(".ssv-shipping-marquee");
   if(shippingMarquee){
-    const shippingText=String(settings.shippingAnnouncementText??"SHIPPING AVAILABLE · NO CASH ON DELIVERY").trim()||"SHIPPING AVAILABLE · NO CASH ON DELIVERY";
+    const shippingText=String(settings.shippingAnnouncementText??"SHIPPING AVAILABLE • NO CASH ON DELIVERY").trim()||"SHIPPING AVAILABLE • NO CASH ON DELIVERY";
     const shippingEnabled=settings.showShippingAnnouncement!==false;
     shippingMarquee.classList.toggle("hidden",!shippingEnabled);
     shippingMarquee.setAttribute("aria-label",shippingText);
@@ -10001,12 +10001,12 @@ function apply(){
     if(accessibleText)accessibleText.textContent=shippingText;
     shippingMarquee.querySelectorAll(".ssv-shipping-marquee__message").forEach(message=>{
       message.replaceChildren();
-      const parts=shippingText.split("·");
+      const parts=shippingText.split("•");
       parts.forEach((part,index)=>{
         if(index){
           const separator=document.createElement("span");
           separator.className="ssv-shipping-marquee__separator";
-          separator.textContent="·";
+          separator.textContent="✦";
           message.appendChild(document.createTextNode(" "));
           message.appendChild(separator);
           message.appendChild(document.createTextNode(" "));
@@ -13423,10 +13423,10 @@ if ("serviceWorker" in navigator) {
 .ssv-shipping-marquee__viewport{width:100%;min-width:0;overflow:hidden}
 .ssv-shipping-marquee__track{display:flex;flex-flow:row nowrap;width:max-content;align-items:center;animation:ssv-shipping-marquee-scroll 54s linear infinite;will-change:transform}
 .ssv-shipping-marquee__message{display:flex;align-items:center;flex:none;white-space:nowrap;padding:12px 8px;font-size:14px;font-weight:500;letter-spacing:.12em;line-height:1;text-transform:uppercase}
-.ssv-shipping-marquee__separator{padding:0 4px;color:#C8B28A}
+.ssv-shipping-marquee__separator{display:inline-flex;align-items:center;flex:none;padding:0 4px;color:#C8B28A;font-family:"Cormorant Garamond",Georgia,serif;font-size:10px;line-height:1}
 .ssv-shipping-marquee__sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 @keyframes ssv-shipping-marquee-scroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
-@media(max-width:600px){.ssv-shipping-marquee{height:34px}.ssv-shipping-marquee__message{padding:10px 6px;font-size:12px;letter-spacing:.1em}.ssv-shipping-marquee__separator{padding-inline:3px}}
+@media(max-width:600px){.ssv-shipping-marquee{height:34px}.ssv-shipping-marquee__message{padding:10px 6px;font-size:12px;letter-spacing:.1em}.ssv-shipping-marquee__separator{padding-inline:3px;font-size:9px}}
 @media(prefers-reduced-motion:reduce){.ssv-shipping-marquee__track{animation:none;transform:none}.ssv-shipping-marquee__message:not(:first-child){display:none}.ssv-shipping-marquee__track{width:100%;justify-content:center}.ssv-shipping-marquee__message:first-child{padding:0;text-align:center;justify-content:center;white-space:normal;line-height:1.3}}
 </style>
 
