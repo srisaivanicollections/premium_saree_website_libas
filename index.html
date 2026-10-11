@@ -9998,14 +9998,19 @@ function apply(){
     const accessibleText=shippingMarquee.querySelector(".ssv-shipping-marquee__sr-only");
     if(accessibleText)accessibleText.textContent=shippingText;
     shippingMarquee.querySelectorAll(".ssv-shipping-marquee__message").forEach(message=>{
-      const separator=document.createElement("span");
-      separator.className="ssv-shipping-marquee__separator";
-      separator.textContent="·";
-      message.replaceChildren(document.createTextNode(shippingText.replace(/\s*·\s*/g," ").replace(/\s+/g," ").trim()),separator);
+      message.replaceChildren();
       const parts=shippingText.split("·");
-      if(parts.length===2){
-        message.replaceChildren(document.createTextNode(parts[0].trim()+" "),separator,document.createTextNode(" "+parts.slice(1).join("·").trim()));
-      }
+      parts.forEach((part,index)=>{
+        if(index){
+          const separator=document.createElement("span");
+          separator.className="ssv-shipping-marquee__separator";
+          separator.textContent="·";
+          message.appendChild(document.createTextNode(" "));
+          message.appendChild(separator);
+          message.appendChild(document.createTextNode(" "));
+        }
+        message.appendChild(document.createTextNode(part.trim()));
+      });
     });
   }
   const heroImage=$(".hero-banner-img");if(heroImage&&settings.heroImage)heroImage.src=productImageSrc(settings.heroImage);
