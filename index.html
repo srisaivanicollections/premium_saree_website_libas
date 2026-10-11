@@ -9925,7 +9925,15 @@ function render(){
     if(isBestSeller(p))return 2;
     return 3;
   };
-  if(pf==="low-high"){
+  if(pf==="new-arrivals"){
+    // New Arrival is a date-based sort, independent of the New Arrival badge.
+    // Keep equal-date and undated products in their original relative order.
+    list=list.map((p,i)=>({p,i,date:Date.parse(p.dateAdded||"")})).sort((a,b)=>{
+      const av=Number.isFinite(a.date)?a.date:Number.NEGATIVE_INFINITY;
+      const bv=Number.isFinite(b.date)?b.date:Number.NEGATIVE_INFINITY;
+      return bv-av||a.i-b.i;
+    }).map(x=>x.p);
+  }else if(pf==="low-high"){
     list.sort((a,b)=>Number(a.price||0)-Number(b.price||0));
   }else if(pf==="high-low"){
     list.sort((a,b)=>Number(b.price||0)-Number(a.price||0));
