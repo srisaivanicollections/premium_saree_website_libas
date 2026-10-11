@@ -9024,19 +9024,22 @@ body:not(#admin) [style*="font-size:7px"]{font-size:8px!important}
 <div class="lux-catalog-container">
     <div class="lux-catalog-toolbar">
       <div class="lux-tabs-wrap"><div id="tabs" class="tabs lux-tabs" role="tablist" aria-label="Collection category"></div><span id="catalogCount" class="lux-catalog-count" aria-live="polite"></span></div>
-      <div class="tools lux-tools">
-        <label class="search lux-search">
+      <div class="tools lux-tools" id="mobileCollectionControls">
+        <div class="search lux-search mobile-lux-search">
           <span class="lux-search-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><circle cx="11" cy="11" r="6.5"></circle><path d="M16 16l5 5"></path></svg></span>
-          <input id="search" class="lux-search-input" type="search" placeholder="Search collection" autocomplete="off" aria-label="Search collection">
-        </label>
-        <select id="price" class="lux-price-select" aria-label="Sort by">
-          <option value="" selected disabled>Sort by</option>
-          <option value="low-high">Price: Low to High</option>
-          <option value="high-low">Price: High to Low</option>
-        </select>
-        <button id="resetCatalog" class="lux-reset-button" type="button" aria-label="Reset catalogue filters">
+          <input id="search" class="lux-search-input" type="search" placeholder="Search collection..." autocomplete="off" aria-label="Search collection">
+          <button id="clearCatalogSearch" class="lux-search-clear" type="button" aria-label="Clear search" hidden>×</button>
+        </div>
+        <div class="lux-mobile-sort" aria-label="Sort collection">
+          <span class="lux-mobile-sort-icon" aria-hidden="true">⇅</span>
+          <select id="price" class="lux-price-select" aria-label="Sort by">
+            <option value="" selected>Default</option>
+            <option value="low-high">Price: Low to High</option>
+            <option value="high-low">Price: High to Low</option>
+          </select>
+        </div>
+        <button id="resetCatalog" class="lux-reset-button" type="button" aria-label="Reset search and sorting" title="Reset">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7v5h-5"></path><path d="M19 12a7 7 0 1 1-2-4.95L20 12"></path></svg>
-          <span>Reset</span>
         </button>
       </div>
     </div>
@@ -10819,7 +10822,7 @@ document.addEventListener("click",async e=>{const t=e.target.closest("[data-tab]
     btn.textContent=oldText;
   }
 }});
-$("#search").oninput=()=>{catalogPage=0;render()};$("#price").onchange=()=>{catalogPage=0;render()};$("#resetCatalog").onclick=()=>{category="All";$("#search").value="";$("#price").value="";catalogPage=0;render()};load();
+const catalogSearch=$("#search"),catalogSort=$("#price"),catalogClear=$("#clearCatalogSearch"),catalogReset=$("#resetCatalog");const syncCatalogClear=()=>{if(catalogClear)catalogClear.hidden=!catalogSearch.value;};if(catalogSearch){catalogSearch.oninput=()=>{syncCatalogClear();catalogPage=0;render()};catalogSearch.addEventListener("input",syncCatalogClear);syncCatalogClear();}if(catalogSort)catalogSort.onchange=()=>{catalogPage=0;render()};if(catalogClear)catalogClear.onclick=()=>{catalogSearch.value="";syncCatalogClear();catalogSearch.dispatchEvent(new Event("input",{bubbles:true}));catalogSearch.focus()};if(catalogReset)catalogReset.onclick=()=>{category="All";catalogSearch.value="";catalogSort.value="";syncCatalogClear();catalogPage=0;render()};load();
 
 </script>
 
@@ -13436,4 +13439,125 @@ if ("serviceWorker" in navigator) {
 
 <style id="ssv-shipping-announcement-setting-hint">
 #admin #studioBody .admin-shipping-announcement-help{grid-column:1/-1;margin:0 0 8px;color:#6F6252;font:400 13px/1.5 "Inter",Arial,sans-serif;letter-spacing:0;text-transform:none;}
+</style>
+
+
+<style id="ssv-mobile-search-sort-reset-20261011">
+/* Mobile-only catalogue controls. Desktop/tablet layout and neighbouring tabs/grid are unchanged. */
+@media (max-width: 768px) {
+  #shop .lux-tools#mobileCollectionControls {
+    display: flex !important;
+    flex-flow: row nowrap !important;
+    align-items: stretch !important;
+    gap: 8px !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    grid-template-columns: none !important;
+    grid-template-rows: none !important;
+  }
+  #shop .lux-tools#mobileCollectionControls .mobile-lux-search {
+    display: flex !important;
+    flex: 1 1 70% !important;
+    width: auto !important;
+    min-width: 0 !important;
+    height: 44px !important;
+    padding: 0 8px !important;
+    border: 1px solid #C5A67C !important;
+    border-radius: 0 !important;
+    background: #FCFAF6 !important;
+    color: #2C2523 !important;
+    box-shadow: none !important;
+  }
+  #shop .mobile-lux-search .lux-search-icon {
+    flex: 0 0 16px !important;
+    width: 16px !important;
+    height: 16px !important;
+    margin: 0 8px 0 0 !important;
+    color: #C5A67C !important;
+  }
+  #shop .mobile-lux-search .lux-search-input {
+    flex: 1 1 auto !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    height: 100% !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    outline: 0 !important;
+    background: transparent !important;
+    color: #2C2523 !important;
+    font-size: 12px !important;
+    box-shadow: none !important;
+  }
+  #shop .mobile-lux-search .lux-search-input::placeholder { color: #82776D !important; opacity: 1; }
+  #shop .mobile-lux-search .lux-search-input::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; }
+  #shop .mobile-lux-search .lux-search-clear {
+    display: inline-flex !important;
+    flex: 0 0 24px !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 24px !important;
+    height: 32px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    color: #2C2523 !important;
+    font: 23px/1 Arial, sans-serif !important;
+    cursor: pointer !important;
+  }
+  #shop .mobile-lux-search .lux-search-clear[hidden] { display: none !important; }
+  #shop .lux-tools#mobileCollectionControls .lux-mobile-sort,
+  #shop .lux-tools#mobileCollectionControls > .lux-reset-button {
+    position: relative !important;
+    display: flex !important;
+    flex: 0 0 44px !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 44px !important;
+    min-width: 44px !important;
+    height: 44px !important;
+    min-height: 44px !important;
+    box-sizing: border-box !important;
+    padding: 0 !important;
+    border: 1px solid #C5A67C !important;
+    border-radius: 0 !important;
+    background: #FCFAF6 !important;
+    color: #C5A67C !important;
+    box-shadow: none !important;
+  }
+  #shop .lux-tools#mobileCollectionControls .lux-mobile-sort { overflow: hidden !important; }
+  #shop .lux-mobile-sort-icon { font: 23px/1 Arial, sans-serif !important; color: #C5A67C !important; pointer-events: none !important; }
+  #shop .lux-tools#mobileCollectionControls .lux-mobile-sort .lux-price-select {
+    position: absolute !important;
+    inset: 0 !important;
+    z-index: 2 !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    height: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    opacity: 0 !important;
+    cursor: pointer !important;
+    font-size: 16px !important;
+    appearance: auto !important;
+    -webkit-appearance: menulist !important;
+  }
+  #shop .lux-tools#mobileCollectionControls > .lux-reset-button {
+    gap: 0 !important;
+    color: #C5A67C !important;
+    font-size: 0 !important;
+    cursor: pointer !important;
+  }
+  #shop .lux-tools#mobileCollectionControls > .lux-reset-button svg {
+    width: 21px !important;
+    height: 21px !important;
+    flex: 0 0 21px !important;
+    stroke: currentColor !important;
+    stroke-width: 1.6 !important;
+  }
+}
 </style>
