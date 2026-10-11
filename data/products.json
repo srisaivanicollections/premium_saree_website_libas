@@ -1,5 +1,17 @@
 [
   {
+    "id": 1791747072939,
+    "name": "Antique necklace",
+    "category": "Jewelry",
+    "color": "",
+    "price": 2500,
+    "originalPrice": 3600,
+    "image": "assets/products/1791747070423-0584f5fec6d4-antique-necklace-ruby-green-gold-antique-necklace-190665-1204988331.jpg",
+    "newArrival": true,
+    "bestSeller": false,
+    "availability": true
+  },
+  {
     "id": 1791746979976,
     "name": "Necklace",
     "category": "Jewelry",
