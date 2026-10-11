@@ -9890,7 +9890,7 @@ function apply(){
   }
   all("a[href*=\"instagram.com\"]").forEach(a=>a.href=settings.instagram||"https://www.instagram.com/sri_sai_vani_collections/");
 }
-function isCategoryEnabled(name){const key=({Sarees:"categorySareesEnabled",Dresses:"categoryDressesEnabled",Jewelry:"categoryJewelryEnabled"})[String(name||"").trim()];return !key||settings[key]!==false}
+function isCategoryEnabled(name){const key=({Sarees:"categorySareesEnabled",Dresses:"categoryDressesEnabled",Jewelry:"categoryJewelryEnabled"})[String(name||"").trim()];return !key||!(settings[key]===false||settings[key]==="false"||settings[key]===0)}
 function renderTabs(){const enabled=["Sarees","Dresses","Jewelry"].filter(isCategoryEnabled);if(category!=="All"&&!enabled.includes(category))category="All";$("#tabs").innerHTML=enabled.map(c=>'<button class="'+(category===c?"active":"")+'" data-tab="'+c+'">'+c.toUpperCase()+"</button>").join("")}
 function render(){
   renderTabs();
