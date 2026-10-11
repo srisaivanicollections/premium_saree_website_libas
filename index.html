@@ -9387,7 +9387,54 @@ body:not(#admin) [style*="font-size:7px"]{font-size:8px!important}
   <button type="button" id="resendOtpBtn" class="text-link" style="display:none;">RESEND OTP</button>
   <button type="button" id="forgotPassword" class="text-link" style="display:none;">Forgot password?</button>
   <small id="loginMsg" class="storage-status-msg" aria-live="polite"></small>
-</div><div id="studio" class="hidden"><div class="studio-nav"><button data-view="products">PRODUCTS</button><button data-view="settings">SETTINGS</button></div><div id="adminFeedback" class="admin-feedback" role="status" aria-live="polite" aria-atomic="true" hidden></div><div id="studioBody"></div></div></div></div><!-- pages-deploy-sync-20261008-store-final -->
+</div><div id="studio" class="hidden"><div class="studio-nav"><button data-view="products">PRODUCTS</button><button data-view="settings">SETTINGS</button></div><div id="adminFeedback" class="admin-feedback" role="status" aria-live="polite" aria-atomic="true" hidden></div><div id="studioBody"></div></div></div></div>
+<style id="ssv-admin-responsive-touch-and-desktop-20261011">
+/* Admin Studio responsive correction. Touch devices stay readable even when the browser requests Desktop site.
+   Scope is limited to #admin; no authentication, storage, CRUD or WhatsApp behavior changes. */
+#admin .admin-settings-grid,
+#admin .admin-settings-group,
+#admin .admin-setting-field,
+#admin .admin-wa-number-input {min-width:0;box-sizing:border-box;}
+#admin .admin-settings-grid input:not([type=checkbox)],
+#admin .admin-settings-grid textarea,
+#admin .admin-settings-grid select {width:100%;min-width:0;max-width:100%;box-sizing:border-box;}
+#admin .admin-wa-number-input input {flex:1 1 auto;min-width:0;}
+#admin .admin-wa-number-help {display:block;line-height:1.45;overflow-wrap:anywhere;}
+@media (pointer:coarse) and (hover:none) {
+  #admin.modal:not(.hidden) {padding:8px!important;align-items:stretch!important;}
+  #admin.modal:not(.hidden) > .panel {
+    width:100%!important;max-width:none!important;height:100%!important;max-height:100%!important;
+    min-height:0!important;margin:0!important;padding:16px 14px 22px!important;
+    overflow:auto!important;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
+  }
+  #admin .panel-top {gap:12px!important;align-items:center!important;}
+  #admin .panel-top h2 {font-size:clamp(25px,4vw,32px)!important;}
+  #admin .admin-header-actions {flex-shrink:0;}
+  #admin .studio-nav {position:sticky;top:0;z-index:5;}
+  #admin .studio-nav button[data-view] {min-height:44px!important;font-size:11px!important;}
+  #admin .admin-settings-grid {grid-template-columns:minmax(0,1fr)!important;gap:13px!important;padding:12px 10px 16px!important;}
+  #admin .admin-setting-field {display:flex;flex-direction:column;gap:6px!important;font-size:12px!important;}
+  #admin .admin-setting-field > span:first-child {font-size:12px!important;line-height:1.35!important;}
+  #admin .admin-setting-field input:not([type=checkbox]),
+  #admin .admin-setting-field textarea,
+  #admin .admin-setting-field select {height:auto;min-height:44px!important;margin:0!important;padding:10px 11px!important;font-size:14px!important;}
+  #admin .admin-wa-number-input {width:100%;}
+  #admin .admin-wa-country-code {min-width:54px;padding:0 10px!important;font-size:13px!important;}
+  #admin .admin-wa-number-help {font-size:11px!important;}
+  #admin .admin-settings-group > summary {min-height:44px;display:flex;align-items:center;padding:12px!important;font-size:14px!important;}
+  #admin .admin-settings-intro {font-size:12px!important;line-height:1.5!important;}
+}
+/* Full-width, two-column settings on ordinary desktop; stack only when the actual viewport is narrow. */
+@media (min-width:901px) and (pointer:fine) {
+  #admin.modal:not(.hidden) > .panel {width:min(1040px,calc(100vw - 48px))!important;max-width:1040px!important;}
+  #admin .admin-settings-grid {grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:14px 18px!important;}
+}
+@media (max-width:600px) {
+  #admin .admin-settings-grid {grid-template-columns:minmax(0,1fr)!important;}
+}
+</style>
+
+<!-- pages-deploy-sync-20261008-store-final -->
 <script>
 
 /* Embedded catalog fallback: keeps the storefront functional if GitHub catalog is unavailable. */
