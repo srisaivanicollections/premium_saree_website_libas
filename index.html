@@ -10131,10 +10131,21 @@ function render(){
       productCategory.includes(q);
     return matchesCollection && matchesSearch;
   });
+  const isOutOfStock=p=>p.inStock===false||p.availability===false||p.outOfStock===true;
+  const isNewArrival=p=>p.newArrival===true||p.newArrival==="true"||p.newArrival===1||p.newArrival==="1";
+  const isBestSeller=p=>p.bestSeller===true||p.bestSeller==="true"||p.bestSeller===1||p.bestSeller==="1";
+  const displayPriority=p=>{
+    if(isOutOfStock(p))return 3;
+    if(isNewArrival(p))return 0;
+    if(isBestSeller(p))return 1;
+    return 2;
+  };
   if(pf==="low-high"){
-    list.sort((a,b)=>Number(a.price||0)-Number(b.price||0));
+    list.sort((a,b)=>(Number(isOutOfStock(a))-Number(isOutOfStock(b)))||(Number(a.price||0)-Number(b.price||0)));
   }else if(pf==="high-low"){
-    list.sort((a,b)=>Number(b.price||0)-Number(a.price||0));
+    list.sort((a,b)=>(Number(isOutOfStock(a))-Number(isOutOfStock(b)))||(Number(b.price||0)-Number(a.price||0)));
+  }else{
+    list.sort((a,b)=>displayPriority(a)-displayPriority(b));
   }
   const countEl=$("#catalogCount"); if(countEl) countEl.textContent=list.length+" "+(list.length===1?"style":"styles");
   const pageCount=Math.max(1,Math.ceil(list.length/CATALOG_PAGE_SIZE));
