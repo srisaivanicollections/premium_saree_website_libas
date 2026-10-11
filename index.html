@@ -13857,3 +13857,57 @@ if ("serviceWorker" in navigator) {
   #shop #products.catalog-grid-refreshing { transition-duration: 1ms; }
 }
 </style>
+
+
+<style id="ssv-mobile-four-digit-discount-fix-20261012">
+/* Mobile product pricing: let four-digit prices breathe and place the discount on its own line. */
+@media (max-width: 600px) {
+  #shop .lux-item-footer {
+    height: auto !important;
+    min-height: 24px !important;
+    align-items: flex-start !important;
+    overflow: visible !important;
+  }
+  #shop .lux-pricing-block {
+    display: grid !important;
+    grid-template-columns: max-content max-content !important;
+    grid-template-rows: auto auto !important;
+    align-items: baseline !important;
+    justify-content: start !important;
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    max-width: calc(100% - 26px) !important;
+    gap: 4px 5px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    white-space: normal !important;
+  }
+  #shop .lux-price-current {
+    grid-column: 1 !important;
+    grid-row: 1 !important;
+    white-space: nowrap !important;
+  }
+  #shop .lux-price-original {
+    grid-column: 2 !important;
+    grid-row: 1 !important;
+    white-space: nowrap !important;
+  }
+  #shop .lux-price-discount {
+    grid-column: 1 / -1 !important;
+    grid-row: 2 !important;
+    justify-self: start !important;
+    display: inline-block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    margin: 0 !important;
+    white-space: nowrap !important;
+    overflow: visible !important;
+  }
+  #shop .lux-wa-action {
+    flex: 0 0 22px !important;
+    align-self: flex-start !important;
+    margin-top: 0 !important;
+  }
+}
+</style>
