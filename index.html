@@ -2798,49 +2798,7 @@ textarea{
 }
 
 
-/* Catalogue toolbar: one authoritative desktop layout; retain the existing stacked mobile flow. */
-@media (min-width: 769px) {
-  #shop .lux-catalog-toolbar {
-    display: block !important;
-    margin: 0 0 18px !important;
-    padding: 0 !important;
-  }
-  #shop .lux-tabs-wrap {
-    margin: 0 0 8px !important;
-  }
-  #shop .lux-tools,
-  #shop .tools {
-    display: grid !important;
-    grid-template-columns: minmax(0, 1fr) 180px max-content !important;
-    grid-template-rows: auto !important;
-    align-items: center !important;
-    gap: 12px !important;
-    width: 100% !important;
-    min-width: 0 !important;
-    margin: 0 !important;
-  }
-  #shop .lux-search {
-    grid-column: 1 !important;
-    grid-row: 1 !important;
-    width: 100% !important;
-    min-width: 0 !important;
-  }
-  #shop .lux-mobile-sort {
-    grid-column: 2 !important;
-    grid-row: 1 !important;
-    width: 180px !important;
-    min-width: 0 !important;
-  }
-  #shop .lux-mobile-sort .lux-price-select {
-    width: 100% !important;
-    min-width: 0 !important;
-  }
-  #shop .lux-reset-button {
-    grid-column: 3 !important;
-    grid-row: 1 !important;
-    justify-self: end !important;
-  }
-}
+/* Desktop toolbar layout consolidated at the end of the document styles. */
 @media (max-width: 768px) {
   #shop .lux-catalog-toolbar {
     display: flex !important;
@@ -12182,7 +12140,7 @@ if ("serviceWorker" in navigator) {
     row-gap:16px!important;
     grid-row-gap:16px!important;
   }
-  #shop .lux-catalog-toolbar{margin-bottom:22px!important;}
+  /* Toolbar spacing is owned by the consolidated desktop toolbar rule. */
 }
 
 
@@ -13535,19 +13493,12 @@ if ("serviceWorker" in navigator) {
 </style>
 <!-- SSV FIX: keep Settings save button in normal document flow -->
 
-</body>
-</html>
+
 
 <style id="ssv-catalog-reset-responsive-fix">
 /* AUTHORITATIVE CATALOGUE TOOLBAR
    Keep Search, Sort by and Reset layout rules together. Preserve the existing JS hooks. */
 #shop .lux-tools{
-  display:grid!important;
-  grid-template-columns:minmax(0,1fr) 180px max-content!important;
-  align-items:center!important;
-  gap:12px!important;
-  width:100%!important;
-  min-width:0!important;
   box-sizing:border-box!important;
 }
 #shop .lux-search{
@@ -13962,3 +13913,54 @@ if ("serviceWorker" in navigator) {
   }
 }
 </style>
+
+<style id="ssv-catalog-toolbar-authoritative-20261012">
+/* Single authoritative desktop toolbar layout.
+   8px separates category/count from controls; 18px separates controls from products.
+   Mobile layout remains controlled by the existing max-width rules. */
+@media (min-width: 769px) {
+  #shop .lux-catalog-toolbar {
+    display: block !important;
+    margin: 0 0 18px !important;
+    padding: 0 !important;
+  }
+  #shop .lux-tabs-wrap {
+    margin: 0 0 8px !important;
+  }
+  #shop .lux-tools,
+  #shop .tools {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) 180px max-content !important;
+    grid-template-rows: auto !important;
+    align-items: center !important;
+    gap: 12px !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+  }
+  #shop .lux-search {
+    grid-column: 1 !important;
+    grid-row: 1 !important;
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+  #shop .lux-mobile-sort {
+    grid-column: 2 !important;
+    grid-row: 1 !important;
+    width: 180px !important;
+    min-width: 0 !important;
+  }
+  #shop .lux-mobile-sort .lux-price-select {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+  #shop .lux-reset-button {
+    grid-column: 3 !important;
+    grid-row: 1 !important;
+    justify-self: end !important;
+  }
+}
+</style>
+</body>
+</html>
