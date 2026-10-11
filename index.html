@@ -13446,6 +13446,16 @@ if ("serviceWorker" in navigator) {
 <style id="ssv-mobile-search-sort-reset-20261011">
 /* Mobile-only catalogue controls. Desktop/tablet layout and neighbouring tabs/grid are unchanged. */
 /* Shared clear-search control for desktop, tablet, and mobile. */
+/* Keep the input and clear button on the same row on desktop as well. */
+#shop .lux-catalog-toolbar .lux-search {
+  display: flex;
+  align-items: center;
+}
+#shop .lux-catalog-toolbar .lux-search .lux-search-input {
+  flex: 1 1 auto;
+  width: auto;
+  min-width: 0;
+}
 #shop .lux-search .lux-search-clear {
   display: inline-flex;
   flex: 0 0 36px;
