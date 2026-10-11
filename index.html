@@ -9890,7 +9890,7 @@ function apply(){
   }
   all("a[href*=\"instagram.com\"]").forEach(a=>a.href=settings.instagram||"https://www.instagram.com/sri_sai_vani_collections/");
 }
-function renderTabs(){$("#tabs").innerHTML=["All","Sarees","Dresses","Best Seller"].map(c=>'<button class="'+(category===c?"active":"")+'" data-tab="'+c+'">'+c.toUpperCase()+"</button>").join("")}
+function renderTabs(){$("#tabs").innerHTML=["Sarees","Dresses"].map(c=>'<button class="'+(category===c?"active":"")+'" data-tab="'+c+'">'+c.toUpperCase()+"</button>").join("")}
 function render(){
   renderTabs();
   const grid=$("#products");
