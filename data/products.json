@@ -1,5 +1,18 @@
 [
   {
+    "id": 1791751897314,
+    "name": "Blue frock",
+    "category": "Dresses",
+    "color": "",
+    "price": 500,
+    "originalPrice": 800,
+    "image": "assets/products/1791751894740-93c033d4879d-asper-viscose-dobby-printed-a-line-maxi-dress-2037737.jpg",
+    "dateAdded": "2026-10-11T20:51:37.314Z",
+    "newArrival": true,
+    "bestSeller": false,
+    "availability": true
+  },
+  {
     "id": 1791751843478,
     "name": "Printed frock",
     "category": "Dresses",
