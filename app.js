@@ -392,16 +392,30 @@ function render(){
       String(p.name||"").toLowerCase().includes(q) ||
       productCategory.includes(q);
     return matchesCollection && matchesSearch;
-  }).filter(p=>{
-    if(!pf)return true;
-    const price=Number(p.price);
-    if(!Number.isFinite(price))return false;
-    if(pf==="0-2000")return price<2000;
-    if(pf==="2000-4000")return price>=2000&&price<4000;
-    if(pf==="4000-7000")return price>=4000&&price<7000;
-    if(pf==="7000+")return price>=7000;
-    return true;
   });
+  // Sorting is controlled only by the existing Sort By dropdown.
+  // Preserve catalog order by default and use a stable fallback for missing dates.
+  if(pf==="low-high"){
+    list=list.map((p,i)=>({p,i})).sort((a,b)=>{
+      const ap=Number(a.p.price),bp=Number(b.p.price);
+      const av=Number.isFinite(ap)?ap:Number.POSITIVE_INFINITY;
+      const bv=Number.isFinite(bp)?bp:Number.POSITIVE_INFINITY;
+      return av-bv||a.i-b.i;
+    }).map(x=>x.p);
+  }else if(pf==="high-low"){
+    list=list.map((p,i)=>({p,i})).sort((a,b)=>{
+      const ap=Number(a.p.price),bp=Number(b.p.price);
+      const av=Number.isFinite(ap)?ap:Number.NEGATIVE_INFINITY;
+      const bv=Number.isFinite(bp)?bp:Number.NEGATIVE_INFINITY;
+      return bv-av||a.i-b.i;
+    }).map(x=>x.p);
+  }else if(pf==="new-arrivals"){
+    list=list.map((p,i)=>({p,i,date:Date.parse(p.dateAdded||"")})).sort((a,b)=>{
+      const av=Number.isFinite(a.date)?a.date:Number.NEGATIVE_INFINITY;
+      const bv=Number.isFinite(b.date)?b.date:Number.NEGATIVE_INFINITY;
+      return bv-av||a.i-b.i;
+    }).map(x=>x.p);
+  }
   if(!list.length){
     grid.innerHTML='<div class="lux-empty"><strong>No pieces found</strong><br><span>Try another category or search.</span><br><button type="button" class="btn dark" id="clearCatalogFilters">CLEAR FILTERS</button></div>';
     const clear=$("#clearCatalogFilters");
@@ -611,6 +625,7 @@ async function saveProduct(id){
 
     const p={
       ...(existing||{}),
+      ...(!existing?{dateAdded:new Date().toISOString()}:{}),
       id:id?Number(id):nextProductId(),
       name,
       category:categoryValue,
