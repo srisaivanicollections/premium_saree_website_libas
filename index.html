@@ -9253,14 +9253,9 @@ body:not(#admin) [style*="font-size:7px"]{font-size:8px!important}
   <span class="ssv-shipping-marquee__sr-only">SHIPPING AVAILABLE • NO CASH ON DELIVERY</span>
   <div class="ssv-shipping-marquee__viewport" aria-hidden="true">
     <div class="ssv-shipping-marquee__track">
-      <span class="ssv-shipping-marquee__message">SHIPPING AVAILABLE <span class="ssv-shipping-marquee__separator">✦</span> NO CASH ON DELIVERY</span>
-      <span class="ssv-shipping-marquee__message">SHIPPING AVAILABLE <span class="ssv-shipping-marquee__separator">✦</span> NO CASH ON DELIVERY</span>
-      <span class="ssv-shipping-marquee__message">SHIPPING AVAILABLE <span class="ssv-shipping-marquee__separator">✦</span> NO CASH ON DELIVERY</span>
-      <span class="ssv-shipping-marquee__message">SHIPPING AVAILABLE <span class="ssv-shipping-marquee__separator">✦</span> NO CASH ON DELIVERY</span>
-      <span class="ssv-shipping-marquee__message">SHIPPING AVAILABLE <span class="ssv-shipping-marquee__separator">✦</span> NO CASH ON DELIVERY</span>
-      <span class="ssv-shipping-marquee__message">SHIPPING AVAILABLE <span class="ssv-shipping-marquee__separator">✦</span> NO CASH ON DELIVERY</span>
-      <span class="ssv-shipping-marquee__message">SHIPPING AVAILABLE <span class="ssv-shipping-marquee__separator">✦</span> NO CASH ON DELIVERY</span>
-      <span class="ssv-shipping-marquee__message">SHIPPING AVAILABLE <span class="ssv-shipping-marquee__separator">✦</span> NO CASH ON DELIVERY</span>
+      <div class="ssv-shipping-marquee__group">
+        <span class="ssv-shipping-marquee__message">SHIPPING AVAILABLE <span class="ssv-shipping-marquee__separator">✦</span> NO CASH ON DELIVERY</span>
+      </div>
     </div>
   </div>
 </section>
@@ -10000,23 +9995,27 @@ function apply(){
     shippingMarquee.setAttribute("aria-label",shippingText);
     const accessibleText=shippingMarquee.querySelector(".ssv-shipping-marquee__sr-only");
     if(accessibleText)accessibleText.textContent=shippingText;
-    shippingMarquee.querySelectorAll(".ssv-shipping-marquee__message").forEach(message=>{
+    const track=shippingMarquee.querySelector(".ssv-shipping-marquee__track");
+    const group=track?.querySelector(".ssv-shipping-marquee__group");
+    const message=group?.querySelector(".ssv-shipping-marquee__message");
+    if(track&&group&&message){
+      // Keep one authoritative message group; the single visual clone is rebuilt from it.
+      track.querySelectorAll(".ssv-shipping-marquee__group[aria-hidden='true']").forEach(clone=>clone.remove());
       message.replaceChildren();
-      // A bullet is content inside the announcement, not the gap between repeats.
-      // Split on every bullet, preserving a final bullet as a final styled separator.
-      // Preserve every entered character except the bullet glyph, which becomes the styled separator.
       const parts=shippingText.split("•");
-      const appendSeparator=()=>{
-        const separator=document.createElement("span");
-        separator.className="ssv-shipping-marquee__separator";
-        separator.textContent="✦";
-        message.appendChild(separator);
-      };
       parts.forEach((part,index)=>{
         if(part)message.appendChild(document.createTextNode(part));
-        if(index<parts.length-1)appendSeparator();
+        if(index<parts.length-1){
+          const separator=document.createElement("span");
+          separator.className="ssv-shipping-marquee__separator";
+          separator.textContent="✦";
+          message.appendChild(separator);
+        }
       });
-    });
+      const clone=group.cloneNode(true);
+      clone.setAttribute("aria-hidden","true");
+      track.appendChild(clone);
+    }
   }
   const heroImage=$(".hero-banner-img");if(heroImage&&settings.heroImage)heroImage.src=productImageSrc(settings.heroImage);
   const search=$("#search");if(search)search.placeholder=String(settings.searchPlaceholder||"Search collection");
@@ -13428,15 +13427,15 @@ if ("serviceWorker" in navigator) {
 .ssv-shipping-marquee__viewport::before,.ssv-shipping-marquee__viewport::after{content:"";position:absolute;top:0;bottom:0;width:32px;z-index:2;pointer-events:none}
 .ssv-shipping-marquee__viewport::before{left:0;background:linear-gradient(90deg,#FAF7F2 0%,rgba(250,247,242,.78) 38%,rgba(250,247,242,0) 100%)}
 .ssv-shipping-marquee__viewport::after{right:0;background:linear-gradient(270deg,#FAF7F2 0%,rgba(250,247,242,.78) 38%,rgba(250,247,242,0) 100%)}
-.ssv-shipping-marquee__track{--ssv-shipping-repeat-half-gap:21px;display:flex;flex-flow:row nowrap;column-gap:0;width:max-content;align-items:center;animation:ssv-shipping-marquee-scroll 60s linear infinite;will-change:transform}
-.ssv-shipping-marquee__message{display:flex;align-items:center;gap:0;flex:none;white-space:nowrap;margin:0;padding:12px calc(var(--ssv-shipping-repeat-half-gap) + 5px);font-family:"Cormorant Garamond",Georgia,serif;font-size:15px;font-weight:500;letter-spacing:.12em;line-height:1;text-transform:uppercase}
+.ssv-shipping-marquee__track{--ssv-shipping-repeat-half-gap:21px;display:flex;flex-flow:row nowrap;gap:0;width:max-content;align-items:center;animation:ssv-shipping-marquee-scroll 60s linear infinite;will-change:transform}
+.ssv-shipping-marquee__group{display:flex;flex:0 0 max-content;width:max-content;min-width:max-content;align-items:center;white-space:nowrap;padding-inline:calc(var(--ssv-shipping-repeat-half-gap) + 5px)}
+.ssv-shipping-marquee__message{display:flex;align-items:center;gap:0;flex:none;white-space:nowrap;margin:0;padding:12px 0;font-family:"Cormorant Garamond",Georgia,serif;font-size:15px;font-weight:500;letter-spacing:.12em;line-height:1;text-transform:uppercase}
 .ssv-shipping-marquee__separator{display:inline-flex;align-items:center;flex:none;padding:0;margin-inline:1.2em;color:#B38E5D;font-family:"Cormorant Garamond",Georgia,serif;font-size:10px;line-height:1}
-/* A trailing bullet is announcement content, not extra inter-group spacing. */
 .ssv-shipping-marquee__message > .ssv-shipping-marquee__separator:last-child{margin-right:0}
 .ssv-shipping-marquee__sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 @keyframes ssv-shipping-marquee-scroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
-@media(max-width:600px){.ssv-shipping-marquee{height:34px}.ssv-shipping-marquee__viewport::before,.ssv-shipping-marquee__viewport::after{width:20px}.ssv-shipping-marquee__track{--ssv-shipping-repeat-half-gap:14px;animation-duration:44s}.ssv-shipping-marquee__message{padding:10px calc(var(--ssv-shipping-repeat-half-gap) + 3px);font-size:12px;letter-spacing:.1em;margin:0}.ssv-shipping-marquee__separator{font-size:9px;margin-inline:1.08em}}
-@media(prefers-reduced-motion:reduce){.ssv-shipping-marquee__track{animation:none;transform:none}.ssv-shipping-marquee__message:not(:first-child){display:none}.ssv-shipping-marquee__track{width:100%;justify-content:center}.ssv-shipping-marquee__message:first-child{padding:0;text-align:center;justify-content:center;white-space:normal;line-height:1.3}}
+@media(max-width:600px){.ssv-shipping-marquee{height:34px}.ssv-shipping-marquee__viewport::before,.ssv-shipping-marquee__viewport::after{width:20px}.ssv-shipping-marquee__track{--ssv-shipping-repeat-half-gap:14px;animation-duration:44s}.ssv-shipping-marquee__group{padding-inline:calc(var(--ssv-shipping-repeat-half-gap) + 3px)}.ssv-shipping-marquee__message{padding:10px 0;font-size:12px;letter-spacing:.1em;margin:0}.ssv-shipping-marquee__separator{font-size:9px;margin-inline:1.08em}}
+@media(prefers-reduced-motion:reduce){.ssv-shipping-marquee__track{animation:none;transform:none;width:100%;justify-content:center}.ssv-shipping-marquee__group[aria-hidden="true"]{display:none}.ssv-shipping-marquee__group{flex:0 1 auto;width:auto;min-width:0;padding-inline:0;max-width:100%}.ssv-shipping-marquee__message{padding:0;text-align:center;justify-content:center;white-space:normal;line-height:1.3}}
 </style>
 
 
