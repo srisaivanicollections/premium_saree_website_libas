@@ -9993,7 +9993,8 @@ function apply(){
   setText(".hero-primary-btn","heroButtonText","Explore Collection");
   const shippingMarquee=$(".ssv-shipping-marquee");
   if(shippingMarquee){
-    const shippingText=String(settings.shippingAnnouncementText??"SHIPPING AVAILABLE • NO CASH ON DELIVERY").trim()||"SHIPPING AVAILABLE • NO CASH ON DELIVERY";
+    const savedShippingText=String(settings.shippingAnnouncementText??"SHIPPING AVAILABLE • NO CASH ON DELIVERY");
+    const shippingText=savedShippingText.trim()?savedShippingText:"SHIPPING AVAILABLE • NO CASH ON DELIVERY";
     const shippingEnabled=settings.showShippingAnnouncement!==false;
     shippingMarquee.classList.toggle("hidden",!shippingEnabled);
     shippingMarquee.setAttribute("aria-label",shippingText);
@@ -10328,6 +10329,7 @@ function showView(v){
       field('Soft section background colour','themeBackground','#fffaf5','color')+
       '</div></details>'+
       '<details class="admin-settings-group"><summary>Shipping Announcement</summary><div class="admin-settings-grid">'+
+      '<p class="admin-settings-help admin-shipping-announcement-help">Use the bullet • between announcement phrases to separate them. The bullet displays as a champagne ✦ on the website. The announcement appears in uppercase.</p>'+
       area('Announcement text','shippingAnnouncementText','SHIPPING AVAILABLE • NO CASH ON DELIVERY')+
       '</div><div class="admin-settings-toggles">'+
       toggle('Show shipping announcement','showShippingAnnouncement')+
@@ -13448,4 +13450,8 @@ if ("serviceWorker" in navigator) {
 <style id="ssv-shipping-announcement-editor-size">
 /* Give the shipping announcement a comfortable multi-line editing area. */
 #admin #studioBody textarea[data-setting-key="shippingAnnouncementText"]{min-height:112px!important;height:112px!important;resize:vertical!important;line-height:1.5!important;padding:10px 12px!important;}
+</style>
+
+<style id="ssv-shipping-announcement-setting-hint">
+#admin #studioBody .admin-shipping-announcement-help{grid-column:1/-1;margin:0 0 8px;color:#6F6252;font:400 13px/1.5 "Inter",Arial,sans-serif;letter-spacing:0;text-transform:none;}
 </style>
