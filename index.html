@@ -9960,7 +9960,7 @@ function validateSettingsInput(settingsValue){
 let settingsWriteQueue=Promise.resolve();
 
 function money(n){return "₹"+Number(n).toLocaleString("en-IN")}
-function waNumber(){return String(settings.whatsapp||"").replace(/\D/g,"")}
+function waNumber(){const digits=String(settings.whatsapp||"").replace(/\D/g,"");return digits.length===10?"91"+digits:digits}
 function wa(p){
   const n=waNumber();
   if(!n)return "#";
