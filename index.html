@@ -9929,7 +9929,20 @@ function render(){
   }else if(pf==="high-low"){
     list.sort((a,b)=>Number(b.price||0)-Number(a.price||0));
   }else{
-    list.sort((a,b)=>displayPriority(a)-displayPriority(b));
+    list.sort((a,b)=>{
+      const priorityDiff=displayPriority(a)-displayPriority(b);
+      if(priorityDiff!==0)return priorityDiff;
+      if(!isNewArrival(a)||!isNewArrival(b))return 0;
+      const dateA=Date.parse(a.dateAdded||"");
+      const dateB=Date.parse(b.dateAdded||"");
+      const validA=Number.isFinite(dateA);
+      const validB=Number.isFinite(dateB);
+      // Products with a real saved date sort newest-first; legacy products
+      // without dates retain their existing relative order and are never assigned invented dates.
+      if(validA&&validB)return dateB-dateA;
+      if(validA!==validB)return validA?-1:1;
+      return 0;
+    });
   }
   const countEl=$("#catalogCount"); if(countEl) countEl.textContent=list.length+" "+(list.length===1?"style":"styles");
   const pageCount=Math.max(1,Math.ceil(list.length/CATALOG_PAGE_SIZE));
@@ -10373,6 +10386,9 @@ async function saveProduct(id){
       price,
       ...(originalPrice===undefined?{originalPrice:undefined}:{originalPrice}),
       image,
+      // Only newly created products receive a date-added timestamp.
+      // Existing products without a date stay undated rather than being backfilled with a guessed date.
+      ...(existing?{}:{dateAdded:new Date().toISOString()}),
       newArrival:$("#fNew").checked,
       bestSeller:$("#fBest").checked,
       availability:$("#fAvail").checked
