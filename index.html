@@ -4493,41 +4493,7 @@ footer .brand b{
     display:none !important;
   }
 }
-/* Search and sort controls: matching height, border, radius and visual weight on every viewport. */
-#shop .tools{
-  display:flex !important;
-  align-items:stretch !important;
-  gap:12px !important;
-  width:100% !important;
-}
-#shop .search,
-
-#shop .search{
-  flex:1 1 0 !important;
-  width:auto !important;
-  min-width:0 !important;
-  padding:0 14px !important;
-}
-#shop .search input{
-  box-sizing:border-box !important;
-  min-width:0 !important;
-  height:100% !important;
-  font-size:14px !important;
-  line-height:1.2 !important;
-}
-
-
-@media(max-width:900px){
-  #shop .tools{gap:12px !important;width:100% !important;}
-  #shop .search{flex:1 1 0 !important;width:auto !important;}
-
-}
-@media(max-width:600px){
-  #shop .search,
-
-  #shop .search input{font-size:13px !important;}
-
-}
+/* Legacy .tools toolbar overrides removed. The #shop .lux-tools rules are authoritative. */
 
 /* Consistent navigation: all three links use plain text styling, no mixed decorations. */
 .header nav{
@@ -13440,18 +13406,20 @@ if ("serviceWorker" in navigator) {
 </html>
 
 <style id="ssv-catalog-reset-responsive-fix">
-/* Authoritative Editorial Luxury rules for catalogue controls.
-   Layout, sizing and responsive placement live here; keep other shop styles untouched. */
+/* AUTHORITATIVE CATALOGUE TOOLBAR
+   Keep Search, Sort by and Reset layout rules together. Preserve the existing JS hooks. */
 #shop .lux-tools{
   display:grid!important;
-  grid-template-columns:minmax(180px,1fr) 180px auto!important;
+  grid-template-columns:minmax(0,1fr) 180px max-content!important;
   align-items:center!important;
   gap:12px!important;
   width:100%!important;
   min-width:0!important;
+  box-sizing:border-box!important;
 }
 #shop .lux-search{
   display:flex!important;
+  align-items:center!important;
   width:100%!important;
   min-width:0!important;
   height:42px!important;
@@ -13464,22 +13432,20 @@ if ("serviceWorker" in navigator) {
 }
 #shop .lux-search-input{
   min-width:0!important;
+  height:100%!important;
   box-sizing:border-box!important;
-  color:#1C1917!important;
 }
-#shop .lux-search-input::placeholder{color:#918980!important;opacity:1!important}
 #shop .lux-price-select{
   width:100%!important;
   min-width:0!important;
   height:42px!important;
-  box-sizing:border-box!important;
   padding:0 12px!important;
+  box-sizing:border-box!important;
   border:1px solid #E4D8C5!important;
   border-radius:0!important;
   background:rgba(255,255,255,.58)!important;
   color:#1C1917!important;
   box-shadow:none!important;
-  font-family:"Montserrat",Arial,sans-serif!important;
 }
 #shop .lux-search:focus-within,
 #shop .lux-price-select:focus-visible{
@@ -13488,45 +13454,74 @@ if ("serviceWorker" in navigator) {
   outline-offset:1px!important;
 }
 #shop .lux-reset-button{
-  display:inline-flex!important;align-items:center!important;justify-content:center!important;
-  gap:7px!important;min-width:44px!important;height:42px!important;padding:0 4px 0 8px!important;
-  border:0!important;border-bottom:1px solid transparent!important;border-radius:0!important;
-  background:transparent!important;color:#6F6252!important;box-shadow:none!important;
-  font-family:"Montserrat",Arial,sans-serif!important;font-size:11px!important;
-  font-weight:500!important;letter-spacing:.06em!important;line-height:1!important;
-  white-space:nowrap!important;cursor:pointer!important;
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:7px!important;
+  min-width:44px!important;
+  height:42px!important;
+  padding:0 4px 0 8px!important;
+  border:0!important;
+  border-bottom:1px solid transparent!important;
+  border-radius:0!important;
+  background:transparent!important;
+  color:#6F6252!important;
+  box-shadow:none!important;
+  font-family:"Montserrat",Arial,sans-serif!important;
+  font-size:11px!important;
+  font-weight:500!important;
+  letter-spacing:.04em!important;
+  line-height:1!important;
+  white-space:nowrap!important;
+  cursor:pointer!important;
 }
-#shop .lux-reset-button svg{display:block!important;width:13px!important;height:13px!important;flex:0 0 13px!important;fill:none!important;stroke:currentColor!important;stroke-width:1.6!important;stroke-linecap:round!important;stroke-linejoin:round!important}
+#shop .lux-reset-button svg{
+  display:block!important;
+  width:13px!important;
+  height:13px!important;
+  flex:0 0 13px!important;
+  fill:none!important;
+  stroke:currentColor!important;
+  stroke-width:1.6!important;
+  stroke-linecap:round!important;
+  stroke-linejoin:round!important;
+}
 #shop .lux-reset-button:hover,
-#shop .lux-reset-button:focus-visible{color:#1C1917!important;border-bottom-color:#C8B28A!important;outline:none!important}
+#shop .lux-reset-button:focus-visible{
+  color:#1C1917!important;
+  border-bottom-color:#C8B28A!important;
+  outline:none!important;
+}
 @media(max-width:760px){
   #shop .lux-tools{
     grid-template-columns:minmax(0,1fr) max-content!important;
     grid-template-rows:auto auto!important;
     gap:8px!important;
-    align-items:center!important;
   }
   #shop .lux-search{
-    grid-column:1/-1!important;grid-row:1!important;
-    width:100%!important;min-width:0!important;height:42px!important;
+    grid-column:1/-1!important;
+    grid-row:1!important;
+    height:42px!important;
   }
-  #shop .lux-search-input{height:100%!important;font-size:13px!important;line-height:normal!important;padding-left:42px!important}
-  #shop .lux-search-icon{left:14px!important;top:50%!important;transform:translateY(-50%)!important;width:18px!important;height:18px!important;flex:0 0 18px!important}
-  #shop .lux-search-icon svg{width:18px!important;height:18px!important}
   #shop .lux-price-select{
-    grid-column:1!important;grid-row:2!important;
-    justify-self:stretch!important;width:100%!important;min-width:0!important;
-    height:42px!important;font-size:12px!important;
+    grid-column:1!important;
+    grid-row:2!important;
+    justify-self:stretch!important;
+    width:100%!important;
+    height:42px!important;
   }
   #shop .lux-reset-button{
-    grid-column:2!important;grid-row:2!important;
-    justify-self:end!important;height:42px!important;
-    padding:0 2px 0 8px!important;font-size:11px!important;letter-spacing:.02em!important;
+    grid-column:2!important;
+    grid-row:2!important;
+    justify-self:end!important;
+    height:42px!important;
+    padding:0 2px 0 8px!important;
+    font-size:10px!important;
   }
 }
 @media(max-width:360px){
   #shop .lux-tools{gap:6px!important}
-  #shop .lux-reset-button{gap:5px!important}
+  #shop .lux-reset-button{gap:5px!important;font-size:10px!important}
 }
 </style>
 
