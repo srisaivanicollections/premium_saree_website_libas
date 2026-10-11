@@ -4333,9 +4333,16 @@ footer .brand b{
   letter-spacing:.045em!important;line-height:1.1!important;text-transform:uppercase!important;white-space:nowrap!important;
   clip-path:polygon(0 0,100% 0,94% 50%,100% 100%,0 100%)!important;
 }
+/* Restyle the existing SOLD OUT badge only; preserve stock logic and NEW styling. */
 #shop .lux-item-media .ssv-badge-pill.pill-out{
-  position:absolute!important;top:auto!important;left:7px!important;right:auto!important;bottom:7px!important;
-  background:rgba(112,48,43,.92)!important;color:#fff!important;font-style:normal!important;
+  position:absolute!important;top:auto!important;left:0!important;right:auto!important;bottom:7px!important;
+  display:inline-block!important;width:auto!important;max-width:calc(100% - 12px)!important;min-height:0!important;
+  margin:0!important;padding:5px 11px 5px 7px!important;box-sizing:border-box!important;
+  border:0!important;border-radius:0!important;box-shadow:none!important;
+  background:#E4C982!important;color:#38251F!important;
+  font-family:"Inter",Arial,sans-serif!important;font-size:8px!important;font-style:italic!important;font-weight:700!important;
+  letter-spacing:.045em!important;line-height:1.1!important;text-transform:uppercase!important;white-space:nowrap!important;
+  clip-path:polygon(0 0,100% 0,94% 50%,100% 100%,0 100%)!important;
 }
 #shop .lux-item-media:has(.pill-out) .ssv-badge-pill.pill-new,
 #shop .lux-item-media:has(.pill-out) .ssv-badge-pill.pill-best{display:none!important;}
