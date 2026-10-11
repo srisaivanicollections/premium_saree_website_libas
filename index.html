@@ -10328,7 +10328,7 @@ function showView(v){
       field('Soft section background colour','themeBackground','#fffaf5','color')+
       '</div></details>'+
       '<details class="admin-settings-group"><summary>Shipping Announcement</summary><div class="admin-settings-grid">'+
-      field('Announcement text','shippingAnnouncementText','SHIPPING AVAILABLE · NO CASH ON DELIVERY')+
+      area('Announcement text','shippingAnnouncementText','SHIPPING AVAILABLE • NO CASH ON DELIVERY')+
       '</div><div class="admin-settings-toggles">'+
       toggle('Show shipping announcement','showShippingAnnouncement')+
       '</div></details>'+
@@ -13444,3 +13444,8 @@ if ("serviceWorker" in navigator) {
 
 </body>
 </html>
+
+<style id="ssv-shipping-announcement-editor-size">
+/* Give the shipping announcement a comfortable multi-line editing area. */
+#admin #studioBody textarea[data-setting-key="shippingAnnouncementText"]{min-height:112px!important;height:112px!important;resize:vertical!important;line-height:1.5!important;padding:10px 12px!important;}
+</style>
