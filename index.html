@@ -10135,10 +10135,11 @@ function render(){
   const isBestSeller=p=>p.bestSeller===true||p.bestSeller==="true"||p.bestSeller===1||p.bestSeller==="1";
   const isSoldOut=p=>p.inStock===false||p.availability===false||p.outOfStock===true;
   const displayPriority=p=>{
-    if(isSoldOut(p))return 3;
+    if(isSoldOut(p))return 4;
+    if(isNewArrival(p)&&isBestSeller(p))return 1;
     if(isNewArrival(p))return 0;
-    if(isBestSeller(p))return 1;
-    return 2;
+    if(isBestSeller(p))return 2;
+    return 3;
   };
   if(pf==="low-high"){
     list.sort((a,b)=>Number(a.price||0)-Number(b.price||0));
