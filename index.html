@@ -9393,12 +9393,10 @@ body:not(#admin) [style*="font-size:7px"]{font-size:8px!important}
    Scope is limited to #admin; no authentication, storage, CRUD or WhatsApp behavior changes. */
 #admin .admin-settings-grid,
 #admin .admin-settings-group,
-#admin .admin-setting-field,
-#admin .admin-wa-number-input {min-width:0;box-sizing:border-box;}
+#admin .admin-setting-field {min-width:0;box-sizing:border-box;}
 #admin .admin-settings-grid input:not([type=checkbox)],
 #admin .admin-settings-grid textarea,
 #admin .admin-settings-grid select {width:100%;min-width:0;max-width:100%;box-sizing:border-box;}
-#admin .admin-wa-number-input input {flex:1 1 auto;min-width:0;}
 #admin .admin-wa-number-help {display:block;line-height:1.45;overflow-wrap:anywhere;}
 @media (pointer:coarse) and (hover:none) {
   #admin.modal:not(.hidden) {padding:8px!important;align-items:stretch!important;}
@@ -9415,11 +9413,9 @@ body:not(#admin) [style*="font-size:7px"]{font-size:8px!important}
   #admin .admin-settings-grid {grid-template-columns:minmax(0,1fr)!important;gap:13px!important;padding:12px 10px 16px!important;}
   #admin .admin-setting-field {display:flex;flex-direction:column;gap:6px!important;font-size:12px!important;}
   #admin .admin-setting-field > span:first-child {font-size:12px!important;line-height:1.35!important;}
-  #admin .admin-setting-field input:not([type=checkbox]),
+  #admin .admin-setting-field input:not([type=checkbox]):not(#setWa),
   #admin .admin-setting-field textarea,
   #admin .admin-setting-field select {height:auto;min-height:44px!important;margin:0!important;padding:10px 11px!important;font-size:14px!important;}
-  #admin .admin-wa-number-input {width:100%;}
-  #admin .admin-wa-country-code {min-width:54px;padding:0 10px!important;font-size:13px!important;}
   #admin .admin-wa-number-help {font-size:11px!important;}
   #admin .admin-settings-group > summary {min-height:44px;display:flex;align-items:center;padding:12px!important;font-size:14px!important;}
   #admin .admin-settings-intro {font-size:12px!important;line-height:1.5!important;}
@@ -9434,34 +9430,6 @@ body:not(#admin) [style*="font-size:7px"]{font-size:8px!important}
 }
 </style>
 
-
-<style id="ssv-admin-wa-control-final-20261011">
-/* Unified fixed-country-code + mobile-number control; Admin-only styling. */
-#admin .admin-wa-number-input{
-  display:flex!important;align-items:stretch!important;gap:0!important;width:100%!important;min-width:0!important;
-}
-#admin .admin-wa-number-input .admin-wa-country-code{
-  display:flex!important;align-items:center!important;justify-content:center!important;
-  flex:0 0 80px!important;width:80px!important;min-width:80px!important;max-width:80px!important;
-  min-height:48px!important;height:48px!important;box-sizing:border-box!important;
-  padding:0 8px!important;white-space:nowrap!important;overflow-wrap:normal!important;word-break:keep-all!important;
-  border:1px solid #d9cec2!important;border-right:0!important;border-radius:8px 0 0 8px!important;
-  line-height:1!important;text-align:center!important;
-}
-#admin .admin-setting-field .admin-wa-number-input input#setWa{
-  flex:1 1 0!important;width:0!important;min-width:0!important;max-width:none!important;
-  height:48px!important;min-height:48px!important;box-sizing:border-box!important;
-  margin:0!important;border:1px solid #d9cec2!important;border-radius:0 8px 8px 0!important;
-  padding:0 12px!important;white-space:nowrap!important;overflow-x:auto!important;text-overflow:clip!important;
-}
-#admin .admin-setting-field .admin-wa-number-input input#setWa:focus{
-  position:relative;z-index:1;outline:2px solid #b9956b!important;outline-offset:0!important;
-}
-#admin .admin-settings-grid input[type=url]{overflow-x:auto!important;text-overflow:clip!important;white-space:nowrap!important;}
-@media(max-width:360px){
-  #admin .admin-wa-number-input .admin-wa-country-code{flex-basis:72px!important;width:72px!important;min-width:72px!important;max-width:72px!important;}
-}
-</style>
 
 <!-- pages-deploy-sync-20261008-store-final -->
 <script>
@@ -11379,9 +11347,9 @@ $("#search").oninput=()=>{catalogPage=0;render()};$("#price").onchange=()=>{cata
 .admin-setting-field{display:flex;flex-direction:column;gap:6px;min-width:0;color:#51463d;font-size:13px;font-weight:600}
 .admin-setting-field input,.admin-setting-field textarea{box-sizing:border-box;width:100%;min-width:0;border:1px solid #d9cec2;border-radius:8px;padding:10px 11px;background:#fff;color:#2f2924;font:inherit;font-weight:400}
 .admin-setting-field textarea{resize:vertical;line-height:1.45}
-.admin-wa-number-input{display:flex;align-items:stretch;min-width:0}
-.admin-wa-country-code{display:flex;align-items:center;justify-content:center;padding:0 13px;border:1px solid #d9cec2;border-right:0;border-radius:8px 0 0 8px;background:#f5f1eb;color:#51463d;font-weight:600}
-.admin-setting-field .admin-wa-number-input input{border-radius:0 8px 8px 0}
+.admin-wa-number-input{display:flex;align-items:stretch;gap:0;width:100%;min-width:0;box-sizing:border-box}
+.admin-wa-country-code{display:flex;flex:0 0 80px;align-items:center;justify-content:center;width:80px;min-width:80px;max-width:80px;height:48px;box-sizing:border-box;padding:0 8px;border:1px solid #d9cec2;border-right:0;border-radius:8px 0 0 8px;background:#f5f1eb;color:#51463d;font-weight:600;line-height:1;text-align:center;white-space:nowrap;overflow-wrap:normal;word-break:keep-all}
+.admin-setting-field .admin-wa-number-input input{flex:1 1 0;width:0;min-width:0;max-width:none;height:48px;min-height:48px;margin:0;box-sizing:border-box;border-radius:0 8px 8px 0;padding:0 12px;white-space:nowrap;overflow-x:auto;text-overflow:clip}
 .admin-wa-number-help{font-size:11px;font-weight:400;color:#766d64}
 .admin-setting-field input:focus,.admin-setting-field textarea:focus{outline:2px solid #b9956b;outline-offset:1px}
 .admin-settings-toggles{display:grid;gap:12px;padding:0 16px 16px}
