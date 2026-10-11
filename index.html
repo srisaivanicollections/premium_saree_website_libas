@@ -10128,7 +10128,7 @@ function showView(v){
     const val=(key,fallback="")=>esc(settings[key]??fallback);
     const field=(label,key,fallback="",type="text")=>'<label class="admin-setting-field"><span>'+label+'</span><input '+(key==="name"?'id="setName" ':'')+'type="'+type+'" data-setting-key="'+key+'" value="'+val(key,fallback)+'"></label>';
     const area=(label,key,fallback="")=>'<label class="admin-setting-field"><span>'+label+'</span><textarea rows="2" data-setting-key="'+key+'">'+val(key,fallback)+'</textarea></label>';
-    const toggle=(label,key,defaultOn=true)=>'<label class="admin-setting-toggle"><input type="checkbox" data-setting-key="'+key+'" '+((settings[key]===undefined?defaultOn:settings[key]!==false)?'checked':'')+'><span>'+label+'</span></label>';
+    const toggle=(label,key,defaultOn=true)=>'<label class="admin-setting-toggle"><input type="checkbox" data-setting-key="'+key+'" '+((settings[key]===undefined?defaultOn:!(settings[key]===false||settings[key]==="false"||settings[key]===0))?'checked':'')+'><span>'+label+'</span></label>';
     b.innerHTML='<div class="admin-customize"><p class="admin-settings-intro">Customize your storefront content and links. Save changes to publish them to the website.</p>'+
       '<details class="admin-settings-group"><summary>Brand & Contact</summary><div class="admin-settings-grid">'+
       field('Boutique name','name','SRI SAI VANI')+
