@@ -13428,5 +13428,17 @@ if ("serviceWorker" in navigator) {
 @media(prefers-reduced-motion:reduce){.ssv-shipping-marquee__track{animation:none;transform:none}.ssv-shipping-marquee__message:not(:first-child){display:none}.ssv-shipping-marquee__track{width:100%;justify-content:center}.ssv-shipping-marquee__message:first-child{padding:0;text-align:center;justify-content:center;white-space:normal;line-height:1.3}}
 </style>
 
+
+<style id="ssv-settings-save-button-flow-fix-20261011">
+/* Keep Save Settings in normal flow inside the existing #studioBody scroll area.
+   Later legacy sticky rules were overriding the earlier static-position correction. */
+#admin.modal:not(.hidden):has(#studio:not(.hidden)) #studioBody #saveSettings {
+  position:static!important;
+  inset:auto!important;
+  align-self:stretch!important;
+}
+</style>
+<!-- SSV FIX: keep Settings save button in normal document flow -->
+
 </body>
 </html>
