@@ -1,5 +1,17 @@
 [
   {
+    "id": 1791744300158,
+    "name": "Designer Saree",
+    "category": "Sarees",
+    "color": "Off white",
+    "price": 1000,
+    "originalPrice": 1200,
+    "image": "assets/products/1791744296729-3c349fd36eb1-file_0000000042f88211ab681436080f464c.png",
+    "newArrival": true,
+    "bestSeller": true,
+    "availability": true
+  },
+  {
     "id": 1791640980017,
     "name": "Colour Saree",
     "category": "Sarees",
