@@ -4310,72 +4310,36 @@ footer .brand b{
   opacity:.9 !important;
 }
 
-/* Koskii-inspired badge placement: NEW top-left, BEST SELLER bottom-left.
-   Sold-out status overrides both visual labels without changing product flags. */
+/* Koskii-inspired BEST SELLER ribbon only.
+   Preserve the existing NEW badge styling and placement unchanged. */
 #shop .lux-item-card > .ssv-badge-row{display:none!important;}
 #shop .lux-item-media .ssv-badge-dock{
   position:absolute!important;
   inset:0!important;
+  width:auto!important;
+  max-width:none!important;
+  display:block!important;
   z-index:20!important;
   margin:0!important;
   padding:0!important;
   pointer-events:none!important;
 }
-#shop .lux-item-media .ssv-badge-pill{
-  position:absolute!important;
-  display:inline-block!important;
-  width:auto!important;
-  max-width:calc(100% - 12px)!important;
-  min-height:0!important;
-  margin:0!important;
-  padding:4px 7px 4px 6px!important;
-  box-sizing:border-box!important;
-  border:0!important;
-  border-radius:0!important;
-  box-shadow:none!important;
-  font-family:"Inter",Arial,sans-serif!important;
-  font-size:8px!important;
-  font-style:italic!important;
-  font-weight:700!important;
-  letter-spacing:.045em!important;
-  line-height:1.1!important;
-  text-transform:uppercase!important;
-  white-space:nowrap!important;
-}
-#shop .lux-item-media .ssv-badge-pill.pill-new{
-  top:7px!important;
-  left:7px!important;
-  right:auto!important;
-  bottom:auto!important;
-  background:rgba(250,248,245,.94)!important;
-  color:#702040!important;
-}
 #shop .lux-item-media .ssv-badge-pill.pill-best{
-  top:auto!important;
-  left:0!important;
-  right:auto!important;
-  bottom:7px!important;
-  padding:5px 11px 5px 7px!important;
-  background:#E4C982!important;
-  color:#38251F!important;
+  position:absolute!important;top:auto!important;left:0!important;right:auto!important;bottom:7px!important;
+  display:inline-block!important;width:auto!important;max-width:calc(100% - 12px)!important;min-height:0!important;
+  margin:0!important;padding:5px 11px 5px 7px!important;box-sizing:border-box!important;
+  border:0!important;border-radius:0!important;box-shadow:none!important;background:#E4C982!important;color:#38251F!important;
+  font-family:"Inter",Arial,sans-serif!important;font-size:8px!important;font-style:italic!important;font-weight:700!important;
+  letter-spacing:.045em!important;line-height:1.1!important;text-transform:uppercase!important;white-space:nowrap!important;
   clip-path:polygon(0 0,100% 0,94% 50%,100% 100%,0 100%)!important;
 }
 #shop .lux-item-media .ssv-badge-pill.pill-out{
-  top:auto!important;
-  left:7px!important;
-  right:auto!important;
-  bottom:7px!important;
-  padding:4px 7px!important;
-  background:rgba(112,48,43,.92)!important;
-  color:#fff!important;
-  font-style:normal!important;
+  position:absolute!important;top:auto!important;left:7px!important;right:auto!important;bottom:7px!important;
+  background:rgba(112,48,43,.92)!important;color:#fff!important;font-style:normal!important;
 }
 #shop .lux-item-media:has(.pill-out) .ssv-badge-pill.pill-new,
 #shop .lux-item-media:has(.pill-out) .ssv-badge-pill.pill-best{display:none!important;}
-@media(max-width:600px){
-  #shop .lux-item-media .ssv-badge-pill{font-size:7px!important;padding:3px 5px!important;}
-  #shop .lux-item-media .ssv-badge-pill.pill-best{padding:4px 8px 4px 5px!important;}
-}
+@media(max-width:600px){#shop .lux-item-media .ssv-badge-pill.pill-best{font-size:7px!important;padding:4px 8px 4px 5px!important;}}
 
 /* Compact product information, flush to image. */
 #shop .lux-item-body{
