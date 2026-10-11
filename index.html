@@ -10133,7 +10133,9 @@ function render(){
   });
   const isNewArrival=p=>p.newArrival===true||p.newArrival==="true"||p.newArrival===1||p.newArrival==="1";
   const isBestSeller=p=>p.bestSeller===true||p.bestSeller==="true"||p.bestSeller===1||p.bestSeller==="1";
+  const isSoldOut=p=>p.inStock===false||p.availability===false||p.outOfStock===true;
   const displayPriority=p=>{
+    if(isSoldOut(p))return 3;
     if(isNewArrival(p))return 0;
     if(isBestSeller(p))return 1;
     return 2;
