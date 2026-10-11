@@ -4310,31 +4310,71 @@ footer .brand b{
   opacity:.9 !important;
 }
 
-/* Keep both status labels on-image, compact and edge-aligned.
-   NEW uses the quiet top-left corner; SOLD OUT uses the bottom-left edge. */
+/* Koskii-inspired badge placement: NEW top-left, BEST SELLER bottom-left.
+   Sold-out status overrides both visual labels without changing product flags. */
 #shop .lux-item-card > .ssv-badge-row{display:none!important;}
 #shop .lux-item-media .ssv-badge-dock{
   position:absolute!important;
-  top:6px!important;
-  left:6px!important;
-  right:auto!important;
-  bottom:auto!important;
-  width:fit-content!important;
-  max-width:calc(100% - 12px)!important;
+  inset:0!important;
+  z-index:20!important;
   margin:0!important;
   padding:0!important;
-  z-index:20!important;
   pointer-events:none!important;
 }
-#shop .lux-item-media .ssv-badge-pill{font-size:6.5px!important;padding:2px 4px!important;line-height:1.1!important;letter-spacing:.045em!important;}
-#shop .lux-item-media .ssv-badge-pill.pill-out{
-  background:rgba(112,48,43,.86)!important;color:#fff!important;
+#shop .lux-item-media .ssv-badge-pill{
+  position:absolute!important;
+  display:inline-block!important;
+  width:auto!important;
+  max-width:calc(100% - 12px)!important;
+  min-height:0!important;
+  margin:0!important;
+  padding:4px 7px 4px 6px!important;
+  box-sizing:border-box!important;
+  border:0!important;
+  border-radius:0!important;
+  box-shadow:none!important;
+  font-family:"Inter",Arial,sans-serif!important;
+  font-size:8px!important;
+  font-style:italic!important;
+  font-weight:700!important;
+  letter-spacing:.045em!important;
+  line-height:1.1!important;
+  text-transform:uppercase!important;
+  white-space:nowrap!important;
 }
 #shop .lux-item-media .ssv-badge-pill.pill-new{
-  background:rgba(250,248,245,.9)!important;color:#702040!important;
+  top:7px!important;
+  left:7px!important;
+  right:auto!important;
+  bottom:auto!important;
+  background:rgba(250,248,245,.94)!important;
+  color:#702040!important;
 }
-#shop .lux-item-media:has(.pill-out) .ssv-badge-dock{
-  top:auto!important;bottom:6px!important;left:6px!important;
+#shop .lux-item-media .ssv-badge-pill.pill-best{
+  top:auto!important;
+  left:0!important;
+  right:auto!important;
+  bottom:7px!important;
+  padding:5px 11px 5px 7px!important;
+  background:#E4C982!important;
+  color:#38251F!important;
+  clip-path:polygon(0 0,100% 0,94% 50%,100% 100%,0 100%)!important;
+}
+#shop .lux-item-media .ssv-badge-pill.pill-out{
+  top:auto!important;
+  left:7px!important;
+  right:auto!important;
+  bottom:7px!important;
+  padding:4px 7px!important;
+  background:rgba(112,48,43,.92)!important;
+  color:#fff!important;
+  font-style:normal!important;
+}
+#shop .lux-item-media:has(.pill-out) .ssv-badge-pill.pill-new,
+#shop .lux-item-media:has(.pill-out) .ssv-badge-pill.pill-best{display:none!important;}
+@media(max-width:600px){
+  #shop .lux-item-media .ssv-badge-pill{font-size:7px!important;padding:3px 5px!important;}
+  #shop .lux-item-media .ssv-badge-pill.pill-best{padding:4px 8px 4px 5px!important;}
 }
 
 /* Compact product information, flush to image. */
@@ -9935,11 +9975,15 @@ function render(){
     const discount=original>price?Math.round((1-price/original)*100):0;
     const categoryTag=String(p.tag||p.label||"").trim();
     const outOfStock=(p.inStock===false||p.availability===false||p.outOfStock===true);
+    const isBestSeller=p.bestSeller===true||p.bestSeller==="true"||p.bestSeller===1||p.bestSeller==="1";
     let badgeDock="";
     if(outOfStock){
       badgeDock='<div class="ssv-badge-dock"><span class="ssv-badge-pill pill-out">SOLD OUT</span></div>';
-    }else if(p.newArrival===true){
-      badgeDock='<div class="ssv-badge-dock"><span class="ssv-badge-pill pill-new">NEW</span></div>';
+    }else if(p.newArrival===true||isBestSeller){
+      badgeDock='<div class="ssv-badge-dock">'+
+        (p.newArrival===true?'<span class="ssv-badge-pill pill-new">NEW</span>':"")+
+        (isBestSeller?'<span class="ssv-badge-pill pill-best">BEST SELLER</span>':"")+
+      '</div>';
     }
     return '<article class="lux-item-card">'+
       '<div class="lux-item-media'+(outOfStock?' is-out-of-stock':'')+'">'+
