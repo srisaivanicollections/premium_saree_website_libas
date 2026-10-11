@@ -12920,10 +12920,17 @@ if ("serviceWorker" in navigator) {
   padding-top: 16px !important;
 }
 #shop .lux-catalog-container { padding-top: 0 !important; }
+/* Desktop only: tighten the gap around the search/sort row. */
 #shop .lux-tools,
-#shop .tools { margin-top: 8px !important; }
+#shop .tools { margin-top: 0 !important; }
 #shop .lux-catalog-toolbar,
-#shop .toolbar { margin-bottom: 14px !important; }
+#shop .toolbar { margin-bottom: 18px !important; }
+@media (max-width: 768px) {
+  #shop .lux-tools,
+  #shop .tools { margin-top: 8px !important; }
+  #shop .lux-catalog-toolbar,
+  #shop .toolbar { margin-bottom: 14px !important; }
+}
 
 /* Keep price, original price, and discount together without displacing WhatsApp. */
 #shop .lux-pricing-block {
