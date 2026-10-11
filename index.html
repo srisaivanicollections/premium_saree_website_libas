@@ -9027,19 +9027,20 @@ body:not(#admin) [style*="font-size:7px"]{font-size:8px!important}
       <div class="tools lux-tools" id="mobileCollectionControls">
         <div class="search lux-search mobile-lux-search">
           <span class="lux-search-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><circle cx="11" cy="11" r="6.5"></circle><path d="M16 16l5 5"></path></svg></span>
-          <input id="search" class="lux-search-input" type="search" placeholder="Search collection..." autocomplete="off" aria-label="Search collection">
+          <input id="search" class="lux-search-input" type="search" placeholder="Search collection" autocomplete="off" aria-label="Search collection">
           <button id="clearCatalogSearch" class="lux-search-clear" type="button" aria-label="Clear search" hidden>×</button>
         </div>
         <div class="lux-mobile-sort" aria-label="Sort collection">
-          <span class="lux-mobile-sort-icon" aria-hidden="true">⇅</span>
+          <span class="lux-mobile-sort-icon" aria-hidden="true" hidden>⇅</span>
           <select id="price" class="lux-price-select" aria-label="Sort by">
-            <option value="" selected>Default</option>
+            <option value="" selected disabled>Sort by</option>
             <option value="low-high">Price: Low to High</option>
             <option value="high-low">Price: High to Low</option>
           </select>
         </div>
         <button id="resetCatalog" class="lux-reset-button" type="button" aria-label="Reset search and sorting" title="Reset">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7v5h-5"></path><path d="M19 12a7 7 0 1 1-2-4.95L20 12"></path></svg>
+          <span class="lux-reset-label">Reset</span>
         </button>
       </div>
     </div>
@@ -10822,7 +10823,7 @@ document.addEventListener("click",async e=>{const t=e.target.closest("[data-tab]
     btn.textContent=oldText;
   }
 }});
-const catalogSearch=$("#search"),catalogSort=$("#price"),catalogClear=$("#clearCatalogSearch"),catalogReset=$("#resetCatalog");const syncCatalogClear=()=>{if(catalogClear)catalogClear.hidden=!catalogSearch.value;};if(catalogSearch){catalogSearch.oninput=()=>{syncCatalogClear();catalogPage=0;render()};catalogSearch.addEventListener("input",syncCatalogClear);syncCatalogClear();}if(catalogSort)catalogSort.onchange=()=>{catalogPage=0;render()};if(catalogClear)catalogClear.onclick=()=>{catalogSearch.value="";syncCatalogClear();catalogSearch.dispatchEvent(new Event("input",{bubbles:true}));catalogSearch.focus()};if(catalogReset)catalogReset.onclick=()=>{category="All";catalogSearch.value="";catalogSort.value="";syncCatalogClear();catalogPage=0;render()};load();
+const catalogSearch=$("#search"),catalogSort=$("#price"),catalogClear=$("#clearCatalogSearch"),catalogReset=$("#resetCatalog");const syncCatalogClear=()=>{if(catalogClear)catalogClear.hidden=!catalogSearch.value;};const syncCatalogPlaceholder=()=>{if(catalogSearch)catalogSearch.placeholder=window.matchMedia("(max-width: 768px)").matches?"Search collection...":"Search collection";};syncCatalogPlaceholder();if(window.matchMedia){const mobileControlsQuery=window.matchMedia("(max-width: 768px)");if(mobileControlsQuery.addEventListener)mobileControlsQuery.addEventListener("change",syncCatalogPlaceholder);else if(mobileControlsQuery.addListener)mobileControlsQuery.addListener(syncCatalogPlaceholder);}if(catalogSearch){catalogSearch.oninput=()=>{syncCatalogClear();catalogPage=0;render()};catalogSearch.addEventListener("input",syncCatalogClear);syncCatalogClear();}if(catalogSort)catalogSort.onchange=()=>{catalogPage=0;render()};if(catalogClear)catalogClear.onclick=()=>{catalogSearch.value="";syncCatalogClear();catalogSearch.dispatchEvent(new Event("input",{bubbles:true}));catalogSearch.focus()};if(catalogReset)catalogReset.onclick=()=>{category="All";catalogSearch.value="";catalogSort.value="";syncCatalogClear();catalogPage=0;render()};load();
 
 </script>
 
@@ -13528,7 +13529,7 @@ if ("serviceWorker" in navigator) {
     box-shadow: none !important;
   }
   #shop .lux-tools#mobileCollectionControls .lux-mobile-sort { overflow: hidden !important; }
-  #shop .lux-mobile-sort-icon { font: 23px/1 Arial, sans-serif !important; color: #C5A67C !important; pointer-events: none !important; }
+  #shop .lux-mobile-sort-icon { display: inline-block !important; font: 23px/1 Arial, sans-serif !important; color: #C5A67C !important; pointer-events: none !important; }
   #shop .lux-tools#mobileCollectionControls .lux-mobile-sort .lux-price-select {
     position: absolute !important;
     inset: 0 !important;
