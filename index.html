@@ -13446,15 +13446,36 @@ if ("serviceWorker" in navigator) {
 <style id="ssv-mobile-search-sort-reset-20261011">
 /* Mobile-only catalogue controls. Desktop/tablet layout and neighbouring tabs/grid are unchanged. */
 /* Shared clear-search control for desktop, tablet, and mobile. */
-/* Keep the input and clear button on the same row on desktop as well. */
-#shop .lux-catalog-toolbar .lux-search {
-  display: flex;
-  align-items: center;
+/* Anchor the clear control inside the search field at every breakpoint. */
+#shop .lux-catalog-toolbar .lux-search,
+#shop .lux-tools#mobileCollectionControls .mobile-lux-search {
+  position: relative !important;
+}
+#shop .lux-catalog-toolbar .lux-search .lux-search-clear {
+  position: absolute !important;
+  top: 50% !important;
+  right: 4px !important;
+  z-index: 3 !important;
+  flex: 0 0 36px !important;
+  transform: translateY(-50%);
 }
 #shop .lux-catalog-toolbar .lux-search .lux-search-input {
-  flex: 1 1 auto;
-  width: auto;
+  width: 100%;
   min-width: 0;
+  padding-right: 44px !important;
+  box-sizing: border-box;
+}
+#shop .lux-tools#mobileCollectionControls .mobile-lux-search .lux-search-clear {
+  position: absolute !important;
+  top: 50% !important;
+  right: 2px !important;
+  z-index: 3 !important;
+  flex: 0 0 40px !important;
+  transform: translateY(-50%);
+}
+#shop .lux-tools#mobileCollectionControls .mobile-lux-search .lux-search-input {
+  padding-right: 42px !important;
+  box-sizing: border-box !important;
 }
 #shop .lux-search .lux-search-clear {
   display: inline-flex;
