@@ -13915,23 +13915,26 @@ if ("serviceWorker" in navigator) {
 </style>
 
 <style id="ssv-catalog-toolbar-authoritative-20261012">
-/* Single authoritative desktop toolbar layout.
-   8px separates category/count from controls; 18px separates controls from products.
-   Mobile layout remains controlled by the existing max-width rules. */
+/* Desktop toolbar: explicit no-wrap flex row avoids grid auto-placement conflicts
+   from legacy .tools rules. Tabs/count stay in their own row above the controls. */
 @media (min-width: 769px) {
   #shop .lux-catalog-toolbar {
-    display: block !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 8px !important;
     margin: 0 0 18px !important;
     padding: 0 !important;
   }
   #shop .lux-tabs-wrap {
-    margin: 0 0 8px !important;
+    display: block !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 !important;
   }
-  #shop .lux-tools,
-  #shop .tools {
-    display: grid !important;
-    grid-template-columns: minmax(0, 1fr) 180px max-content !important;
-    grid-template-rows: auto !important;
+  #shop .lux-tools#mobileCollectionControls {
+    display: flex !important;
+    flex-flow: row nowrap !important;
     align-items: center !important;
     gap: 12px !important;
     width: 100% !important;
@@ -13939,26 +13942,37 @@ if ("serviceWorker" in navigator) {
     margin: 0 !important;
     box-sizing: border-box !important;
   }
-  #shop .lux-search {
-    grid-column: 1 !important;
-    grid-row: 1 !important;
+  #shop .lux-tools#mobileCollectionControls > .lux-search {
+    display: flex !important;
+    flex: 1 1 0 !important;
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: none !important;
+  }
+  #shop .lux-tools#mobileCollectionControls > .lux-mobile-sort {
+    display: block !important;
+    flex: 0 0 220px !important;
+    width: 220px !important;
+    min-width: 0 !important;
+    max-width: 220px !important;
+    position: relative !important;
+  }
+  #shop .lux-tools#mobileCollectionControls > .lux-mobile-sort .lux-price-select {
+    display: block !important;
+    position: static !important;
     width: 100% !important;
     min-width: 0 !important;
+    max-width: 100% !important;
+    opacity: 1 !important;
+    height: 42px !important;
   }
-  #shop .lux-mobile-sort {
-    grid-column: 2 !important;
-    grid-row: 1 !important;
-    width: 180px !important;
-    min-width: 0 !important;
-  }
-  #shop .lux-mobile-sort .lux-price-select {
-    width: 100% !important;
-    min-width: 0 !important;
-  }
-  #shop .lux-reset-button {
-    grid-column: 3 !important;
-    grid-row: 1 !important;
-    justify-self: end !important;
+  #shop .lux-tools#mobileCollectionControls > .lux-reset-button {
+    display: inline-flex !important;
+    flex: 0 0 max-content !important;
+    width: auto !important;
+    min-width: max-content !important;
+    margin-left: auto !important;
+    white-space: nowrap !important;
   }
 }
 </style>
