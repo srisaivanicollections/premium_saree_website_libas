@@ -9273,6 +9273,10 @@ body:not(#admin) [style*="font-size:7px"]{font-size:8px!important}
           <option value="low-high">Price: Low to High</option>
           <option value="high-low">Price: High to Low</option>
         </select>
+        <button id="resetCatalog" class="lux-reset-button" type="button" aria-label="Reset catalogue filters">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7v5h-5"></path><path d="M19 12a7 7 0 1 1-2-4.95L20 12"></path></svg>
+          <span>Reset</span>
+        </button>
       </div>
     </div>
     <div id="products" class="products lux-product-grid" aria-live="polite"></div>
@@ -11054,7 +11058,7 @@ document.addEventListener("click",async e=>{const t=e.target.closest("[data-tab]
     btn.textContent=oldText;
   }
 }});
-$("#search").oninput=()=>{catalogPage=0;render()};$("#price").onchange=()=>{catalogPage=0;render()};load();
+$("#search").oninput=()=>{catalogPage=0;render()};$("#price").onchange=()=>{catalogPage=0;render()};$("#resetCatalog").onclick=()=>{category="All";$("#search").value="";$("#price").value="";catalogPage=0;render()};load();
 
 </script>
 
@@ -13531,6 +13535,31 @@ if ("serviceWorker" in navigator) {
 
 </body>
 </html>
+
+<style id="ssv-catalog-reset-responsive-fix">
+/* Catalogue-only reset control and responsive alignment. Reuses existing storefront palette. */
+#shop .lux-tools{grid-template-columns:minmax(0,1fr) 180px auto!important;align-items:stretch!important;}
+#shop .lux-reset-button{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  min-width:94px;height:48px;box-sizing:border-box;padding:0 14px;
+  border:1px solid #DED5C8;border-radius:0;background:#FBF9F5;color:#1C1917;
+  font-family:"Montserrat",Arial,sans-serif;font-size:13px;font-weight:500;
+  line-height:1;white-space:nowrap;cursor:pointer;
+}
+#shop .lux-reset-button svg{display:block;width:15px;height:15px;flex:0 0 15px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+#shop .lux-reset-button:hover,#shop .lux-reset-button:focus-visible{border-color:#B38E5D;outline:none}
+@media(max-width:760px){
+  #shop .lux-tools{grid-template-columns:minmax(0,1fr) auto!important;gap:8px!important;align-items:stretch!important}
+  #shop .lux-search{grid-column:1/-1!important;width:100%!important;min-width:0!important}
+  #shop .lux-price-select{grid-column:1!important;width:100%!important;min-width:0!important;height:40px!important}
+  #shop .lux-reset-button{grid-column:2!important;min-width:96px;height:40px;padding:0 12px;font-size:12px}
+}
+@media(max-width:360px){
+  #shop .lux-tools{gap:6px!important}
+  #shop .lux-reset-button{min-width:84px;padding:0 8px;gap:5px}
+}
+</style>
+
 
 <style id="ssv-shipping-announcement-editor-size">
 /* Give the shipping announcement a comfortable multi-line editing area. */
