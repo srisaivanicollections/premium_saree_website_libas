@@ -10823,7 +10823,7 @@ document.addEventListener("click",async e=>{const t=e.target.closest("[data-tab]
     btn.textContent=oldText;
   }
 }});
-const catalogSearch=$("#search"),catalogSort=$("#price"),catalogClear=$("#clearCatalogSearch"),catalogReset=$("#resetCatalog");const syncCatalogClear=()=>{if(catalogClear)catalogClear.hidden=!(catalogSearch.value&&window.matchMedia("(max-width: 768px)").matches);};const syncCatalogPlaceholder=()=>{if(catalogSearch)catalogSearch.placeholder=window.matchMedia("(max-width: 768px)").matches?"Search collection...":"Search collection";};syncCatalogPlaceholder();if(window.matchMedia){const mobileControlsQuery=window.matchMedia("(max-width: 768px)");if(mobileControlsQuery.addEventListener)mobileControlsQuery.addEventListener("change",syncCatalogPlaceholder);else if(mobileControlsQuery.addListener)mobileControlsQuery.addListener(syncCatalogPlaceholder);}if(catalogSearch){catalogSearch.oninput=()=>{syncCatalogClear();catalogPage=0;render()};catalogSearch.addEventListener("input",syncCatalogClear);syncCatalogClear();}if(catalogSort)catalogSort.onchange=()=>{catalogPage=0;render()};if(catalogClear)catalogClear.onclick=()=>{catalogSearch.value="";syncCatalogClear();catalogSearch.dispatchEvent(new Event("input",{bubbles:true}));catalogSearch.focus()};if(catalogReset)catalogReset.onclick=()=>{category="All";catalogSearch.value="";catalogSort.value="";syncCatalogClear();catalogPage=0;render()};load();
+const catalogSearch=$("#search"),catalogSort=$("#price"),catalogClear=$("#clearCatalogSearch"),catalogReset=$("#resetCatalog");const syncCatalogClear=()=>{if(catalogClear)catalogClear.hidden=!(catalogSearch&&catalogSearch.value.trim().length>0);};const syncCatalogPlaceholder=()=>{if(catalogSearch)catalogSearch.placeholder=window.matchMedia("(max-width: 768px)").matches?"Search collection...":"Search collection";};syncCatalogPlaceholder();if(window.matchMedia){const mobileControlsQuery=window.matchMedia("(max-width: 768px)");if(mobileControlsQuery.addEventListener)mobileControlsQuery.addEventListener("change",syncCatalogPlaceholder);else if(mobileControlsQuery.addListener)mobileControlsQuery.addListener(syncCatalogPlaceholder);}if(catalogSearch){catalogSearch.oninput=()=>{syncCatalogClear();catalogPage=0;render()};catalogSearch.addEventListener("input",syncCatalogClear);syncCatalogClear();}if(catalogSort)catalogSort.onchange=()=>{catalogPage=0;render()};if(catalogClear)catalogClear.onclick=()=>{if(!catalogSearch)return;catalogSearch.value="";catalogSearch.dispatchEvent(new Event("input",{bubbles:true}));catalogSearch.focus()};if(catalogReset)catalogReset.onclick=()=>{category="All";catalogSearch.value="";catalogSort.value="";syncCatalogClear();catalogPage=0;render()};load();
 
 </script>
 
@@ -13445,6 +13445,38 @@ if ("serviceWorker" in navigator) {
 
 <style id="ssv-mobile-search-sort-reset-20261011">
 /* Mobile-only catalogue controls. Desktop/tablet layout and neighbouring tabs/grid are unchanged. */
+/* Shared clear-search control for desktop, tablet, and mobile. */
+#shop .lux-search .lux-search-clear {
+  display: inline-flex;
+  flex: 0 0 36px;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #C5A67C;
+  font: 25px/1 Arial, sans-serif;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+#shop .lux-search .lux-search-clear[hidden] { display: none !important; }
+#shop .lux-search .lux-search-clear:hover { opacity: .75; }
+#shop .lux-search .lux-search-clear:active { transform: scale(.92); }
+#shop .lux-search .lux-search-clear:focus-visible {
+  outline: 1px solid #C5A67C;
+  outline-offset: -3px;
+}
+#shop .lux-search .lux-search-input::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  appearance: none;
+  display: none;
+}
 @media (max-width: 768px) {
   #shop .lux-tools#mobileCollectionControls {
     display: flex !important;
@@ -13491,24 +13523,13 @@ if ("serviceWorker" in navigator) {
     box-shadow: none !important;
   }
   #shop .mobile-lux-search .lux-search-input::placeholder { color: #82776D !important; opacity: 1; }
-  #shop .mobile-lux-search .lux-search-input::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; }
   #shop .mobile-lux-search .lux-search-clear {
-    display: inline-flex !important;
-    flex: 0 0 24px !important;
-    align-items: center !important;
-    justify-content: center !important;
-    width: 24px !important;
-    height: 32px !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    border: 0 !important;
-    border-radius: 0 !important;
-    background: transparent !important;
-    color: #2C2523 !important;
-    font: 23px/1 Arial, sans-serif !important;
-    cursor: pointer !important;
+    flex-basis: 40px !important;
+    width: 40px !important;
+    min-width: 40px !important;
+    height: 40px !important;
+    color: #C5A67C !important;
   }
-  #shop .mobile-lux-search .lux-search-clear[hidden] { display: none !important; }
   #shop .lux-tools#mobileCollectionControls .lux-mobile-sort,
   #shop .lux-tools#mobileCollectionControls > .lux-reset-button {
     position: relative !important;
