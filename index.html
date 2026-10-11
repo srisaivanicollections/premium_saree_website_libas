@@ -9891,13 +9891,13 @@ function apply(){
   all("a[href*=\"instagram.com\"]").forEach(a=>a.href=settings.instagram||"https://www.instagram.com/sri_sai_vani_collections/");
 }
 function isCategoryEnabled(name){const key=({Sarees:"categorySareesEnabled",Dresses:"categoryDressesEnabled",Jewelry:"categoryJewelryEnabled"})[String(name||"").trim()];return !key||!(settings[key]===false||settings[key]==="false"||settings[key]===0)}
-function renderTabs(){const enabled=["Sarees","Dresses","Jewelry"].filter(isCategoryEnabled);if(category!=="All"&&!enabled.includes(category))category="All";$("#tabs").innerHTML=enabled.map(c=>'<button class="'+(category===c?"active":"")+'" data-tab="'+c+'">'+c.toUpperCase()+"</button>").join("")}
+function renderTabs(){const enabled=["Sarees","Dresses","Jewelry"].filter(isCategoryEnabled);if(category!=="All"&&!enabled.includes(category))category=enabled[0]||"";$("#tabs").innerHTML=enabled.map(c=>'<button class="'+(category===c?"active":"")+'" data-tab="'+c+'">'+c.toUpperCase()+"</button>").join("")}
 function render(){
   renderTabs();
   const grid=$("#products");
   if(!grid)return;
   if(!Array.isArray(products)||products.length===0){
-    $("#products").innerHTML='<div class="lux-empty"><strong>No styles found</strong><span>'+esc(settings.emptyCatalogText||"Try another search or browse the full collection.")+'</span><br><button type="button" class="btn dark" id="clearCatalogFilters">'+esc(settings.viewAllLabel||"VIEW ALL STYLES")+'</button></div>'; const clear=$("#clearCatalogFilters"); if(clear)clear.onclick=()=>{category="All";$("#search").value="";$("#price").value="";render()};
+    $("#products").innerHTML='<div class="lux-empty"><strong>No styles found</strong><span>'+esc(settings.emptyCatalogText||"Try another search or browse the full collection.")+'</span><br><button type="button" class="btn dark" id="clearCatalogFilters">'+esc(settings.viewAllLabel||"VIEW ALL STYLES")+'</button></div>'; const clear=$("#clearCatalogFilters"); if(clear)clear.onclick=()=>{const search=$("#search"),price=$("#price");if(search)search.value="";if(price)price.value="";catalogPage=0;syncCatalogClear?.();syncCatalogSortIcon?.();render()};
     return;
   }
   const q=$("#search").value.trim().toLowerCase(),pf=$("#price").value;
@@ -10862,7 +10862,7 @@ const syncCatalogSortIcon=()=>{
 syncCatalogSortIcon();
 if(catalogSort)catalogSort.onchange=()=>{syncCatalogSortIcon();catalogPage=0;render()};if(catalogClear)catalogClear.onclick=()=>{if(!catalogSearch)return;catalogSearch.value="";catalogSearch.dispatchEvent(new Event("input",{bubbles:true}));catalogSearch.focus()};let catalogResetPulseTimer=0;
 if(catalogReset)catalogReset.onclick=()=>{
-  category="All";
+  if(category!=="All"&&!isCategoryEnabled(category)){const enabled=["Sarees","Dresses","Jewelry"].filter(isCategoryEnabled);category=enabled[0]||"";}
   if(catalogSearch)catalogSearch.value="";
   if(catalogSort){catalogSort.value="";syncCatalogSortIcon();}
   syncCatalogClear();
