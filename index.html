@@ -12977,6 +12977,30 @@ if ("serviceWorker" in navigator) {
 }
 
 
+/* Keep pricing on one line when it fits; let only the discount wrap on narrow cards. */
+@media (max-width: 600px) {
+  #shop .lux-pricing-block {
+    display: flex !important;
+    flex-flow: row wrap !important;
+    align-items: baseline !important;
+    justify-content: flex-start !important;
+    column-gap: 5px !important;
+    row-gap: 3px !important;
+    min-width: 0 !important;
+    overflow: visible !important;
+  }
+  #shop .lux-price-current,
+  #shop .lux-price-original {
+    flex: 0 0 auto !important;
+    white-space: nowrap !important;
+  }
+  #shop .lux-price-discount {
+    flex: 0 0 auto !important;
+    white-space: nowrap !important;
+    margin-left: 0 !important;
+  }
+}
+
 /* Keep the WhatsApp action visible on every product card on narrow screens. */
 @media (max-width: 600px) {
   #shop .lux-item-footer {
