@@ -9249,8 +9249,8 @@ body:not(#admin) [style*="font-size:7px"]{font-size:8px!important}
     </div>
   </div>
 </section>
-<section class="ssv-shipping-marquee" aria-label="Shipping information">
-  <span class="ssv-shipping-marquee__sr-only">Shipping available. No cash on delivery.</span>
+<section class="ssv-shipping-marquee" aria-label="SHIPPING AVAILABLE · NO CASH ON DELIVERY">
+  <span class="ssv-shipping-marquee__sr-only">SHIPPING AVAILABLE · NO CASH ON DELIVERY</span>
   <div class="ssv-shipping-marquee__viewport" aria-hidden="true">
     <div class="ssv-shipping-marquee__track">
       <span class="ssv-shipping-marquee__message">SHIPPING AVAILABLE <span class="ssv-shipping-marquee__separator">·</span> NO CASH ON DELIVERY</span>
@@ -9989,6 +9989,25 @@ function apply(){
   const heroTitle=$(".hero-title");if(heroTitle){const title=String(settings.heroTitle??"One Destination.\nEvery Celebration.");heroTitle.replaceChildren();title.split(/\n/).forEach((part,i)=>{if(i)heroTitle.appendChild(document.createElement("br"));heroTitle.appendChild(document.createTextNode(part));});}
   setText(".hero-description","heroDescription","From wedding sarees to modern festive styles, find something special for every celebration.");
   setText(".hero-primary-btn","heroButtonText","Explore Collection");
+  const shippingMarquee=$(".ssv-shipping-marquee");
+  if(shippingMarquee){
+    const shippingText=String(settings.shippingAnnouncementText??"SHIPPING AVAILABLE · NO CASH ON DELIVERY").trim()||"SHIPPING AVAILABLE · NO CASH ON DELIVERY";
+    const shippingEnabled=settings.showShippingAnnouncement!==false;
+    shippingMarquee.classList.toggle("hidden",!shippingEnabled);
+    shippingMarquee.setAttribute("aria-label",shippingText);
+    const accessibleText=shippingMarquee.querySelector(".ssv-shipping-marquee__sr-only");
+    if(accessibleText)accessibleText.textContent=shippingText;
+    shippingMarquee.querySelectorAll(".ssv-shipping-marquee__message").forEach(message=>{
+      const separator=document.createElement("span");
+      separator.className="ssv-shipping-marquee__separator";
+      separator.textContent="·";
+      message.replaceChildren(document.createTextNode(shippingText.replace(/\s*·\s*/g," ").replace(/\s+/g," ").trim()),separator);
+      const parts=shippingText.split("·");
+      if(parts.length===2){
+        message.replaceChildren(document.createTextNode(parts[0].trim()+" "),separator,document.createTextNode(" "+parts.slice(1).join("·").trim()));
+      }
+    });
+  }
   const heroImage=$(".hero-banner-img");if(heroImage&&settings.heroImage)heroImage.src=productImageSrc(settings.heroImage);
   const search=$("#search");if(search)search.placeholder=String(settings.searchPlaceholder||"Search collection");
   setText(".sv-reviews__eyebrow","reviewsEyebrow","Customer Voices");
@@ -10300,6 +10319,11 @@ function showView(v){
       '<details class="admin-settings-group"><summary>Appearance</summary><div class="admin-settings-grid">'+
       field('Accent colour','themeAccent','#755239','color')+
       field('Soft section background colour','themeBackground','#fffaf5','color')+
+      '</div></details>'+
+      '<details class="admin-settings-group"><summary>Shipping Announcement</summary><div class="admin-settings-grid">'+
+      field('Announcement text','shippingAnnouncementText','SHIPPING AVAILABLE · NO CASH ON DELIVERY')+
+      '</div><div class="admin-settings-toggles">'+
+      toggle('Show shipping announcement','showShippingAnnouncement')+
       '</div></details>'+
       '<details class="admin-settings-group"><summary>Section Visibility</summary><div class="admin-settings-toggles">'+
       toggle('Show customer reviews section','showReviews')+toggle('Show Visual Journal section','showJournal')+toggle('Show store details section','showStore')+
