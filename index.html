@@ -12920,11 +12920,49 @@ if ("serviceWorker" in navigator) {
   padding-top: 16px !important;
 }
 #shop .lux-catalog-container { padding-top: 0 !important; }
-/* Desktop only: tighten the gap around the search/sort row. */
-#shop .lux-tools,
-#shop .tools { margin-top: 0 !important; }
-#shop .lux-catalog-toolbar,
-#shop .toolbar { margin-bottom: 18px !important; }
+/* Desktop catalogue spacing: override the earlier column/gap rule that was
+   keeping the controls separated despite the previous margin-only adjustment. */
+@media (min-width: 769px) {
+  #shop .lux-catalog-toolbar {
+    display: block !important;
+    margin: 0 0 18px !important;
+    padding: 0 !important;
+  }
+  #shop .lux-tabs-wrap {
+    margin: 0 0 12px !important;
+  }
+  #shop .lux-tools,
+  #shop .tools {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) 180px max-content !important;
+    grid-template-rows: auto !important;
+    align-items: center !important;
+    gap: 12px !important;
+    width: 100% !important;
+    margin: 0 !important;
+  }
+  #shop .lux-search {
+    grid-column: 1 !important;
+    grid-row: 1 !important;
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+  #shop .lux-mobile-sort {
+    grid-column: 2 !important;
+    grid-row: 1 !important;
+    width: 180px !important;
+    min-width: 0 !important;
+  }
+  #shop .lux-mobile-sort .lux-price-select {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+  #shop .lux-reset-button {
+    grid-column: 3 !important;
+    grid-row: 1 !important;
+    justify-self: end !important;
+  }
+}
 @media (max-width: 768px) {
   #shop .lux-tools,
   #shop .tools { margin-top: 8px !important; }
