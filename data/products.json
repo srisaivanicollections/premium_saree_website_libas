@@ -1,5 +1,17 @@
 [
   {
+    "id": 1791746979976,
+    "name": "Necklace",
+    "category": "Jewelry",
+    "color": "",
+    "price": 3000,
+    "originalPrice": 3600,
+    "image": "assets/products/1791746977998-d5f3a6a664f8-Viva_Jewels_Antique_Temple_Lakshmi___Peacock_Grand_Combo___Premium_Gold_Plated_Short___Long_Haram_Set_with_Matching_Jhumkas_PWTE5A2TXX_2026-05-15_1.webp",
+    "newArrival": true,
+    "bestSeller": true,
+    "availability": true
+  },
+  {
     "id": 1791744300158,
     "name": "Designer Saree",
     "category": "Sarees",
