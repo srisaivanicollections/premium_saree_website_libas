@@ -67,7 +67,7 @@ nav a:not(.shop-link):hover{color:var(--accent)}
 #shop .search:focus-within{border-color:var(--gold);box-shadow:0 0 0 2px rgba(179,142,93,.08)}
 #shop .search input{width:100%;padding:0 6px;border:0;outline:0;background:transparent;color:var(--ink);font-size:11px}
 #shop .search input::placeholder{color:#9b928c}
-#shop .tools select{min-width:128px;height:36px;padding:0 9px;border:1px solid #E5DFD7;outline:0;background:transparent;color:var(--ink);font-size:10px}
+
 #shop .tools select:focus{border-color:var(--gold);box-shadow:0 0 0 2px rgba(179,142,93,.08)}
 
 /* Product cards */
@@ -321,7 +321,7 @@ footer{padding:40px 34px;border-top:1px solid var(--line);display:flex;justify-c
 @media(max-width:600px){
  #shop .toolbar{margin-bottom:22px}
  #shop .tools{grid-template-columns:minmax(0,1fr) 108px}
- #shop .search,#shop .tools select{height:36px}
+
  #shop .products{grid-template-columns:repeat(2,minmax(0,1fr));gap:26px 12px}
  #shop .product-image{aspect-ratio:3/4}
 }
@@ -394,11 +394,7 @@ footer{padding:40px 34px;border-top:1px solid var(--line);display:flex;justify-c
   height:2px;
   background:#B38E5D;
 }
-#shop .search:focus-within,
-#shop .tools select:focus{
-  border-color:#C8A97E;
-  box-shadow:0 0 0 2px rgba(200,169,126,.10);
-}
+
 
 
 /* DESKTOP HERO REFINEMENT: scoped to #shop and intentionally inactive below 992px */
@@ -1497,19 +1493,8 @@ nav a,.shop-link,.admin-link{
   background:transparent !important;
   box-shadow:none !important;
 }
-#shop .tools select{
-  min-width:120px !important;
-  height:34px !important;
-  border-color:#E4D8C5 !important;
-  background:transparent !important;
-  color:#1C1917 !important;
-  box-shadow:none !important;
-}
-#shop .search:focus-within,
-#shop .tools select:focus{
-  border-color:#C8B28A !important;
-  box-shadow:0 0 0 2px rgba(200,178,138,.10) !important;
-}
+
+
 
 /* ---------- Product grid ---------- */
 #shop .products{
@@ -1694,10 +1679,7 @@ footer a{
     flex:1 1 auto !important;
     width:auto !important;
   }
-  #shop .tools select{
-    flex:0 0 34% !important;
-    min-width:0 !important;
-  }
+
 }
 
 @media(max-width:600px){
@@ -1753,10 +1735,7 @@ footer a{
     padding:8px 0 7px !important;
   }
   #shop .search,
-  #shop .tools select{
-    height:32px !important;
-    font-size:10px !important;
-  }
+
   #shop .products{
     gap:27px 12px !important;
   }
@@ -2742,13 +2721,13 @@ textarea{
 #shop .lux-tabs button{appearance:none;position:relative;flex:0 0 auto;margin:0;padding:0 0 10px;border:0;background:transparent;color:#78716C;font-family:"Inter","Montserrat",Arial,sans-serif;font-size:.62rem;font-weight:600;line-height:1;letter-spacing:.18em;text-transform:uppercase;white-space:nowrap;cursor:pointer}
 #shop .lux-tabs button.active{color:#1C1917}
 #shop .lux-tabs button.active::after{content:"";position:absolute;left:0;right:0;bottom:0;height:1px;background:#B89758}
-#shop .lux-tools{display:flex;align-items:center;gap:10px;flex:0 0 auto}
+
 #shop .lux-search{position:relative;width:230px;height:40px;min-width:0;display:block;overflow:hidden}
 #shop .lux-search-icon{position:absolute;left:13px;top:50%;z-index:2;width:16px!important;height:16px!important;min-width:16px;min-height:16px;transform:translateY(-50%);display:grid;place-items:center;color:#8A8177;pointer-events:none}
 #shop .lux-search-icon svg{display:block!important;width:16px!important;height:16px!important;max-width:16px!important;max-height:16px!important;min-width:16px;min-height:16px;box-sizing:border-box;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round}
 #shop .lux-search-input,#shop .lux-price-select{height:40px;box-sizing:border-box;border:1px solid #E4D8C5;border-radius:0;background:rgba(255,255,255,.58);color:#1C1917;font-family:"Inter","Montserrat",Arial,sans-serif;font-size:.68rem;line-height:1;outline:none}
 #shop .lux-search-input{display:block;width:100%;min-width:0;padding:0 12px 0 46px!important;margin:0;line-height:40px}
-#shop .lux-price-select{width:124px;padding:0 10px}
+
 #shop .lux-search-input::placeholder{color:#918980}
 #shop .lux-search-input:focus,#shop .lux-price-select:focus{border-color:#B89758;box-shadow:0 0 0 2px rgba(184,151,88,.08)}
 #shop .lux-product-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));column-gap:24px;row-gap:44px;width:100%}
@@ -2797,11 +2776,11 @@ textarea{
 #shop{padding:28px 14px 56px}
 #shop .lux-catalog-toolbar{display:block;margin:0 0 24px}
 #shop .lux-tabs{gap:28px;margin:0 0 18px}
-#shop .lux-tools{width:100%;gap:10px}
+
 #shop .lux-search{flex:1 1 auto;width:auto;min-width:0;max-width:none}
 #shop .lux-search-icon{left:13px;width:16px!important;height:16px!important}
 #shop .lux-search-input{padding-left:46px!important}
-#shop .lux-price-select{flex:0 0 108px;width:108px}
+
 #shop .lux-product-grid{grid-template-columns:repeat(2,minmax(0,1fr));column-gap:14px;row-gap:30px}
 #shop .lux-item-title{font-size:1.08rem}
 #shop .lux-item-cat{font-size:.51rem}
@@ -2821,11 +2800,11 @@ textarea{
 
 /* FINAL ALIGNMENT FIX: catalog controls stay on-grid at every viewport */
 #shop .lux-catalog-toolbar{display:flex !important;flex-direction:column !important;align-items:stretch !important;gap:16px !important;}
-#shop .lux-tools{display:grid !important;grid-template-columns:minmax(0,1fr) 150px !important;gap:10px !important;align-items:stretch !important;}
+
 #shop .lux-search{width:100% !important;min-width:0 !important;}
 #shop .lux-search-input,#shop .lux-price-select{width:100% !important;min-width:0 !important;height:42px !important;box-sizing:border-box !important;}
 @media(max-width:430px){
-  #shop .lux-tools{grid-template-columns:minmax(0,1fr) 112px !important;gap:8px !important;}
+
   #shop .lux-search-input,#shop .lux-price-select{height:40px !important;}
 }
 /* ==========================================================================
@@ -2886,14 +2865,7 @@ textarea{
   font-weight:600;
   border-bottom-color:#B38E5D;
 }
-#shop .lux-tools{
-  width:100%;
-  min-width:0;
-  display:grid;
-  grid-template-columns:minmax(0,1fr) 220px;
-  gap:12px;
-  margin-top:18px;
-}
+
 #shop .lux-search{
   position:relative;
   display:flex;
@@ -2943,18 +2915,7 @@ textarea{
   font-weight:400;
 }
 #shop .lux-search-input::placeholder{color:#9A928B;opacity:1}
-#shop .lux-price-select{
-  width:100%;
-  min-width:0;
-  height:48px;
-  padding:0 14px;
-  border:1px solid #DED5C8;
-  outline:0;
-  background:#FBF9F5;
-  color:#1C1917;
-  font-family:"Montserrat",Arial,sans-serif!important;
-  font-size:13px;
-}
+
 #shop .lux-price-select:focus{border-color:#B38E5D}
 #shop .lux-product-grid{
   width:100%;
@@ -3149,23 +3110,9 @@ textarea{
   }
   #shop .lux-tabs button:first-child{padding-left:0;padding-right:15px}
   /* Mobile search + price filter: matched compact luxury controls */
-  #shop .lux-tools{
-    align-items:center;
-    grid-template-columns:minmax(0,1fr) 110px;
-    gap:8px;
-    margin-top:14px;
-  }
+
   #shop .lux-search,
-  #shop .lux-price-select{
-    height:34px;
-    min-height:34px;
-    max-height:34px;
-    box-sizing:border-box;
-    border:1px solid rgba(215,204,185,.8);
-    border-radius:2px;
-    background:#FFFFFF;
-    color:#2C2825;
-  }
+
   #shop .lux-search{
     padding:0 8px;
   }
@@ -3191,13 +3138,7 @@ textarea{
     background:transparent;
     color:#2C2825;
   }
-  #shop .lux-price-select{
-    width:110px;
-    padding:0 10px;
-    font-size:11.5px;
-    line-height:32px;
-    letter-spacing:.02em;
-  }
+
   #shop .lux-product-grid{
     grid-template-columns:repeat(2,minmax(0,1fr));
     gap:30px 12px;
@@ -3224,9 +3165,9 @@ textarea{
 }
 @media(max-width:360px){
   #shop .lux-catalog-container{padding-inline:12px}
-  #shop .lux-tools{grid-template-columns:minmax(0,1fr) 98px}
+
   #shop .lux-search-input{font-size:11px}
-  #shop .lux-price-select{font-size:10px}
+
   #shop .lux-product-grid{gap-inline:10px}
 }.drape-editorial-inner{
   width:min(1080px,100%);
@@ -4037,32 +3978,16 @@ footer .brand b{
     margin-bottom:7px !important;
   }
 
-  #shop .lux-tools{
-    gap:6px !important;
-    margin:0 !important;
-    padding:0 !important;
-  }
+
 
   #shop .lux-search-input,
-  #shop .lux-price-select{
-    height:32px !important;
-    min-height:32px !important;
-    box-sizing:border-box !important;
-    border:1px solid #E5DFD7 !important;
-    border-radius:0 !important;
-    background:#FAF8F5 !important;
-    font-size:11px !important;
-    line-height:32px !important;
-  }
+
 
   #shop .lux-search-input{
     padding-left:40px !important;
   }
 
-  #shop .lux-price-select{
-    width:108px !important;
-    padding:0 8px !important;
-  }
+
 
   /* True compact two-column catalog. */
   #shop .products,
@@ -4576,17 +4501,7 @@ footer .brand b{
   width:100% !important;
 }
 #shop .search,
-#shop .tools select{
-  box-sizing:border-box !important;
-  height:44px !important;
-  min-height:44px !important;
-  border:1px solid #DCCFBC !important;
-  border-radius:0 !important;
-  background:#FBF9F6 !important;
-  color:#292521 !important;
-  box-shadow:none !important;
-  font:400 14px/1.2 inherit !important;
-}
+
 #shop .search{
   flex:1 1 0 !important;
   width:auto !important;
@@ -4600,30 +4515,18 @@ footer .brand b{
   font-size:14px !important;
   line-height:1.2 !important;
 }
-#shop .tools select{
-  flex:0 0 34% !important;
-  width:34% !important;
-  min-width:0 !important;
-  padding:0 12px !important;
-  font-size:14px !important;
-  line-height:1.2 !important;
-}
-#shop .search:focus-within,
-#shop .tools select:focus{
-  outline:none !important;
-  border-color:#BDA57C !important;
-  box-shadow:0 0 0 2px rgba(189,165,124,.12) !important;
-}
+
+
 @media(max-width:900px){
   #shop .tools{gap:12px !important;width:100% !important;}
   #shop .search{flex:1 1 0 !important;width:auto !important;}
-  #shop .tools select{flex:0 0 34% !important;width:34% !important;}
+
 }
 @media(max-width:600px){
   #shop .search,
-  #shop .tools select{height:44px !important;min-height:44px !important;font-size:13px !important;}
+
   #shop .search input{font-size:13px !important;}
-  #shop .tools select{padding:0 9px !important;}
+
 }
 
 /* Consistent navigation: all three links use plain text styling, no mixed decorations. */
@@ -13537,16 +13440,20 @@ if ("serviceWorker" in navigator) {
 </html>
 
 <style id="ssv-catalog-reset-responsive-fix">
-/* Editorial luxury catalogue controls. Keep this styling isolated to the shop toolbar. */
+/* Authoritative Editorial Luxury rules for catalogue controls.
+   Layout, sizing and responsive placement live here; keep other shop styles untouched. */
 #shop .lux-tools{
   display:grid!important;
   grid-template-columns:minmax(180px,1fr) 180px auto!important;
   align-items:center!important;
   gap:12px!important;
+  width:100%!important;
+  min-width:0!important;
 }
-#shop .lux-search{width:100%!important;min-width:0!important;}
-#shop .lux-search,
-#shop .lux-price-select{
+#shop .lux-search{
+  display:flex!important;
+  width:100%!important;
+  min-width:0!important;
   height:42px!important;
   box-sizing:border-box!important;
   border:1px solid #E4D8C5!important;
@@ -13555,13 +13462,31 @@ if ("serviceWorker" in navigator) {
   color:#1C1917!important;
   box-shadow:none!important;
 }
+#shop .lux-search-input{
+  min-width:0!important;
+  box-sizing:border-box!important;
+  color:#1C1917!important;
+}
+#shop .lux-search-input::placeholder{color:#918980!important;opacity:1!important}
+#shop .lux-price-select{
+  width:100%!important;
+  min-width:0!important;
+  height:42px!important;
+  box-sizing:border-box!important;
+  padding:0 12px!important;
+  border:1px solid #E4D8C5!important;
+  border-radius:0!important;
+  background:rgba(255,255,255,.58)!important;
+  color:#1C1917!important;
+  box-shadow:none!important;
+  font-family:"Montserrat",Arial,sans-serif!important;
+}
 #shop .lux-search:focus-within,
 #shop .lux-price-select:focus-visible{
   border-color:#C8B28A!important;
   outline:1px solid rgba(200,178,138,.24)!important;
   outline-offset:1px!important;
 }
-#shop .lux-price-select{width:100%!important;min-width:0!important;padding:0 12px!important;}
 #shop .lux-reset-button{
   display:inline-flex!important;align-items:center!important;justify-content:center!important;
   gap:7px!important;min-width:44px!important;height:42px!important;padding:0 4px 0 8px!important;
@@ -13576,7 +13501,6 @@ if ("serviceWorker" in navigator) {
 #shop .lux-reset-button:focus-visible{color:#1C1917!important;border-bottom-color:#C8B28A!important;outline:none!important}
 @media(max-width:760px){
   #shop .lux-tools{
-    display:grid!important;
     grid-template-columns:minmax(0,1fr) max-content!important;
     grid-template-rows:auto auto!important;
     gap:8px!important;
@@ -13586,20 +13510,23 @@ if ("serviceWorker" in navigator) {
     grid-column:1/-1!important;grid-row:1!important;
     width:100%!important;min-width:0!important;height:42px!important;
   }
+  #shop .lux-search-input{height:100%!important;font-size:13px!important;line-height:normal!important;padding-left:42px!important}
+  #shop .lux-search-icon{left:14px!important;top:50%!important;transform:translateY(-50%)!important;width:18px!important;height:18px!important;flex:0 0 18px!important}
+  #shop .lux-search-icon svg{width:18px!important;height:18px!important}
   #shop .lux-price-select{
     grid-column:1!important;grid-row:2!important;
     justify-self:stretch!important;width:100%!important;min-width:0!important;
-    height:42px!important;font-size:11px!important;
+    height:42px!important;font-size:12px!important;
   }
   #shop .lux-reset-button{
     grid-column:2!important;grid-row:2!important;
     justify-self:end!important;height:42px!important;
-    padding:0 2px 0 8px!important;font-size:10px!important;letter-spacing:.04em!important;
+    padding:0 2px 0 8px!important;font-size:11px!important;letter-spacing:.02em!important;
   }
 }
 @media(max-width:360px){
   #shop .lux-tools{gap:6px!important}
-  #shop .lux-reset-button{gap:5px!important;font-size:9px!important}
+  #shop .lux-reset-button{gap:5px!important}
 }
 </style>
 
