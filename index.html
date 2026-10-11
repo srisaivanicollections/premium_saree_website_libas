@@ -13036,6 +13036,31 @@ if ("serviceWorker" in navigator) {
   }
 }
 
+/* Ensure the discount is not clipped by earlier no-wrap/overflow rules. */
+@media (max-width: 600px) {
+  #shop .lux-pricing-block {
+    display: flex !important;
+    flex-flow: row wrap !important;
+    min-width: 0 !important;
+    max-width: calc(100% - 24px) !important;
+    overflow: visible !important;
+    white-space: normal !important;
+  }
+  #shop .lux-price-current,
+  #shop .lux-price-original {
+    flex: 0 0 auto !important;
+    white-space: nowrap !important;
+  }
+  #shop .lux-price-discount {
+    display: inline-block !important;
+    flex: 0 0 auto !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    overflow: visible !important;
+    white-space: nowrap !important;
+  }
+}
+
 /* Mobile */
 @media (max-width: 600px) {
   #shop.lux-catalog-section,
