@@ -13537,26 +13537,46 @@ if ("serviceWorker" in navigator) {
 </html>
 
 <style id="ssv-catalog-reset-responsive-fix">
-/* Catalogue-only reset control and responsive alignment. Reuses existing storefront palette. */
-#shop .lux-tools{grid-template-columns:minmax(0,1fr) 180px auto!important;align-items:stretch!important;}
-#shop .lux-reset-button{
-  display:inline-flex;align-items:center;justify-content:center;gap:8px;
-  min-width:94px;height:48px;box-sizing:border-box;padding:0 14px;
-  border:1px solid #DED5C8;border-radius:0;background:#FBF9F5;color:#1C1917;
-  font-family:"Montserrat",Arial,sans-serif;font-size:13px;font-weight:500;
-  line-height:1;white-space:nowrap;cursor:pointer;
+/* Premium catalogue controls: quiet, aligned and consistent with the existing ivory/champagne storefront. */
+#shop .lux-tools{
+  display:grid!important;
+  grid-template-columns:minmax(180px,1fr) 180px auto!important;
+  align-items:center!important;
+  gap:12px!important;
 }
-#shop .lux-reset-button svg{display:block;width:15px;height:15px;flex:0 0 15px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
-#shop .lux-reset-button:hover,#shop .lux-reset-button:focus-visible{border-color:#B38E5D;outline:none}
+#shop .lux-search{width:100%!important;min-width:0!important;}
+#shop .lux-search,#shop .lux-price-select{
+  height:42px!important;
+  box-sizing:border-box!important;
+  border:1px solid #E4D8C5!important;
+  border-radius:0!important;
+  background:rgba(255,255,255,.58)!important;
+  color:#1C1917!important;
+}
+#shop .lux-price-select{width:100%!important;min-width:0!important;padding:0 12px!important;}
+#shop .lux-reset-button{
+  display:inline-flex!important;align-items:center!important;justify-content:center!important;
+  gap:7px!important;min-width:0!important;height:42px!important;padding:0 4px 0 8px!important;
+  border:0!important;border-bottom:1px solid transparent!important;border-radius:0!important;
+  background:transparent!important;color:#6F6252!important;
+  font-family:"Montserrat",Arial,sans-serif!important;font-size:11px!important;
+  font-weight:500!important;letter-spacing:.06em!important;line-height:1!important;
+  white-space:nowrap!important;cursor:pointer!important;
+}
+#shop .lux-reset-button svg{display:block!important;width:13px!important;height:13px!important;flex:0 0 13px!important;fill:none!important;stroke:currentColor!important;stroke-width:1.6!important;stroke-linecap:round!important;stroke-linejoin:round!important}
+#shop .lux-reset-button:hover,#shop .lux-reset-button:focus-visible{color:#1C1917!important;border-bottom-color:#C8B28A!important;outline:none!important}
 @media(max-width:760px){
-  #shop .lux-tools{grid-template-columns:minmax(0,1fr) auto!important;gap:8px!important;align-items:stretch!important}
-  #shop .lux-search{grid-column:1/-1!important;width:100%!important;min-width:0!important}
-  #shop .lux-price-select{grid-column:1!important;width:100%!important;min-width:0!important;height:40px!important}
-  #shop .lux-reset-button{grid-column:2!important;min-width:96px;height:40px;padding:0 12px;font-size:12px}
+  #shop .lux-tools{
+    display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;
+    gap:8px!important;align-items:center!important;
+  }
+  #shop .lux-search{grid-column:1/-1!important;width:100%!important;min-width:0!important;height:38px!important;}
+  #shop .lux-price-select{grid-column:1!important;width:100%!important;height:38px!important;font-size:11px!important;}
+  #shop .lux-reset-button{grid-column:2!important;height:38px!important;padding:0 2px 0 8px!important;font-size:10px!important;letter-spacing:.04em!important;}
 }
 @media(max-width:360px){
   #shop .lux-tools{gap:6px!important}
-  #shop .lux-reset-button{min-width:84px;padding:0 8px;gap:5px}
+  #shop .lux-reset-button{gap:5px!important;font-size:9px!important}
 }
 </style>
 
