@@ -9758,7 +9758,7 @@ function validateProductInput(product){
   if(!product||!Number.isSafeInteger(Number(product.id))||Number(product.id)<=0) throw new Error("Invalid product ID.");
   const name=String(product.name||"").trim();
   if(!name||name.length>120) throw new Error("Product name must be 1-120 characters.");
-  if(!["Sarees","Dresses"].includes(String(product.category||""))) throw new Error("Invalid product category.");
+  if(!["Sarees","Dresses","Jewelry"].includes(String(product.category||""))) throw new Error("Invalid product category.");
   const price=Number(product.price);
   if(!Number.isFinite(price)||price<=0||price>10000000) throw new Error("Invalid product price.");
   if(product.originalPrice!==undefined){
@@ -9890,7 +9890,8 @@ function apply(){
   }
   all("a[href*=\"instagram.com\"]").forEach(a=>a.href=settings.instagram||"https://www.instagram.com/sri_sai_vani_collections/");
 }
-function renderTabs(){$("#tabs").innerHTML=["Sarees","Dresses"].map(c=>'<button class="'+(category===c?"active":"")+'" data-tab="'+c+'">'+c.toUpperCase()+"</button>").join("")}
+function isCategoryEnabled(name){const key=({Sarees:"categorySareesEnabled",Dresses:"categoryDressesEnabled",Jewelry:"categoryJewelryEnabled"})[String(name||"").trim()];return !key||settings[key]!==false}
+function renderTabs(){const enabled=["Sarees","Dresses","Jewelry"].filter(isCategoryEnabled);if(category!=="All"&&!enabled.includes(category))category="All";$("#tabs").innerHTML=enabled.map(c=>'<button class="'+(category===c?"active":"")+'" data-tab="'+c+'">'+c.toUpperCase()+"</button>").join("")}
 function render(){
   renderTabs();
   const grid=$("#products");
@@ -9911,7 +9912,7 @@ function render(){
       !q ||
       String(p.name||"").toLowerCase().includes(q) ||
       productCategory.includes(q);
-    return matchesCollection && matchesSearch;
+    return isCategoryEnabled(p.category) && matchesCollection && matchesSearch;
   });
   const isNewArrival=p=>p.newArrival===true||p.newArrival==="true"||p.newArrival===1||p.newArrival==="1";
   const isBestSeller=p=>p.bestSeller===true||p.bestSeller==="true"||p.bestSeller===1||p.bestSeller==="1";
@@ -10030,7 +10031,7 @@ function form(p={}){
   const price=esc(p.price??"");
   const original=esc(p.originalPrice??"");
   const image=esc(p.image||"");
-  return '<div class="admin-row"><input id="fName" maxlength="120" placeholder="Product name" value="'+name+'"><select id="fCat"><option value="Sarees" '+(p.category==="Sarees"?"selected":"")+'>Sarees</option><option value="Dresses" '+(p.category==="Dresses"?"selected":"")+'>Dresses</option></select></div><div class="admin-row"><input id="fColor" maxlength="40" placeholder="Colour (e.g. Pink, Maroon, Green)" value="'+esc(p.color||"")+'"><input id="fPrice" type="number" min="1" step="1" placeholder="Price" value="'+price+'"><input id="fOriginal" type="number" min="1" step="1" placeholder="Original price" value="'+original+'"></div><div class="upload-row"><input id="fImage" maxlength="1000" placeholder="Image path or URL" value="'+image+'"><input id="fFile" type="file" accept="image/jpeg,image/png,image/webp,image/gif"></div><div class="admin-image-preview-wrap"><img id="fImagePreview" class="admin-image-preview" src="'+(image?esc(productImageSrc(p.image)):'')+'" alt="Selected product preview" '+(image?'':'hidden')+'><span id="fImagePreviewEmpty" '+(image?'hidden':'')+'>IMAGE PREVIEW</span></div><label><input id="fNew" type="checkbox" '+(p.newArrival?"checked":"")+'> New arrival</label> <label><input id="fBest" type="checkbox" '+(p.bestSeller?"checked":"")+'> Best seller</label> <label><input id="fAvail" type="checkbox" '+(p.availability!==false?"checked":"")+'> Available</label><br><br><button type="button" class="btn dark" id="saveItem">'+(p.id?"SAVE CHANGES":"SAVE ITEM")+'</button>'+(p.id?' <button type="button" class="danger" id="deleteItem">DELETE ITEM</button>':"");
+  return '<div class="admin-row"><input id="fName" maxlength="120" placeholder="Product name" value="'+name+'"><select id="fCat"><option value="Sarees" '+(p.category==="Sarees"?"selected":"")+'>Sarees</option><option value="Dresses" '+(p.category==="Dresses"?"selected":"")+'>Dresses</option><option value="Jewelry" '+(p.category==="Jewelry"?"selected":"")+'>Jewelry</option></select></div><div class="admin-row"><input id="fColor" maxlength="40" placeholder="Colour (e.g. Pink, Maroon, Green)" value="'+esc(p.color||"")+'"><input id="fPrice" type="number" min="1" step="1" placeholder="Price" value="'+price+'"><input id="fOriginal" type="number" min="1" step="1" placeholder="Original price" value="'+original+'"></div><div class="upload-row"><input id="fImage" maxlength="1000" placeholder="Image path or URL" value="'+image+'"><input id="fFile" type="file" accept="image/jpeg,image/png,image/webp,image/gif"></div><div class="admin-image-preview-wrap"><img id="fImagePreview" class="admin-image-preview" src="'+(image?esc(productImageSrc(p.image)):'')+'" alt="Selected product preview" '+(image?'':'hidden')+'><span id="fImagePreviewEmpty" '+(image?'hidden':'')+'>IMAGE PREVIEW</span></div><label><input id="fNew" type="checkbox" '+(p.newArrival?"checked":"")+'> New arrival</label> <label><input id="fBest" type="checkbox" '+(p.bestSeller?"checked":"")+'> Best seller</label> <label><input id="fAvail" type="checkbox" '+(p.availability!==false?"checked":"")+'> Available</label><br><br><button type="button" class="btn dark" id="saveItem">'+(p.id?"SAVE CHANGES":"SAVE ITEM")+'</button>'+(p.id?' <button type="button" class="danger" id="deleteItem">DELETE ITEM</button>':"");
 }
 function updateStudioNav(activeView){
   all("[data-view]").forEach(btn=>{
@@ -10141,6 +10142,9 @@ function showView(v){
       area('Description','heroDescription','From wedding sarees to modern festive styles, find something special for every celebration.')+
       field('Primary button label','heroButtonText','Explore Collection')+
       field('Hero image URL or site path','heroImage','assets/hero-banner.webp?v=20261006')+'</div></details>'+
+      '<details class="admin-settings-group"><summary>Category Management</summary><div class="admin-settings-grid">'+
+      '<p class="admin-settings-help">Disabled categories are hidden from the storefront. Their products and settings are preserved and can be restored by enabling the category again.</p>'+
+      '<div class="admin-settings-toggles">'+toggle("Enable Sarees category","categorySareesEnabled")+toggle("Enable Dresses category","categoryDressesEnabled")+toggle("Enable Jewelry category","categoryJewelryEnabled")+'</div></details>'+
       '<details class="admin-settings-group"><summary>Catalogue</summary><div class="admin-settings-grid">'+
       field('Search placeholder','searchPlaceholder','Search collection')+
       area('Empty catalogue message','emptyCatalogText','Try another search or browse the full collection.')+
@@ -10803,7 +10807,7 @@ window.addEventListener("pageshow",()=>{
 });
 
 all("[data-view]").forEach(b=>b.onclick=()=>showView(b.dataset.view));
-document.addEventListener("click",async e=>{const t=e.target.closest("[data-tab]");if(t){category=t.dataset.tab;catalogPage=0;render()}const c=e.target.closest("[data-cat]");if(c){category=c.dataset.cat;catalogPage=0;$("#nav").classList.remove("open");render()}const eb=e.target.closest(".edit");if(eb)edit(Number(eb.dataset.id));if(e.target.id==="saveSettings"){
+document.addEventListener("click",async e=>{const t=e.target.closest("[data-tab]");if(t){if(!isCategoryEnabled(t.dataset.tab))return;category=t.dataset.tab;catalogPage=0;render()}const c=e.target.closest("[data-cat]");if(c){if(!isCategoryEnabled(c.dataset.cat))return;category=c.dataset.cat;catalogPage=0;$("#nav").classList.remove("open");render()}const eb=e.target.closest(".edit");if(eb)edit(Number(eb.dataset.id));if(e.target.id==="saveSettings"){
   e.preventDefault();
   const nextSettings={
     name:$("#setName").value.trim()||"SRI SAI VANI",
