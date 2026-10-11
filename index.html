@@ -13576,12 +13576,26 @@ if ("serviceWorker" in navigator) {
 #shop .lux-reset-button:focus-visible{color:#1C1917!important;border-bottom-color:#C8B28A!important;outline:none!important}
 @media(max-width:760px){
   #shop .lux-tools{
-    display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;
-    gap:8px!important;align-items:center!important;
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr) max-content!important;
+    grid-template-rows:auto auto!important;
+    gap:8px!important;
+    align-items:center!important;
   }
-  #shop .lux-search{grid-column:1/-1!important;width:100%!important;min-width:0!important;height:42px!important;}
-  #shop .lux-price-select{grid-column:1!important;width:100%!important;height:42px!important;font-size:11px!important;}
-  #shop .lux-reset-button{grid-column:2!important;height:42px!important;padding:0 2px 0 8px!important;font-size:10px!important;letter-spacing:.04em!important;}
+  #shop .lux-search{
+    grid-column:1/-1!important;grid-row:1!important;
+    width:100%!important;min-width:0!important;height:42px!important;
+  }
+  #shop .lux-price-select{
+    grid-column:1!important;grid-row:2!important;
+    justify-self:stretch!important;width:100%!important;min-width:0!important;
+    height:42px!important;font-size:11px!important;
+  }
+  #shop .lux-reset-button{
+    grid-column:2!important;grid-row:2!important;
+    justify-self:end!important;height:42px!important;
+    padding:0 2px 0 8px!important;font-size:10px!important;letter-spacing:.04em!important;
+  }
 }
 @media(max-width:360px){
   #shop .lux-tools{gap:6px!important}
