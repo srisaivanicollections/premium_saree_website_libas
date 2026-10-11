@@ -9986,6 +9986,8 @@ function render(){
     pager.setAttribute("aria-label","Product pages");
     grid.insertAdjacentElement("afterend",pager);
   }
+  const catalogSection=$("#shop");
+  if(catalogSection)catalogSection.classList.toggle("catalog-no-pagination",pageCount<=1);
   if(pageCount>1){
     pager.innerHTML='<button type="button" class="catalog-page-arrow" data-page="'+Math.max(0,catalogPage-1)+'" aria-label="Previous page" '+(catalogPage===0?'disabled':'')+'>‹</button>'+
       '<span class="catalog-page-label">'+String(catalogPage+1).padStart(2,"0")+' / '+String(pageCount).padStart(2,"0")+'</span>'+
@@ -11170,6 +11172,9 @@ if(catalogReset)catalogReset.onclick=()=>{
 <style id="catalog-pagination-style-20261009">
 #catalog-pagination.catalog-pagination{display:flex;align-items:center;justify-content:center;gap:14px;margin:28px auto 8px;padding:8px 0;color:#332b24}
 #catalog-pagination[hidden]{display:none!important}
+@media(max-width:600px){
+  #shop.catalog-no-pagination{padding-bottom:36px}
+}
 #catalog-pagination .catalog-page-progress{width:84px;height:3px;overflow:hidden;border-radius:999px;background:#E8DED1}
 #catalog-pagination .catalog-page-progress span{display:block;height:100%;border-radius:inherit;background:#A77B45;transition:width .25s ease}
 #catalog-pagination .catalog-page-arrow{width:30px;height:30px;display:flex;align-items:center;justify-content:center;border:1px solid #D8C9B2;border-radius:50%;background:transparent;color:#332b24;font-size:20px;line-height:1;cursor:pointer}
