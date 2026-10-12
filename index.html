@@ -10107,7 +10107,7 @@ async function listUnusedImageFiles(){
     const dir=pending.pop();
     if(visited.has(dir))continue;
     visited.add(dir);
-    const result=await githubRequest("/repos/"+GITHUB_REPO+"/contents/"+dir+"?ref="+encodeURIComponent(GITHUB_BRANCH)+"&scan="+Date.now());
+    const result=await githubRequest("/repos/"+GITHUB_REPO+"/contents/"+dir+"?ref="+encodeURIComponent(GITHUB_BRANCH)+"&scan="+Date.now()).catch(error=>{if(error.status===404)return [];throw error;});
     if(!Array.isArray(result))throw new Error("Could not verify unused-image folder: "+dir);
     for(const item of result){
       if(item.type==="dir"&&isSafeUnusedImagePath(item.path+"/placeholder"))pending.push(item.path);
