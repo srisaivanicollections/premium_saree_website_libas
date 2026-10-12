@@ -576,6 +576,8 @@ async function verifyProductPersistence(product){
   if(!saved) throw new Error("GitHub saved the change, but the product could not be verified.");
   if(String(saved.name||"").trim()!==String(product.name||"").trim()) throw new Error("Product verification failed.");
   if(String(saved.image||"").trim()!==String(product.image||"").trim()) throw new Error("Product image verification failed.");
+  if(!saved.dateAdded||!Number.isFinite(Date.parse(saved.dateAdded))) throw new Error("Product date could not be verified.");
+  if(String(saved.dateAdded)!==String(product.dateAdded)) throw new Error("Product date verification failed.");
   return latest.value;
 }
 
@@ -606,6 +608,12 @@ async function saveProduct(id){
     // Build from the existing Git-backed product when editing so unrelated
     // fields are never accidentally erased by an Admin form update.
     const existing=id?products.find(x=>Number(x.id)===Number(id)):null;
+    // Every Admin Studio save must leave a valid creation timestamp. Preserve
+    // an existing valid date; backfill older products that have no valid date.
+    const existingDate=existing?.dateAdded;
+    const hasValidDate=typeof existingDate==="string"&&Number.isFinite(Date.parse(existingDate));
+    const dateAdded=hasValidDate?existingDate:new Date().toISOString();
+    const dateWasAdded=!hasValidDate;
 
     if(file){
       if(file.size>5*1024*1024)throw new Error("Image must be 5MB or smaller.");
@@ -625,7 +633,7 @@ async function saveProduct(id){
 
     const p={
       ...(existing||{}),
-      ...(!existing?{dateAdded:new Date().toISOString()}:{}),
+      dateAdded,
       id:id?Number(id):nextProductId(),
       name,
       category:categoryValue,
@@ -653,7 +661,10 @@ async function saveProduct(id){
     // and no static-file fallback can resurrect or remove products.
     await load();
     showView("products");
-    showAdminToast(id?"Product updated successfully.":"Product added successfully.","success");
+    const successMessage=id
+      ?(dateWasAdded?"Product updated successfully. Missing date added.":"Product updated successfully.")
+      :"Product added successfully. Date recorded.";
+    showAdminToast(successMessage,"success");
   }catch(e){
     products=oldProducts;
     render();
