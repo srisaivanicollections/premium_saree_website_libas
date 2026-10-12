@@ -10460,14 +10460,14 @@ async function imageHasKnownReferences(path){
   ]);
   if(!Array.isArray(c.value)||!st.value||typeof st.value!=="object"||!html?.content)return true;
   const contains=(v,seen=new Set())=>{if(v===path)return true;if(!v||typeof v!=="object"||seen.has(v))return false;seen.add(v);return Object.values(v).some(x=>contains(x,seen));};
-  const source=new TextDecoder().decode(Uint8Array.from(atob(String(html.content).replace(/\\s/g,"")),ch=>ch.charCodeAt(0)));
+  const source=new TextDecoder().decode(Uint8Array.from(atob(String(html.content).replace(/\s/g,"")),ch=>ch.charCodeAt(0)));
   // Inspect rendered markup attributes and CSS only. Do not treat comments,
   // arbitrary JavaScript strings, or documentation examples as live references.
   const doc=new DOMParser().parseFromString(source,"text/html");
   const attrReference=Array.from(doc.querySelectorAll("[src],[href],[srcset],[style]")).some(el=>{
    for(const name of ["src","href","srcset","style"]){
     const value=el.getAttribute(name)||"";
-    if(value.split(/[\\s,]+/).some(part=>part===path||part.startsWith(path+"?")||part.startsWith(path+"#")))return true;
+    if(value.split(/[\s,]+/).some(part=>part===path||part.startsWith(path+"?")||part.startsWith(path+"#")))return true;
     if(name==="style"&&value.includes(path))return true;
    }
    return false;
