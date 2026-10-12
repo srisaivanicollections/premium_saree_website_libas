@@ -1,5 +1,18 @@
 [
   {
+    "id": 1791810958129,
+    "name": "Colour Saree",
+    "category": "Sarees",
+    "color": "",
+    "price": 1000,
+    "originalPrice": 2000,
+    "image": "assets/products/1791810953423-b4f80114d9aa-file_00000000c1688211ba7f1a315f7f44ec.png",
+    "dateAdded": "2026-10-12T13:15:58.129Z",
+    "newArrival": true,
+    "bestSeller": true,
+    "availability": true
+  },
+  {
     "id": 1791751897314,
     "name": "Blue frock",
     "category": "Dresses",
