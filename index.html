@@ -10345,12 +10345,25 @@ function nextProductId(){
 }
 
 async function verifyProductPersistence(product){
-  const latest=await githubReadJson("data/products.json");
+  // Use a cache-busted GitHub Contents API read, independent of the write response.
+  const latest=await githubReadJsonFresh("data/products.json");
   const list=Array.isArray(latest.value)?latest.value:[];
-  const saved=list.find(p=>Number(p.id)===Number(product.id));
-  if(!saved) throw new Error("GitHub saved the change, but the product could not be verified.");
-  if(String(saved.name||"").trim()!==String(product.name||"").trim()) throw new Error("Product verification failed.");
-  if(String(saved.image||"").trim()!==String(product.image||"").trim()) throw new Error("Product image verification failed.");
+  const matches=list.filter(item=>Number(item.id)===Number(product.id));
+  if(matches.length!==1){
+    throw new Error("Save may have succeeded, but verification found "+matches.length+" copies of this product. Refresh and check before retrying.");
+  }
+  const saved=matches[0];
+  const fields=["name","category","image","color","price","originalPrice","newArrival","bestSeller","availability","dateAdded"];
+  for(const field of fields){
+    const expected=product[field];
+    const actual=saved[field];
+    if(expected===undefined && actual===undefined) continue;
+    if(field==="color" && expected===undefined && (actual===undefined || actual==="")) continue;
+    const equal=(typeof expected==="number" || typeof actual==="number")
+      ? Number(actual)===Number(expected)
+      : JSON.stringify(actual)===JSON.stringify(expected);
+    if(!equal) throw new Error("Save may have succeeded, but verification failed for the "+field+" field. Refresh and check before retrying.");
+  }
   return latest.value;
 }
 
@@ -10363,6 +10376,8 @@ async function saveProduct(id){
     btn.textContent="SAVING...";
   }
   const oldProducts=products.slice();
+  let writeReportedSuccess=false;
+  let writeResponseProducts=null;
   try{
     const name=$("#fName").value.trim();
     const categoryValue=$("#fCat").value;
@@ -10419,8 +10434,12 @@ async function saveProduct(id){
     // against each other with stale GitHub file SHAs.
     const write=async()=>{
       const result=await persistProduct(p);
-      if(!Array.isArray(result?.products)) throw new Error("GitHub saved the product but did not return the updated catalogue. Refresh before retrying.");
-      products=result.products;
+      if(!Array.isArray(result?.products)) throw new Error("GitHub did not confirm the product write. Refresh and check the catalogue before retrying.");
+      writeReportedSuccess=true;
+      writeResponseProducts=result.products;
+      // Never treat the write response alone as proof of persistence.
+      const verifiedProducts=await verifyProductPersistence(p);
+      products=verifiedProducts;
       githubOriginalIds=new Set(products.map(x=>Number(x.id)));
       render();
     };
@@ -10429,12 +10448,21 @@ async function saveProduct(id){
     showView("products");
     showAdminToast(id?"Product updated successfully.":"Product added successfully.","success");
   }catch(e){
-    products=oldProducts;
-    render();
-    if(uploadedImagePath){
-      try{await api({action:"deleteImage",password:adminPassword,path:uploadedImagePath});}catch(cleanupError){console.warn("Uploaded image cleanup failed:",cleanupError);}
+    // If the write returned successfully but read-back verification failed, do
+    // not delete an uploaded image or repeat the write: the product may exist.
+    if(writeReportedSuccess){
+      if(Array.isArray(writeResponseProducts)) products=writeResponseProducts;
+      githubOriginalIds=new Set(products.map(x=>Number(x.id)));
+      render();
+      showAdminToast("Save may have succeeded, but could not be independently confirmed. Refresh the catalogue and check before retrying. "+(e?.message||""),"error");
+    }else{
+      products=oldProducts;
+      render();
+      if(uploadedImagePath){
+        try{await api({action:"deleteImage",password:adminPassword,path:uploadedImagePath});}catch(cleanupError){console.warn("Uploaded image cleanup failed:",cleanupError);}
+      }
+      showAdminToast("Could not save product. "+(e?.message||"Please try again."),"error");
     }
-    showAdminToast("Could not save product. "+(e?.message||"Please try again."),"error");
   }finally{
     if(btn){
       btn.disabled=false;
