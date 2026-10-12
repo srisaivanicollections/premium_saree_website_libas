@@ -9746,37 +9746,62 @@ async function removeLegacyInstagramEmbed(){
 }
 async function load(){
   removeLegacyInstagramEmbed();
+
+  // Load products independently: a settings failure must never discard valid products.
   try{
-    // Storefront reads are PUBLIC. They must never depend on an Admin GitHub
-    // token or GitHub API rate-limit. Admin credentials are only required for
-    // CRUD/settings writes.
-    const [pr,sr]=await Promise.all([
-      loadPublicJson("data/products.json"),
-      loadPublicJson("data/settings.json")
-    ]);
+    const pr=await loadPublicJson("data/products.json");
     if(!Array.isArray(pr.value)||pr.value.length===0) throw new Error("Empty Git-backed catalog.");
     products=pr.value;
     githubOriginalIds=new Set(products.map(p=>Number(p.id)));
-    settings=(sr.value&&typeof sr.value==="object")?{...sr.value}:{};
-    delete settings.githubToken;
-    apply();
-    render();
-return true;
   }catch(e){
-    console.error("Public catalog load failed:",e);
-    if(Array.isArray(products)&&products.length){
+    console.error("Public product catalogue load failed:",e);
+    if(!Array.isArray(products)||!products.length){
+      products=[];
+    }
+  }
+
+  // Settings are optional for product rendering. Keep safe defaults if their
+  // request fails, then continue to render any successfully loaded products.
+  try{
+    const sr=await loadPublicJson("data/settings.json");
+    settings=(sr.value&&typeof sr.value==="object")?{...sr.value}:{};
+  }catch(e){
+    console.error("Public storefront settings could not be loaded; using defaults:",e);
+    settings={name:"SRI SAI VANI",whatsapp:"",instagram:"https://www.instagram.com/sri_sai_vani_collections/"};
+  }
+  delete settings.githubToken;
+
+  try{
+    apply();
+  }catch(e){
+    console.error("Storefront settings could not be applied:",e);
+  }
+
+  if(Array.isArray(products)&&products.length){
+    try{
       render();
+      return true;
+    }catch(e){
+      console.error("Product catalogue rendering failed:",e);
+      const grid=$("#products");
+      if(grid){
+        grid.style.display="grid";
+        grid.style.minHeight="96px";
+        grid.innerHTML='<div class="lux-empty"><strong>Catalogue could not be displayed</strong><br><span>Please refresh in a moment.</span></div>';
+      }
       return false;
     }
-    products=[];
-    settings={name:"SRI SAI VANI",whatsapp:"",instagram:"https://www.instagram.com/sri_sai_vani_collections/"};
-    apply();
-    // Keep category navigation available even when both product sources fail.
-    renderTabs();
-    const grid=$("#products");
-    if(grid)grid.innerHTML='<div class="lux-empty"><strong>Collection temporarily unavailable</strong><br><span>Please refresh in a moment.</span></div>';
-    return false;
   }
+
+  // Only show unavailable state when the product source itself failed.
+  try{renderTabs();}catch(e){console.error("Catalogue tabs could not be rendered:",e);}
+  const grid=$("#products");
+  if(grid){
+    grid.style.display="grid";
+    grid.style.minHeight="96px";
+    grid.innerHTML='<div class="lux-empty"><strong>Collection temporarily unavailable</strong><br><span>Please refresh in a moment.</span></div>';
+  }
+  return false;
 }
 function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 function cleanProductName(value){
