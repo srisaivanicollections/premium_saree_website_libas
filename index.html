@@ -9446,6 +9446,8 @@ function getSavedGithubToken(){
    This also protects older cached page instances from a missing global binding. */
 window.getSavedGithubToken=getSavedGithubToken;
 let products=[],settings={},category="Sarees",adminPassword="",githubOriginalIds=new Set();
+// Settings may only be edited after a successful authoritative GitHub read.
+let settingsAuthoritativeLoaded=false;
 let settingsFormBaseline={};
 let catalogPage=0;
 const CATALOG_PAGE_SIZE=20;
@@ -9667,14 +9669,28 @@ async function localApi(body){
   }
   if(body.action==="deleteImage"){
     const path=String(body.path||"");
-    if(!/^assets\/products\/[a-zA-Z0-9._-]+$/.test(path)) throw new Error("Invalid image path.");
-    const file=await githubRequest("/repos/"+GITHUB_REPO+"/contents/"+path);
-    if(!file?.sha) throw new Error("Image was not found in GitHub.");
-    await githubRequest("/repos/"+GITHUB_REPO+"/contents/"+path,{
-      method:"DELETE",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({message:"Remove unused product image",sha:file.sha,branch:GITHUB_BRANCH})
-    });
+    const activeImagePath=/^assets\/products\/[a-zA-Z0-9._-]+$/.test(path);
+    if(!activeImagePath&&!isSafeUnusedImagePath(path)) throw new Error("Invalid image path.");
+    // Recheck references at the destructive-operation boundary. Quarantined files are handled by explicit Danger Zone confirmation.
+    if(!path.startsWith("assets/products/_unused/")&&await imageHasKnownReferences(path))throw new Error("Image is still referenced or its reference status could not be verified.");
+    const file=await githubRequest("/repos/"+GITHUB_REPO+"/contents/"+path+"?ref="+encodeURIComponent(GITHUB_BRANCH)+"&deleteCheck="+Date.now());
+    if(!file?.sha||file.type!=="file") throw new Error("Image was not found on the configured branch.");
+    if(body.expectedSha&&body.expectedSha!==file.sha)throw new Error("Image changed since it was selected. Refresh the list and try again.");
+    await githubRequest("/repos/"+GITHUB_REPO+"/contents/"+path,{method:"DELETE",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:"Remove unused product image",sha:file.sha,branch:GITHUB_BRANCH})});
+    let after;
+    try{
+      after=await githubRequest("/repos/"+GITHUB_REPO+"/contents/"+path+"?ref="+encodeURIComponent(GITHUB_BRANCH)+"&verifyDelete="+Date.now());
+    }catch(error){
+      if(error.status===404)return {ok:true};
+      // Retry transient verification failures before surfacing an uncertain outcome.
+      try{after=await githubRequest("/repos/"+GITHUB_REPO+"/contents/"+path+"?ref="+encodeURIComponent(GITHUB_BRANCH)+"&verifyDeleteRetry="+Date.now());}
+      catch(retryError){if(retryError.status===404)return {ok:true};const uncertain=new Error("Deletion outcome is uncertain because GitHub could not verify the final state. Refresh the list before retrying.");uncertain.uncertain=true;throw uncertain;}
+    }
+    if(after&&after.sha){
+      // One more fresh read protects against a stale response immediately after DELETE.
+      try{const finalCheck=await githubRequest("/repos/"+GITHUB_REPO+"/contents/"+path+"?ref="+encodeURIComponent(GITHUB_BRANCH)+"&verifyDeleteFinal="+Date.now());if(finalCheck?.sha)throw new Error("GitHub still reports the image after deletion.");}
+      catch(finalError){if(finalError.status===404)return {ok:true};if(finalError.message==="GitHub still reports the image after deletion.")throw finalError;const uncertain=new Error("Deletion was submitted, but the final verification request failed. Refresh the list before retrying.");uncertain.uncertain=true;throw uncertain;}
+    }
     return {ok:true};
   }
   throw new Error("Unknown action");
@@ -10106,11 +10122,146 @@ function updateStudioNav(activeView){
   });
 }
 
+const UNUSED_IMAGE_CLEANUP_THRESHOLD_BYTES=100*1000*1000;
+const UNUSED_IMAGE_FOLDER="assets/products/_unused";
+function isSupportedUnusedImageFile(path){return typeof path==="string"&&/\.(?:jpe?g|png|webp|gif)$/i.test(path);}
+function isSafeUnusedImagePath(path){
+  if(typeof path!=="string"||!path.startsWith(UNUSED_IMAGE_FOLDER+"/"))return false;
+  const parts=path.split("/");
+  return parts[0]==="assets"&&parts[1]==="products"&&parts[2]==="_unused"&&parts.length>3&&parts.slice(3).every(part=>/^[a-zA-Z0-9._-]+$/.test(part)&&part!=="."&&part!=="..");
+}
+async function listUnusedImageFiles(){
+  const found=[];
+  const pending=[UNUSED_IMAGE_FOLDER];
+  const visited=new Set();
+  while(pending.length){
+    const dir=pending.pop();
+    if(visited.has(dir))continue;
+    visited.add(dir);
+    const result=await githubRequest("/repos/"+GITHUB_REPO+"/contents/"+dir+"?ref="+encodeURIComponent(GITHUB_BRANCH)+"&scan="+Date.now()).catch(error=>{if(error.status===404)return [];throw error;});
+    if(!Array.isArray(result))throw new Error("Could not verify unused-image folder: "+dir);
+    for(const item of result){
+      if(item.type==="dir"&&isSafeUnusedImagePath(item.path+"/placeholder"))pending.push(item.path);
+      else if(item.type==="file"&&isSafeUnusedImagePath(item.path)&&isSupportedUnusedImageFile(item.path)&&item.sha&&Number.isFinite(Number(item.size))&&Number(item.size)>0)found.push(item);
+    }
+  }
+  return found;
+}
+let unusedImageCleanupInProgress=false;
+async function autoCleanupUnusedImagesIfThreshold(){
+  if(unusedImageCleanupInProgress)throw new Error("Unused-image cleanup is already running.");
+  unusedImageCleanupInProgress=true;
+  let checked=0,deleted=0,totalBytes=0,triggered=false;
+  const failed=[],uncertain=[];
+  try{
+    // Re-scan after each batch so files added during cleanup are not silently left
+    // above the limit. A bounded retry prevents an endless loop if files keep arriving.
+    for(let pass=0;pass<3;pass++){
+      const files=await listUnusedImageFiles();
+      totalBytes=files.reduce((sum,file)=>sum+Number(file.size||0),0);
+      if(totalBytes<UNUSED_IMAGE_CLEANUP_THRESHOLD_BYTES||files.length===0)return {checked,totalBytes,deleted,triggered,failed,uncertain};
+      triggered=true;checked+=files.length;
+      for(const file of files){
+        try{
+          const fresh=await githubRequest("/repos/"+GITHUB_REPO+"/contents/"+file.path+"?ref="+encodeURIComponent(GITHUB_BRANCH)+"&autoCleanupCheck="+Date.now());
+          if(!fresh?.sha||fresh.type!=="file"||Number(fresh.size)<=0||!isSupportedUnusedImageFile(file.path))throw new Error("File changed or is not a supported image.");
+          const result=await api({action:"deleteImage",path:file.path,expectedSha:fresh.sha});
+          if(!result?.ok)throw new Error("GitHub did not confirm deletion.");
+          deleted++;
+        }catch(e){
+          (e?.uncertain?uncertain:failed).push(file.path+": "+(e.message||"delete failed"));
+          return {checked,totalBytes,deleted,triggered,failed,uncertain};
+        }
+      }
+    }
+    const remaining=await listUnusedImageFiles();
+    totalBytes=remaining.reduce((sum,file)=>sum+Number(file.size||0),0);
+    if(totalBytes>=UNUSED_IMAGE_CLEANUP_THRESHOLD_BYTES)failed.push("The unused-image folder is still at or above 100 MB after three scans.");
+    return {checked,totalBytes,deleted,triggered,failed,uncertain};
+  }finally{unusedImageCleanupInProgress=false;}
+}
+async function renderImageDangerZone(){
+  const section=$("#studioBody")?.querySelector("#imageDangerZone");if(!section)return;
+  const scan=section.querySelector("#scanUnusedImages"),cleanup=section.querySelector("#cleanupUnusedImages"),status=section.querySelector("#unusedImageStatus"),count=section.querySelector("#unusedImageCount");
+  const say=(t,bad=false)=>{status.textContent=t;status.style.color=bad?"#a32121":"";};
+  const formatMB=bytes=>(bytes/1000000).toLocaleString(undefined,{maximumFractionDigits:1})+" MB";
+  const refreshCount=async()=>{
+    if(unusedImageCleanupInProgress)return;
+    scan.disabled=true;cleanup.disabled=true;say("Checking unused-image count…");
+    try{
+      let files=await listUnusedImageFiles();
+      let totalBytes=files.reduce((sum,file)=>sum+Number(file.size||0),0);
+      let result=null;
+      if(totalBytes>=UNUSED_IMAGE_CLEANUP_THRESHOLD_BYTES){
+        say("100 MB threshold reached. Automatically cleaning unused images…");
+        result=await autoCleanupUnusedImagesIfThreshold();
+        files=await listUnusedImageFiles();
+        totalBytes=files.reduce((sum,file)=>sum+Number(file.size||0),0);
+      }
+      count.textContent=files.length+" images · "+formatMB(totalBytes)+" / 100 MB";
+      cleanup.disabled=totalBytes<UNUSED_IMAGE_CLEANUP_THRESHOLD_BYTES;
+      if(result&&(result.failed.length||result.uncertain.length))say(result.deleted+" deleted before cleanup stopped. "+(result.failed[0]||result.uncertain[0])+" Refresh the count before retrying.",true);
+      else if(result?.triggered)say(result.deleted+" unused image(s) automatically deleted at the 100 MB threshold.");
+      else if(files.length===0)say("The unused folder is empty.");
+      else say("Cleanup runs automatically when supported unused images reach 100 MB. Refreshing the count does not delete files below the threshold.");
+    }catch(e){
+      count.textContent="Count unavailable";cleanup.disabled=true;
+      say("Could not verify or clean the unused folder safely. "+(e.message||""),true);
+    }finally{scan.disabled=unusedImageCleanupInProgress;}
+  };
+  scan.onclick=refreshCount;
+  cleanup.onclick=async()=>{
+    if(unusedImageCleanupInProgress)return;
+    try{
+      const files=await listUnusedImageFiles();
+      const totalBytes=files.reduce((sum,file)=>sum+Number(file.size||0),0);
+      count.textContent=files.length+" images · "+formatMB(totalBytes)+" / 100 MB";
+      if(totalBytes<UNUSED_IMAGE_CLEANUP_THRESHOLD_BYTES){cleanup.disabled=true;say("Cleanup threshold is not reached. No files were deleted.");return;}
+      if(!confirm("Delete all "+files.length+" supported image files inside assets/products/_unused/ ("+formatMB(totalBytes)+")? Active product images outside this folder will not be touched."))return;
+      cleanup.disabled=true;scan.disabled=true;say("Cleanup in progress…");
+      const result=await autoCleanupUnusedImagesIfThreshold();
+      const remaining=await listUnusedImageFiles();
+      const remainingBytes=remaining.reduce((sum,file)=>sum+Number(file.size||0),0);
+      count.textContent=remaining.length+" images · "+formatMB(remainingBytes)+" / 100 MB";
+      if(result.failed.length||result.uncertain.length)say(result.deleted+" deleted before cleanup stopped. "+(result.failed[0]||result.uncertain[0])+" Refresh the count before trying again.",true);
+      else say(result.triggered?result.deleted+" unused image(s) deleted.":"Threshold not reached; no files deleted.");
+    }catch(e){say("Cleanup could not be completed safely. "+(e.message||"Refresh the count before retrying."),true);}
+    finally{scan.disabled=false;await refreshCount();}
+  };
+  await refreshCount();
+}
 function showView(v){
   updateStudioNav(v);
   const studio=$("#studio");
   if(studio)studio.classList.toggle("admin-view-add",v==="add");
   const b=$("#studioBody");
+  if(v==="settings"&&!settingsAuthoritativeLoaded){
+    b.innerHTML='<section class="admin-settings-group" role="status" aria-live="polite" style="padding:20px"><h3>Settings are read-only</h3><p>The latest website settings could not be verified from GitHub. No default values will be saved. Retry the settings read to safely unlock editing.</p><button type="button" class="btn dark" id="retryAuthoritativeSettings">RETRY SETTINGS READ</button><p id="retryAuthoritativeSettingsStatus" role="status" aria-live="polite"></p></section>';
+    const retry=$("#retryAuthoritativeSettings");
+    retry.onclick=async()=>{
+      if(retry.disabled)return;
+      retry.disabled=true;
+      retry.textContent="CHECKING GITHUB...";
+      const status=$("#retryAuthoritativeSettingsStatus");
+      if(status)status.textContent="Reading the latest settings…";
+      try{
+        const fresh=await githubReadJsonFresh("data/settings.json");
+        if(!fresh.value||typeof fresh.value!=="object"||Array.isArray(fresh.value))throw new Error("GitHub returned invalid settings.");
+        settings={...fresh.value};
+        delete settings.githubToken;
+        settingsAuthoritativeLoaded=true;
+        apply();
+        showView("settings");
+        showAdminToast("Latest website settings loaded. Editing is now enabled.","success");
+      }catch(error){
+        settingsAuthoritativeLoaded=false;
+        if(status)status.textContent="Settings are still locked. "+(error?.message||"GitHub could not verify settings. Try again later.");
+        retry.disabled=false;
+        retry.textContent="RETRY SETTINGS READ";
+      }
+    };
+    return;
+  }
   if(v==="products"){
     const productCounts={total:products.length,newArrival:products.filter(p=>p.newArrival).length,bestSeller:products.filter(p=>p.bestSeller).length,available:products.filter(p=>p.availability!==false).length};
     const knownColors=["Black","Blue","Brown","Gold","Green","Grey","Ivory","Maroon","Multi-colour","Orange","Pink","Purple","Red","Silver","White","Yellow"];
@@ -10250,12 +10401,13 @@ function showView(v){
       '</div></details>'+
       '<details class="admin-settings-group"><summary>Section Visibility</summary><div class="admin-settings-toggles">'+
       toggle('Show customer reviews section','showReviews')+toggle('Show Visual Journal section','showJournal')+toggle('Show store details section','showStore')+
-      '</div></details><button type="button" class="btn dark" id="saveSettings">SAVE ALL WEBSITE SETTINGS</button></div>';
+      '</div></details><button type="button" class="btn dark" id="saveSettings">SAVE ALL WEBSITE SETTINGS</button><section id="imageDangerZone" class="admin-settings-group" style="padding:16px;border:1px solid var(--line);margin-top:18px"><h3>Unused Image Cleanup</h3><p>Supported image files in <code>assets/products/_unused/</code> are counted by total file size. When the folder reaches 100 MB, its unused images are automatically deleted. Active product images outside this folder are never included.</p><p id="unusedImageCount" role="status" aria-live="polite">Checking count…</p><button type="button" class="btn dark" id="scanUnusedImages">REFRESH COUNT</button> <button type="button" class="btn dark" id="cleanupUnusedImages" disabled>CLEAN UNUSED IMAGES</button><p id="unusedImageStatus" role="status" aria-live="polite"></p></section></div>';
     settingsFormBaseline={};
     all("#studioBody [data-setting-key]").forEach(input=>{settingsFormBaseline[input.dataset.settingKey]=input.type==="checkbox"?input.checked:input.value.trim();});
     settingsFormBaseline.name=$("#setName")?.value.trim()||"SRI SAI VANI";
     {const digits=String(settings.whatsapp||"").replace(/\D/g,"").replace(/^91(?=\d{10}$)/,"").slice(-10);settingsFormBaseline.whatsapp=digits.length===10?"91"+digits:"";}
     settingsFormBaseline.instagram=$("#setIg")?.value.trim()||"";
+    renderImageDangerZone();
   }
 }
 function edit(id){
@@ -10428,6 +10580,81 @@ async function verifyProductPersistence(product,latestRead=null){
   }
   return latest.value;
 }
+async function verifyUploadedImageAccessible(path){
+ if(!/^assets\/products\/[a-zA-Z0-9._-]+$/.test(String(path||"")))return false;
+ const f=await githubRequest("/repos/"+GITHUB_REPO+"/contents/"+path+"?ref="+encodeURIComponent(GITHUB_BRANCH)+"&verify="+Date.now());
+ return !!(f&&f.type==="file"&&f.sha&&Number(f.size)>0&&f.download_url);
+}
+async function imageHasKnownReferences(path){
+ if(!path)return true;
+ try{
+  const [c,st,html]=await Promise.all([
+   githubReadJsonFresh("data/products.json"),
+   githubReadJsonFresh("data/settings.json"),
+   githubRequest("/repos/"+GITHUB_REPO+"/contents/index.html?ref="+encodeURIComponent(GITHUB_BRANCH)+"&referenceCheck="+Date.now())
+  ]);
+  if(!Array.isArray(c.value)||!st.value||typeof st.value!=="object"||!html?.content)return true;
+  const contains=(v,seen=new Set())=>{if(v===path)return true;if(!v||typeof v!=="object"||seen.has(v))return false;seen.add(v);return Object.values(v).some(x=>contains(x,seen));};
+  const source=new TextDecoder().decode(Uint8Array.from(atob(String(html.content).replace(/\s/g,"")),ch=>ch.charCodeAt(0)));
+  // Inspect rendered markup attributes and CSS only. Do not treat comments,
+  // arbitrary JavaScript strings, or documentation examples as live references.
+  const doc=new DOMParser().parseFromString(source,"text/html");
+  const attrReference=Array.from(doc.querySelectorAll("[src],[href],[srcset],[style]")).some(el=>{
+   for(const name of ["src","href","srcset","style"]){
+    const value=el.getAttribute(name)||"";
+    if(value.split(/[\s,]+/).some(part=>part===path||part.startsWith(path+"?")||part.startsWith(path+"#")))return true;
+    if(name==="style"&&value.includes(path))return true;
+   }
+   return false;
+  });
+  const cssReference=Array.from(doc.querySelectorAll("style")).some(el=>el.textContent.includes("url("+path+")")||el.textContent.includes("url('"+path+"')")||el.textContent.includes('url("'+path+'")'));
+  return c.value.some(p=>contains(p))||contains(st.value)||attrReference||cssReference;
+ }catch(e){console.warn("Could not prove image is unreferenced; retaining it:",e);return true;}
+}
+async function cleanupReplacedImage(oldPath,newPath){
+ if(!oldPath||oldPath===newPath||!/^assets\/products\/[a-zA-Z0-9._-]+$/.test(oldPath))return {moved:false,reason:"not eligible"};
+ try{if(!(await verifyUploadedImageAccessible(newPath)))return {moved:false,reason:"new image verification failed"};const latest=await githubReadJsonFresh("data/products.json");if(!Array.isArray(latest.value)||!latest.value.some(p=>String(p.image||"").trim()===newPath))return {moved:false,reason:"replacement is not confirmed in the saved catalogue"};}catch(e){return {moved:false,reason:"replacement or catalogue verification failed"};}
+ if(await imageHasKnownReferences(oldPath))return {moved:false,reason:"still referenced or reference check inconclusive"};
+ try{return await quarantineUploadedImage(oldPath);}catch(e){console.warn("Old image move failed:",e);return {moved:false,reason:e.message||"Could not move old image"};}
+}
+async function quarantineUploadedImage(path){
+ if(!/^assets\/products\/[a-zA-Z0-9._-]+$/.test(String(path||"")))return {moved:false,reason:"invalid product image path"};
+ if(await imageHasKnownReferences(path))return {moved:false,reason:"image is referenced or reference status is unknown"};
+ const source=await githubRequest("/repos/"+GITHUB_REPO+"/contents/"+path+"?ref="+encodeURIComponent(GITHUB_BRANCH)+"&quarantineSource="+Date.now());
+ if(!source||source.type!=="file"||!source.sha||!source.download_url||Number(source.size)<=0)return {moved:false,reason:"source image could not be verified"};
+ // The Contents API may omit inline Base64 for files larger than 1 MB. Download
+ // raw bytes and encode in chunks to support the existing 5 MB upload limit.
+ let encoded;
+ try{
+  const response=await fetch(source.download_url,{cache:"no-store"});
+  if(!response.ok)throw new Error("Raw image download failed ("+response.status+").");
+  const bytes=new Uint8Array(await response.arrayBuffer());
+  if(bytes.byteLength!==Number(source.size))throw new Error("Downloaded image size does not match GitHub metadata.");
+  let binary="";for(let offset=0;offset<bytes.length;offset+=0x8000)binary+=String.fromCharCode(...bytes.subarray(offset,Math.min(offset+0x8000,bytes.length)));
+  encoded=btoa(binary);
+ }catch(e){return {moved:false,reason:"could not safely read image bytes: "+(e.message||"download failed")};}
+ const base=path.split("/").pop();let destination="assets/products/_unused/"+base;
+ for(let n=1;n<=20;n++){const check=await githubRequest("/repos/"+GITHUB_REPO+"/contents/"+destination+"?ref="+encodeURIComponent(GITHUB_BRANCH)+"&destinationCheck="+Date.now()).catch(error=>{if(error.status===404)return null;throw error;});if(!check)break;const dot=base.lastIndexOf(".");destination="assets/products/_unused/"+(dot>0?base.slice(0,dot)+"-"+n+base.slice(dot):base+"-"+n);}
+ const collision=await githubRequest("/repos/"+GITHUB_REPO+"/contents/"+destination+"?ref="+encodeURIComponent(GITHUB_BRANCH)+"&finalDestinationCheck="+Date.now()).catch(error=>{if(error.status===404)return null;throw error;});
+ if(collision)return {moved:false,reason:"could not find a unique quarantine filename"};
+ await githubRequest("/repos/"+GITHUB_REPO+"/contents/"+destination,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:"Quarantine unreferenced product image after failed save",content:encoded,branch:GITHUB_BRANCH})});
+ const copied=await githubRequest("/repos/"+GITHUB_REPO+"/contents/"+destination+"?ref="+encodeURIComponent(GITHUB_BRANCH)+"&verifyCopy="+Date.now());
+ if(copied?.type!=="file"||!copied.sha||Number(copied.size)!==Number(source.size)||!copied.download_url)return {moved:false,reason:"quarantine copy could not be verified; original retained"};
+ if(await imageHasKnownReferences(path))return {moved:false,reason:"image became referenced; both copies retained"};
+ const latestSource=await githubRequest("/repos/"+GITHUB_REPO+"/contents/"+path+"?ref="+encodeURIComponent(GITHUB_BRANCH)+"&sourceDeleteCheck="+Date.now());
+ if(!latestSource?.sha||latestSource.sha!==source.sha)return {moved:false,reason:"source changed during quarantine; both copies retained"};
+ await githubRequest("/repos/"+GITHUB_REPO+"/contents/"+path,{method:"DELETE",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:"Move unreferenced image to quarantine",sha:latestSource.sha,branch:GITHUB_BRANCH})});
+ const sourceAfter=await githubRequest("/repos/"+GITHUB_REPO+"/contents/"+path+"?ref="+encodeURIComponent(GITHUB_BRANCH)+"&verifyMove="+Date.now()).catch(error=>{if(error.status===404)return null;throw error;});
+ if(sourceAfter?.sha)return {moved:false,reason:"quarantine copy exists but source deletion could not be confirmed"};
+ // A verified quarantine can push the folder over 100 MB. Trigger cleanup
+ // immediately; cleanup failure must not turn a successful product save into failure.
+ try{
+   const cleanup=await autoCleanupUnusedImagesIfThreshold();
+   if(cleanup.failed.length||cleanup.uncertain.length)console.warn("Automatic unused-image cleanup stopped safely:",cleanup.failed[0]||cleanup.uncertain[0]);
+ }catch(cleanupError){console.warn("Automatic unused-image cleanup could not run:",cleanupError);}
+ return {moved:true,path:destination};
+}
+
 async function saveProduct(id){
   const btn=$("#saveItem");
   const originalText=btn?.textContent||"SAVE ITEM";
@@ -10441,6 +10668,7 @@ async function saveProduct(id){
   let writeReportedSuccess=false;
   let uploadedImagePath="";
   let productToSave=null;
+  let previousImagePath="";
   try{
     const name=$("#fName").value.trim();
     const categoryValue=$("#fCat").value;
@@ -10458,6 +10686,7 @@ async function saveProduct(id){
     // Build from the existing Git-backed product when editing so unrelated
     // fields are never accidentally erased by an Admin form update.
     const existing=id?products.find(x=>Number(x.id)===Number(id)):null;
+    previousImagePath=String(existing?.image||"").trim();
 
     if(file){
       if(file.size>5*1024*1024)throw new Error("Image must be 5MB or smaller.");
@@ -10502,17 +10731,22 @@ async function saveProduct(id){
       writeReportedSuccess=true;
       // Never treat the write response alone as proof of persistence.
       const verifiedProducts=await verifyProductPersistence(p);
+      if(uploadedImagePath && !(await verifyUploadedImageAccessible(uploadedImagePath))) throw new Error("Product save could not verify the new image in GitHub. The previous image was retained.");
       products=verifiedProducts;
       githubOriginalIds=new Set(products.map(x=>Number(x.id)));
       render();
     };
     catalogWriteQueue=catalogWriteQueue.then(write,write);
     await catalogWriteQueue;
+    let cleanupMessage="";
+    if(uploadedImagePath && previousImagePath && previousImagePath!==uploadedImagePath){const cleanup=await cleanupReplacedImage(previousImagePath,uploadedImagePath);if(!cleanup.moved)cleanupMessage=" Previous image retained: "+cleanup.reason+".";}
     showView("products");
-    showAdminToast(id?"Product updated successfully.":"Product added successfully.","success");
+    showAdminToast((id?"Product updated successfully.":"Product added successfully.")+(cleanupMessage?" "+cleanupMessage.replace(/^ Previous image retained: /,"The previous image was retained safely: "):""),"success");
   }catch(e){
     let latestProducts=null;
     let exactMatch=false;
+    let recordMatches=false;
+    let imageVerificationFailed=false;
     let targetMatches=[];
     let verificationSucceeded=false;
     if(writeAttempted && productToSave){
@@ -10525,7 +10759,12 @@ async function saveProduct(id){
           if(targetMatches.length===1){
             try{
               await verifyProductPersistence(productToSave,latest);
+              recordMatches=true;
               exactMatch=true;
+              if(uploadedImagePath){
+                try{if(!(await verifyUploadedImageAccessible(uploadedImagePath))){imageVerificationFailed=true;exactMatch=false;}}
+                catch(imageError){imageVerificationFailed=true;exactMatch=false;}
+              }
             }catch(_){
               exactMatch=false;
             }
@@ -10542,9 +10781,15 @@ async function saveProduct(id){
       render();
       showView("products");
       showAdminToast(id?"Product updated successfully.":"Product added successfully.","success");
-    }else if(writeReportedSuccess || (writeAttempted && (!verificationSucceeded || targetMatches.length>0))){
-      // A conflicting record or failed read is inconclusive. Keep the uploaded
-      // image and never repeat a write that may already have succeeded.
+    }else if(recordMatches&&imageVerificationFailed){
+      products=latestProducts;
+      githubOriginalIds=new Set(products.map(x=>Number(x.id)));
+      render();
+      showAdminToast("Product was saved, but the new image could not be verified. The previous image was retained. Check the image before retrying.","error");
+    }else if(writeReportedSuccess || (writeAttempted && (!verificationSucceeded || (targetMatches.length>0 && !oldProducts.some(old=>Number(old.id)===Number(productToSave?.id) && targetMatches.length===1 && JSON.stringify(old)===JSON.stringify(targetMatches[0])))))){
+      // A changed/conflicting record or failed read is inconclusive. An unchanged
+      // pre-edit record means the attempted edit was not persisted. Keep the uploaded
+      // image in place until the save outcome is explicitly resolved.
       if(Array.isArray(latestProducts)){
         products=latestProducts;
         githubOriginalIds=new Set(products.map(x=>Number(x.id)));
@@ -10552,24 +10797,11 @@ async function saveProduct(id){
       render();
       showAdminToast("Save may have succeeded, but could not be confirmed. Refresh the catalogue and check before retrying.","error");
     }else{
-      // Cleanup is safe only when a fresh read succeeded, the intended product
-      // is absent, and no product references the uploaded image.
-      if(Array.isArray(latestProducts)){
-        products=latestProducts;
-        githubOriginalIds=new Set(products.map(x=>Number(x.id)));
-      }else{
-        products=oldProducts;
-      }
+      if(Array.isArray(latestProducts)){products=latestProducts;githubOriginalIds=new Set(products.map(x=>Number(x.id)));}else{products=oldProducts;}
       render();
-      const imageIsReferenced=uploadedImagePath&&Array.isArray(latestProducts)&&latestProducts.some(item=>item.image===uploadedImagePath);
-      if(uploadedImagePath && writeAttempted && verificationSucceeded && targetMatches.length===0 && !imageIsReferenced){
-        try{await api({action:"deleteImage",password:adminPassword,path:uploadedImagePath});}
-        catch(cleanupError){console.warn("Uploaded image cleanup failed:",cleanupError);}
-      }else if(uploadedImagePath && !writeAttempted){
-        try{await api({action:"deleteImage",password:adminPassword,path:uploadedImagePath});}
-        catch(cleanupError){console.warn("Uploaded image cleanup failed:",cleanupError);}
-      }
-      showAdminToast("Could not save product. "+(e?.message||"Please try again."),"error");
+      let recoveryMessage=uploadedImagePath?" The uploaded image was retained for safety.":"";
+      if(uploadedImagePath&&writeAttempted)recoveryMessage=" The save outcome may be uncertain; both the previous image and uploaded image were retained. Verify the product before retrying.";
+      showAdminToast("Could not save product. "+(e?.message||"Please try again.")+recoveryMessage,"error");
     }
   }finally{
     if(btn){
@@ -10733,7 +10965,11 @@ async function connectGithubStorage(){
 
     // Validate the token against both Git-backed files before opening Admin Studio.
     await githubReadJson("data/products.json");
-    await githubReadJson("data/settings.json");
+    const settingsRead=await githubReadJsonFresh("data/settings.json");
+    if(!settingsRead.value||typeof settingsRead.value!=="object"||Array.isArray(settingsRead.value))throw new Error("GitHub settings are invalid. Settings editing remains locked.");
+    settings={...settingsRead.value};
+    delete settings.githubToken;
+    settingsAuthoritativeLoaded=true;
 
     otpAdminSession=true;
     adminSessionActive=true;
@@ -10889,29 +11125,33 @@ async function verifyAdminOtp(){
       return false;
     }
 
-    // Validate access, then refresh the Admin catalogue/settings from the
-    // latest GitHub commit before rendering the product list. Never rely on
-    // the public storefront's possibly stale in-memory catalogue after login.
+    // Load the catalogue independently from optional site settings. A transient
+    // settings read failure must not discard a valid product catalogue. Settings
+    // remain read-only until an authoritative GitHub read succeeds.
+    settingsAuthoritativeLoaded=false;
     try{
-      const [catalog,siteSettings]=await Promise.all([
-        githubReadJsonFresh("data/products.json"),
-        githubReadJsonFresh("data/settings.json")
-      ]);
-      if(!Array.isArray(catalog.value)||catalog.value.length===0){
-        throw new Error("GitHub product catalogue is empty or invalid.");
-      }
+      const catalog=await githubReadJsonFresh("data/products.json");
+      if(!Array.isArray(catalog.value)||catalog.value.length===0)throw new Error("GitHub product catalogue is empty or invalid.");
       products=catalog.value;
       githubOriginalIds=new Set(products.map(p=>Number(p.id)));
-      settings=(siteSettings.value&&typeof siteSettings.value==="object")?{...siteSettings.value}:{};
-      delete settings.githubToken;
-      apply();
-      render();
-    }catch(storageError){
-      setStorageStatus(
-        storageError?.message||"The latest GitHub catalogue could not be loaded on this device."
-      );
+    }catch(catalogError){
+      setStorageStatus(catalogError?.message||"The latest GitHub product catalogue could not be loaded on this device.");
       return false;
     }
+    try{
+      const siteSettings=await githubReadJsonFresh("data/settings.json");
+      if(!siteSettings.value||typeof siteSettings.value!=="object"||Array.isArray(siteSettings.value))throw new Error("GitHub settings are invalid.");
+      settings={...siteSettings.value};
+      settingsAuthoritativeLoaded=true;
+    }catch(settingsError){
+      console.warn("Admin settings could not be loaded; settings editing is locked until a fresh read succeeds:",settingsError);
+      settings={name:"SRI SAI VANI",whatsapp:"",instagram:"https://www.instagram.com/sri_sai_vani_collections/"};
+      settingsAuthoritativeLoaded=false;
+      setStorageStatus("Products loaded. Settings could not be refreshed. Settings editing is locked until you retry.",false);
+    }
+    delete settings.githubToken;
+    apply();
+    render();
 
     adminSessionActive=true;
     adminPassword="";
@@ -10934,6 +11174,7 @@ function logoutAdmin(){
   adminLogoutLock=true;
   adminSessionActive=false;
   otpAdminSession=false;
+  settingsAuthoritativeLoaded=false;
   otpAdminEmail="";
   closeAdminModal();
   resetOtpScreen();
@@ -10998,6 +11239,11 @@ window.addEventListener("pageshow",()=>{
 all("[data-view]").forEach(b=>b.onclick=()=>showView(b.dataset.view));
 document.addEventListener("click",async e=>{const t=e.target.closest("[data-tab]");if(t){if(!isCategoryEnabled(t.dataset.tab))return;category=t.dataset.tab;catalogPage=0;render()}const c=e.target.closest("[data-cat]");if(c){if(!isCategoryEnabled(c.dataset.cat))return;category=c.dataset.cat;catalogPage=0;$("#nav").classList.remove("open");render()}const eb=e.target.closest(".edit");if(eb)edit(Number(eb.dataset.id));if(e.target.id==="saveSettings"){
   e.preventDefault();
+  if(!settingsAuthoritativeLoaded){
+    showAdminToast("Settings are locked because the latest GitHub settings were not verified. Retry the settings read before editing.","error");
+    showView("settings");
+    return;
+  }
   const nextSettings={
     name:$("#setName").value.trim()||"SRI SAI VANI",
     whatsapp:(()=>{const digits=$("#setWa").value.replace(/\D/g,"").slice(0,10);return digits.length===10?"91"+digits:"";})(),
@@ -11010,14 +11256,19 @@ document.addEventListener("click",async e=>{const t=e.target.closest("[data-tab]
     else nextSettings[key]=input.value.trim();
   });
   delete nextSettings.githubToken;
-  const hasChanges=Object.entries(nextSettings).some(([key,value])=>JSON.stringify(value)!==JSON.stringify(settingsFormBaseline[key]));
-  if(!hasChanges){showAdminToast("No changes to save.","success");return;}
+  // Submit only fields the Admin actually changed. The backend re-reads the
+  // latest settings on every retry, so unrelated concurrent settings survive.
+  const changedSettings={};
+  for(const [key,value] of Object.entries(nextSettings)){
+    if(JSON.stringify(value)!==JSON.stringify(settingsFormBaseline[key]))changedSettings[key]=value;
+  }
+  if(!Object.keys(changedSettings).length){showAdminToast("No changes to save.","success");return;}
   const btn=e.target;
   const oldText=btn.textContent;
   btn.disabled=true;
   btn.textContent="SAVING...";
   try{
-    const saveSettingsOperation=async()=>api({action:"saveSettings",password:adminPassword,settings:nextSettings});
+    const saveSettingsOperation=async()=>api({action:"saveSettings",password:adminPassword,settings:changedSettings});
     settingsWriteQueue=settingsWriteQueue.then(saveSettingsOperation,saveSettingsOperation);
     const result=await settingsWriteQueue;
     if(!result?.settings) throw new Error("Settings were saved but could not be verified. Refresh before retrying.");
