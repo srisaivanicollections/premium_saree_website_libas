@@ -10944,6 +10944,8 @@ if(!window.__LIBAS_ADMIN_OTP_BOUND){
   },true);
   document.addEventListener("keydown",(e)=>{
     if(e.key==="Escape"&&$("#admin")&&!$("#admin").classList.contains("hidden")){
+      // Let the open confirmation dialog handle Escape before the Admin Studio can close.
+      if($("#admin .admin-confirm-overlay"))return;
       e.preventDefault();closeAdminModal();lastAdminTrigger?.focus?.();return;
     }
     trapAdminFocus(e);
