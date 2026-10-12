@@ -24,15 +24,21 @@ async function loadAuthoritativeCatalog(){
 async function githubRequest(path,options={}){
   const token=getSavedGithubToken();
   if(!token) throw new Error("GitHub storage is not connected. Enter a GitHub token in Admin Studio.");
-  const r=await fetch("https://api.github.com"+path,{...options,headers:{
-    "Accept":"application/vnd.github+json",
-    "Authorization":"Bearer "+token,
-    "X-GitHub-Api-Version":"2022-11-28",
-    ...(options.headers||{})
-  }});
+  let r;
+  try{
+    r=await fetch("https://api.github.com"+path,{...options,headers:{
+      "Accept":"application/vnd.github+json",
+      "Authorization":"Bearer "+token,
+      "X-GitHub-Api-Version":"2022-11-28",
+      ...(options.headers||{})
+    }});
+  }catch(_){
+    throw new Error("Network error while contacting GitHub. Check your connection and try again.");
+  }
   const d=await r.json().catch(()=>({}));
   if(!r.ok){
-    const error=new Error(d.message||"GitHub request failed");
+    const messages={401:"GitHub authentication failed. Reconnect a valid GitHub token.",403:"GitHub denied this action. Check token permissions and repository access.",404:"The GitHub file or repository was not found.",409:"GitHub reported a save conflict. Refresh the Admin Studio and try again.",422:"GitHub rejected the data. Check the product fields and try again.",429:"GitHub rate limit reached. Wait a moment and try again."};
+    const error=new Error(messages[r.status]||(r.status>=500?"GitHub is temporarily unavailable. Try again shortly.":(d.message||"GitHub request failed.")));
     error.status=r.status;
     throw error;
   }
@@ -157,23 +163,38 @@ async function localApi(body){
   const configuredSettings=configured.value&&typeof configured.value==="object"?configured.value:{};
   if(!otpAdminSession && !await verifyAdminPassword(String(body.password||""),configuredSettings)) throw new Error("Unauthorized");
   if(body.action==="saveProduct"){
-    const incoming=body.product;
-    validateProductInput(incoming);
+    let incoming={...(body.product||{})};
     const current=await githubReadJson("data/products.json");
     const list=Array.isArray(current.value)?current.value:[];
     const id=Number(incoming.id);
-    const exists=list.some(p=>Number(p.id)===id);
-    const merged=exists?list.map(p=>Number(p.id)===id?incoming:p):[incoming,...list];
+    const existing=list.find(p=>Number(p.id)===id);
+    if(body.isNew===true&&existing) throw new Error("A product with this ID already exists. Please try again.");
+    if(body.isNew===false&&!existing) throw new Error("This product no longer exists. Refresh the catalog and try again.");
+    if(existing){
+      const oldDate=existing.dateAdded;
+      if(typeof oldDate==="string"&&Number.isFinite(Date.parse(oldDate))) incoming.dateAdded=oldDate;
+      else delete incoming.dateAdded;
+    }else incoming.dateAdded=new Date().toISOString();
+    validateProductInput(incoming);
+    if(!existing&&(typeof incoming.dateAdded!=="string"||!Number.isFinite(Date.parse(incoming.dateAdded)))) throw new Error("A valid creation timestamp is required.");
+    const merged=existing?list.map(p=>Number(p.id)===id?incoming:p):[incoming,...list];
     if(!merged.length) throw new Error("Catalog safety check failed.");
     try{
-      await githubWriteJson("data/products.json",merged,current.sha,"Update product");
-    }catch(_){
+      await githubWriteJson("data/products.json",merged,current.sha,existing?"Update product":"Add product");
+    }catch(writeError){
+      if(writeError?.status!==409) throw writeError;
       const latest=await githubReadJson("data/products.json");
       const latestList=Array.isArray(latest.value)?latest.value:[];
-      const latestMerged=latestList.some(p=>Number(p.id)===id)
-        ?latestList.map(p=>Number(p.id)===id?incoming:p)
-        :[incoming,...latestList];
-      await githubWriteJson("data/products.json",latestMerged,latest.sha,"Retry product update");
+      const latestExisting=latestList.find(p=>Number(p.id)===id);
+      if(body.isNew===true&&latestExisting) throw new Error("A product with this ID already exists. Refresh and try again.");
+      if(body.isNew===false&&!latestExisting) throw new Error("This product no longer exists. Refresh the catalog and try again.");
+      if(latestExisting){
+        const oldDate=latestExisting.dateAdded;
+        if(typeof oldDate==="string"&&Number.isFinite(Date.parse(oldDate))) incoming.dateAdded=oldDate;
+        else delete incoming.dateAdded;
+      }
+      const latestMerged=latestExisting?latestList.map(p=>Number(p.id)===id?incoming:p):[incoming,...latestList];
+      await githubWriteJson("data/products.json",latestMerged,latest.sha,existing?"Retry product update":"Retry product creation");
     }
     return {ok:true};
   }
@@ -186,7 +207,8 @@ async function localApi(body){
     if(!merged.length) throw new Error("Catalog safety check failed.");
     try{
       await githubWriteJson("data/products.json",merged,current.sha,"Delete product");
-    }catch(_){
+    }catch(writeError){
+      if(writeError?.status!==409) throw writeError;
       const latest=await githubReadJson("data/products.json");
       const latestList=Array.isArray(latest.value)?latest.value:[];
       const latestMerged=latestList.filter(p=>Number(p.id)!==id);
@@ -205,6 +227,7 @@ async function localApi(body){
     try{
       await githubWriteJson("data/settings.json",merged,current.sha,"Update shop settings");
     }catch(writeError){
+      if(writeError?.status!==409) throw writeError;
       const latest=await githubReadJson("data/settings.json");
       const latestExisting=(latest.value&&typeof latest.value==="object")?latest.value:{};
       const retryMerged={...latestExisting,...incoming};
@@ -527,8 +550,8 @@ function edit(id){
     }
   };
 }
-async function persistProduct(product){
-  await api({action:"saveProduct",password:adminPassword,product});
+async function persistProduct(product,isNew){
+  await api({action:"saveProduct",password:adminPassword,product,isNew});
 }
 async function deleteProductFromGithub(id){
   const deleteOperation=async()=>{
@@ -576,8 +599,12 @@ async function verifyProductPersistence(product){
   if(!saved) throw new Error("GitHub saved the change, but the product could not be verified.");
   if(String(saved.name||"").trim()!==String(product.name||"").trim()) throw new Error("Product verification failed.");
   if(String(saved.image||"").trim()!==String(product.image||"").trim()) throw new Error("Product image verification failed.");
-  if(!saved.dateAdded||!Number.isFinite(Date.parse(saved.dateAdded))) throw new Error("Product date could not be verified.");
-  if(String(saved.dateAdded)!==String(product.dateAdded)) throw new Error("Product date verification failed.");
+  if(product.dateAdded){
+    if(!saved.dateAdded||!Number.isFinite(Date.parse(saved.dateAdded))) throw new Error("Product date could not be verified.");
+    if(String(saved.dateAdded)!==String(product.dateAdded)) throw new Error("Product date verification failed.");
+  }else if(saved.dateAdded&&Number.isFinite(Date.parse(saved.dateAdded))){
+    throw new Error("A creation date was unexpectedly added to a legacy product.");
+  }
   return latest.value;
 }
 
@@ -608,12 +635,11 @@ async function saveProduct(id){
     // Build from the existing Git-backed product when editing so unrelated
     // fields are never accidentally erased by an Admin form update.
     const existing=id?products.find(x=>Number(x.id)===Number(id)):null;
-    // Every Admin Studio save must leave a valid creation timestamp. Preserve
-    // an existing valid date; backfill older products that have no valid date.
+    // Creation gets a timestamp. Editing preserves a valid original timestamp;
+    // legacy products without a valid date remain undated.
     const existingDate=existing?.dateAdded;
     const hasValidDate=typeof existingDate==="string"&&Number.isFinite(Date.parse(existingDate));
-    const dateAdded=hasValidDate?existingDate:new Date().toISOString();
-    const dateWasAdded=!hasValidDate;
+    const dateAdded=id?(hasValidDate?existingDate:undefined):new Date().toISOString();
 
     if(file){
       if(file.size>5*1024*1024)throw new Error("Image must be 5MB or smaller.");
@@ -629,11 +655,12 @@ async function saveProduct(id){
       if(!up?.path)throw new Error("Image upload failed.");
       uploadedImagePath=up.path;
       image=up.path;
+      showAdminToast("Image uploaded successfully.","success");
     }
 
     const p={
       ...(existing||{}),
-      dateAdded,
+      ...(dateAdded?{dateAdded}:{}),
       id:id?Number(id):nextProductId(),
       name,
       category:categoryValue,
@@ -644,11 +671,12 @@ async function saveProduct(id){
       bestSeller:$("#fBest").checked,
       availability:$("#fAvail").checked
     };
+    if(id&&!hasValidDate) delete p.dateAdded;
 
     // Serialize catalog writes. Two rapid Admin operations must never race
     // against each other with stale GitHub file SHAs.
     const write=async()=>{
-      await persistProduct(p);
+      await persistProduct(p,!id);
       const verified=await verifyProductPersistence(p);
       products=verified;
       githubOriginalIds=new Set(products.map(x=>Number(x.id)));
@@ -661,10 +689,7 @@ async function saveProduct(id){
     // and no static-file fallback can resurrect or remove products.
     await load();
     showView("products");
-    const successMessage=id
-      ?(dateWasAdded?"Product updated successfully. Missing date added.":"Product updated successfully.")
-      :"Product added successfully. Date recorded.";
-    showAdminToast(successMessage,"success");
+    showAdminToast(id?"Product updated successfully.":"Product added successfully.","success");
   }catch(e){
     products=oldProducts;
     render();
@@ -927,9 +952,9 @@ document.addEventListener("click",async e=>{const t=e.target.closest("[data-tab]
     apply();
     render();
     showView("products");
-    alert("Settings saved successfully.");
+    showAdminToast("Settings saved successfully.","success");
   }catch(err){
-    alert(err?.message||"Settings could not be saved.");
+    showAdminToast("Settings could not be saved. "+(err?.message||"Please try again."),"error");
   }finally{
     btn.disabled=false;
     btn.textContent=oldText;
