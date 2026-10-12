@@ -9683,7 +9683,11 @@ async function localApi(body){
       try{after=await githubRequest("/repos/"+GITHUB_REPO+"/contents/"+path+"?ref="+encodeURIComponent(GITHUB_BRANCH)+"&verifyDeleteRetry="+Date.now());}
       catch(retryError){if(retryError.status===404)return {ok:true};throw new Error("Deletion was submitted, but GitHub could not confirm the final state. Refresh the list before retrying.");}
     }
-    if(after&&after.sha)throw new Error("GitHub still reports the image after deletion.");
+    if(after&&after.sha){
+      // One more fresh read protects against a stale response immediately after DELETE.
+      try{const finalCheck=await githubRequest("/repos/"+GITHUB_REPO+"/contents/"+path+"?ref="+encodeURIComponent(GITHUB_BRANCH)+"&verifyDeleteFinal="+Date.now());if(finalCheck?.sha)throw new Error("GitHub still reports the image after deletion.");}
+      catch(finalError){if(finalError.status===404)return {ok:true};throw finalError;}
+    }
     return {ok:true};
   }
   throw new Error("Unknown action");
