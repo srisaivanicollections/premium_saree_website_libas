@@ -9671,8 +9671,9 @@ async function localApi(body){
     const path=String(body.path||"");
     const activeImagePath=/^assets\/products\/[a-zA-Z0-9._-]+$/.test(path);
     if(!activeImagePath&&!isSafeUnusedImagePath(path)) throw new Error("Invalid image path.");
-    // Recheck references at the destructive-operation boundary. Quarantined files are handled by explicit Danger Zone confirmation.
-    if(!path.startsWith("assets/products/_unused/")&&await imageHasKnownReferences(path))throw new Error("Image is still referenced or its reference status could not be verified.");
+    // Protect active references even if a product record or page asset unexpectedly points into the archive.
+    // If references cannot be verified, imageHasKnownReferences fails closed and the deletion is blocked.
+    if(await imageHasKnownReferences(path))throw new Error("Image is still referenced or its reference status could not be verified.");
     const file=await githubRequest("/repos/"+GITHUB_REPO+"/contents/"+path+"?ref="+encodeURIComponent(GITHUB_BRANCH)+"&deleteCheck="+Date.now());
     if(!file?.sha||file.type!=="file") throw new Error("Image was not found on the configured branch.");
     if(body.expectedSha&&body.expectedSha!==file.sha)throw new Error("Image changed since it was selected. Refresh the list and try again.");
