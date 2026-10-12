@@ -9671,8 +9671,9 @@ async function localApi(body){
     const path=String(body.path||"");
     const activeImagePath=/^assets\/products\/[a-zA-Z0-9._-]+$/.test(path);
     if(!activeImagePath&&!isSafeUnusedImagePath(path)) throw new Error("Invalid image path.");
-    // Recheck references at the destructive-operation boundary. Quarantined files are handled by explicit Danger Zone confirmation.
-    if(!path.startsWith("assets/products/_unused/")&&await imageHasKnownReferences(path))throw new Error("Image is still referenced or its reference status could not be verified.");
+    // Protect active references even if a product record or page asset unexpectedly points into the archive.
+    // If references cannot be verified, imageHasKnownReferences fails closed and the deletion is blocked.
+    if(await imageHasKnownReferences(path))throw new Error("Image is still referenced or its reference status could not be verified.");
     const file=await githubRequest("/repos/"+GITHUB_REPO+"/contents/"+path+"?ref="+encodeURIComponent(GITHUB_BRANCH)+"&deleteCheck="+Date.now());
     if(!file?.sha||file.type!=="file") throw new Error("Image was not found on the configured branch.");
     if(body.expectedSha&&body.expectedSha!==file.sha)throw new Error("Image changed since it was selected. Refresh the list and try again.");
@@ -10122,7 +10123,6 @@ function updateStudioNav(activeView){
   });
 }
 
-const UNUSED_IMAGE_CLEANUP_THRESHOLD_BYTES=100*1000*1000;
 const UNUSED_IMAGE_FOLDER="assets/products/_unused";
 function isSupportedUnusedImageFile(path){return typeof path==="string"&&/\.(?:jpe?g|png|webp|gif)$/i.test(path);}
 function isSafeUnusedImagePath(path){
@@ -10148,36 +10148,32 @@ async function listUnusedImageFiles(){
   return found;
 }
 let unusedImageCleanupInProgress=false;
-async function autoCleanupUnusedImagesIfThreshold(force=false){
+async function cleanupUnusedImagesSafely(){
   if(unusedImageCleanupInProgress)throw new Error("Unused-image cleanup is already running.");
   unusedImageCleanupInProgress=true;
-  let checked=0,deleted=0,totalBytes=0,triggered=false;
+  let checked=0,deleted=0,totalBytes=0;
   const failed=[],uncertain=[];
   try{
-    // Re-scan after each batch so files added during cleanup are not silently left
-    // above the limit. A bounded retry prevents an endless loop if files keep arriving.
-    for(let pass=0;pass<3;pass++){
-      const files=await listUnusedImageFiles();
-      totalBytes=files.reduce((sum,file)=>sum+Number(file.size||0),0);
-      if((!force&&totalBytes<UNUSED_IMAGE_CLEANUP_THRESHOLD_BYTES)||files.length===0)return {checked,totalBytes,deleted,triggered,failed,uncertain};
-      triggered=true;checked+=files.length;
-      for(const file of files){
-        try{
-          const fresh=await githubRequest("/repos/"+GITHUB_REPO+"/contents/"+file.path+"?ref="+encodeURIComponent(GITHUB_BRANCH)+"&autoCleanupCheck="+Date.now());
-          if(!fresh?.sha||fresh.type!=="file"||Number(fresh.size)<=0||!isSupportedUnusedImageFile(file.path))throw new Error("File changed or is not a supported image.");
-          const result=await api({action:"deleteImage",path:file.path,expectedSha:fresh.sha});
-          if(!result?.ok)throw new Error("GitHub did not confirm deletion.");
-          deleted++;
-        }catch(e){
-          (e?.uncertain?uncertain:failed).push(file.path+": "+(e.message||"delete failed"));
-          return {checked,totalBytes,deleted,triggered,failed,uncertain};
-        }
+    const files=await listUnusedImageFiles();
+    checked=files.length;
+    totalBytes=files.reduce((sum,file)=>sum+Number(file.size||0),0);
+    for(const file of files){
+      try{
+        if(!isSafeUnusedImagePath(file.path)||!isSupportedUnusedImageFile(file.path))throw new Error("File path is outside the supported unused-image archive.");
+        const fresh=await githubRequest("/repos/"+GITHUB_REPO+"/contents/"+file.path+"?ref="+encodeURIComponent(GITHUB_BRANCH)+"&manualCleanupCheck="+Date.now());
+        if(!fresh?.sha||fresh.type!=="file"||!isSafeUnusedImagePath(fresh.path)||!isSupportedUnusedImageFile(fresh.path))throw new Error("File changed or is not a supported archived image.");
+        const result=await api({action:"deleteImage",path:file.path,expectedSha:fresh.sha});
+        if(!result?.ok)throw new Error("GitHub did not confirm deletion.");
+        deleted++;
+      }catch(e){
+        (e?.uncertain?uncertain:failed).push(file.path+": "+(e.message||"delete failed"));
+        // Stop immediately if a deletion fails or its result is uncertain.
+        break;
       }
     }
     const remaining=await listUnusedImageFiles();
     totalBytes=remaining.reduce((sum,file)=>sum+Number(file.size||0),0);
-    if(totalBytes>=UNUSED_IMAGE_CLEANUP_THRESHOLD_BYTES)failed.push("The unused-image folder is still at or above 100 MB after three scans.");
-    return {checked,totalBytes,deleted,triggered,failed,uncertain};
+    return {checked,totalBytes,deleted,remaining:remaining.length,failed,uncertain};
   }finally{unusedImageCleanupInProgress=false;}
 }
 async function renderImageDangerZone(){
@@ -10187,26 +10183,18 @@ async function renderImageDangerZone(){
   const formatMB=bytes=>(bytes/1000000).toLocaleString(undefined,{maximumFractionDigits:1})+" MB";
   const refreshCount=async()=>{
     if(unusedImageCleanupInProgress)return;
-    scan.disabled=true;cleanup.disabled=true;say("Checking unused-image count…");
+    scan.disabled=true;say("Checking unused-image archive…");
     try{
-      let files=await listUnusedImageFiles();
-      let totalBytes=files.reduce((sum,file)=>sum+Number(file.size||0),0);
-      let result=null;
-      if(totalBytes>=UNUSED_IMAGE_CLEANUP_THRESHOLD_BYTES){
-        say("100 MB threshold reached. Automatically cleaning unused images…");
-        result=await autoCleanupUnusedImagesIfThreshold();
-        files=await listUnusedImageFiles();
-        totalBytes=files.reduce((sum,file)=>sum+Number(file.size||0),0);
-      }
-      count.textContent=files.length+" images · "+formatMB(totalBytes)+" / 100 MB";
+      const files=await listUnusedImageFiles();
+      const totalBytes=files.reduce((sum,file)=>sum+Number(file.size||0),0);
+      count.textContent=files.length+" "+(files.length===1?"image":"images")+" · "+formatMB(totalBytes);
       cleanup.disabled=files.length===0;
-      if(result&&(result.failed.length||result.uncertain.length))say(result.deleted+" deleted before cleanup stopped. "+(result.failed[0]||result.uncertain[0])+" Refresh the count before retrying.",true);
-      else if(result?.triggered)say(result.deleted+" unused image(s) automatically deleted at the 100 MB threshold.");
-      else if(files.length===0)say("The unused folder is empty.");
-      else say("Cleanup runs automatically when supported unused images reach 100 MB. Refreshing the count does not delete files below the threshold.");
+      if(files.length===0)say("The unused-image archive is empty.");
+      else say("Unused images are ready for review.");
     }catch(e){
       count.textContent="Count unavailable";cleanup.disabled=true;
-      say("Could not verify or clean the unused folder safely. "+(e.message||""),true);
+      console.warn("Unused-image inventory scan failed:",e);
+      say("Could not verify the unused-image archive. Refresh the count and try again.",true);
     }finally{scan.disabled=unusedImageCleanupInProgress;}
   };
   scan.onclick=refreshCount;
@@ -10215,17 +10203,19 @@ async function renderImageDangerZone(){
     try{
       const files=await listUnusedImageFiles();
       const totalBytes=files.reduce((sum,file)=>sum+Number(file.size||0),0);
-      count.textContent=files.length+" images · "+formatMB(totalBytes)+" / 100 MB";
-      if(files.length===0){cleanup.disabled=true;say("The unused folder is empty.");return;}
-      if(!confirm("Delete all "+files.length+" supported image files inside assets/products/_unused/ ("+formatMB(totalBytes)+")? Active product images outside this folder will not be touched."))return;
+      count.textContent=files.length+" "+(files.length===1?"image":"images")+" · "+formatMB(totalBytes);
+      cleanup.disabled=files.length===0;
+      if(files.length===0){say("The unused-image archive is empty.");return;}
+      if(!(await showAdminConfirm("Clean unused images?","Delete "+files.length+" supported image "+(files.length===1?"file":"files")+" from assets/products/_unused/ ("+formatMB(totalBytes)+")? Active product images outside this folder will not be touched.","Delete")))return;
       cleanup.disabled=true;scan.disabled=true;say("Cleanup in progress…");
-      const result=await autoCleanupUnusedImagesIfThreshold(true);
-      const remaining=await listUnusedImageFiles();
-      const remainingBytes=remaining.reduce((sum,file)=>sum+Number(file.size||0),0);
-      count.textContent=remaining.length+" images · "+formatMB(remainingBytes)+" / 100 MB";
-      if(result.failed.length||result.uncertain.length)say(result.deleted+" deleted before cleanup stopped. "+(result.failed[0]||result.uncertain[0])+" Refresh the count before trying again.",true);
-      else say(result.triggered?result.deleted+" unused image(s) deleted.":"Threshold not reached; no files deleted.");
-    }catch(e){say("Cleanup could not be completed safely. "+(e.message||"Refresh the count before retrying."),true);}
+      const result=await cleanupUnusedImagesSafely();
+      count.textContent=result.remaining+" "+(result.remaining===1?"image":"images")+" · "+formatMB(result.totalBytes);
+      if(result.failed.length||result.uncertain.length){
+        say(result.deleted+" deleted before cleanup stopped. "+(result.failed[0]||result.uncertain[0])+" Refresh the count before trying again.",true);
+      }else{
+        say(result.deleted+" unused image(s) deleted. "+result.remaining+" remaining.");
+      }
+    }catch(e){console.warn("Unused-image cleanup failed safely:",e);say("Cleanup could not be completed safely. Refresh the count before retrying.",true);}
     finally{scan.disabled=false;await refreshCount();}
   };
   await refreshCount();
@@ -10401,7 +10391,7 @@ function showView(v){
       '</div></details>'+
       '<details class="admin-settings-group"><summary>Section Visibility</summary><div class="admin-settings-toggles">'+
       toggle('Show customer reviews section','showReviews')+toggle('Show Visual Journal section','showJournal')+toggle('Show store details section','showStore')+
-      '</div></details><button type="button" class="btn dark" id="saveSettings">SAVE ALL WEBSITE SETTINGS</button><section id="imageDangerZone" class="admin-settings-group" style="padding:16px;border:1px solid var(--line);margin-top:18px"><h3>Unused Image Cleanup</h3><p>Supported image files in <code>assets/products/_unused/</code> are counted by total file size. When the folder reaches 100 MB, its unused images are automatically deleted. Active product images outside this folder are never included.</p><p id="unusedImageCount" role="status" aria-live="polite">Checking count…</p><button type="button" class="btn dark" id="scanUnusedImages">REFRESH COUNT</button> <button type="button" class="btn dark" id="cleanupUnusedImages" disabled>CLEAN UNUSED IMAGES</button><p id="unusedImageStatus" role="status" aria-live="polite"></p></section></div>';
+      '</div></details><button type="button" class="btn dark" id="saveSettings">SAVE ALL WEBSITE SETTINGS</button><section id="imageDangerZone" class="admin-settings-group" style="padding:16px;border:1px solid var(--line);margin-top:18px"><h3>Unused Image Cleanup</h3><p>Review and remove unused product images from the archive.</p><p id="unusedImageCount" role="status" aria-live="polite">Checking count…</p><button type="button" class="btn dark" id="scanUnusedImages">REFRESH COUNT</button> <button type="button" class="btn dark" id="cleanupUnusedImages" disabled>CLEAN UNUSED IMAGES</button><p id="unusedImageStatus" role="status" aria-live="polite"></p></section></div>';
     settingsFormBaseline={};
     all("#studioBody [data-setting-key]").forEach(input=>{settingsFormBaseline[input.dataset.settingKey]=input.type==="checkbox"?input.checked:input.value.trim();});
     settingsFormBaseline.name=$("#setName")?.value.trim()||"SRI SAI VANI";
@@ -10646,12 +10636,7 @@ async function quarantineUploadedImage(path){
  await githubRequest("/repos/"+GITHUB_REPO+"/contents/"+path,{method:"DELETE",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:"Move unreferenced image to quarantine",sha:latestSource.sha,branch:GITHUB_BRANCH})});
  const sourceAfter=await githubRequest("/repos/"+GITHUB_REPO+"/contents/"+path+"?ref="+encodeURIComponent(GITHUB_BRANCH)+"&verifyMove="+Date.now()).catch(error=>{if(error.status===404)return null;throw error;});
  if(sourceAfter?.sha)return {moved:false,reason:"quarantine copy exists but source deletion could not be confirmed"};
- // A verified quarantine can push the folder over 100 MB. Trigger cleanup
- // immediately; cleanup failure must not turn a successful product save into failure.
- try{
-   const cleanup=await autoCleanupUnusedImagesIfThreshold();
-   if(cleanup.failed.length||cleanup.uncertain.length)console.warn("Automatic unused-image cleanup stopped safely:",cleanup.failed[0]||cleanup.uncertain[0]);
- }catch(cleanupError){console.warn("Automatic unused-image cleanup could not run:",cleanupError);}
+ // Keep the quarantined image available for deliberate manual cleanup in Admin Studio.
  return {moved:true,path:destination};
 }
 
