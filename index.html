@@ -9176,7 +9176,7 @@ body:not(#admin) [style*="font-size:7px"]{font-size:8px!important}
   <button type="button" id="resendOtpBtn" class="text-link" style="display:none;">RESEND OTP</button>
   <button type="button" id="forgotPassword" class="text-link" style="display:none;">Forgot password?</button>
   <small id="loginMsg" class="storage-status-msg" aria-live="polite"></small>
-</div><div id="studio" class="hidden"><div class="studio-nav"><button data-view="products">PRODUCTS</button><button data-view="settings">SETTINGS</button><button data-view="danger">DANGER ZONE</button></div><div id="adminFeedback" class="admin-feedback" role="status" aria-live="polite" aria-atomic="true" hidden></div><div id="studioBody"></div></div></div></div>
+</div><div id="studio" class="hidden"><div class="studio-nav"><button data-view="products">PRODUCTS</button><button data-view="settings">SETTINGS</button></div><div id="adminFeedback" class="admin-feedback" role="status" aria-live="polite" aria-atomic="true" hidden></div><div id="studioBody"></div></div></div></div>
 <style id="ssv-admin-responsive-touch-and-desktop-20261011">
 /* Admin Studio responsive correction. Touch devices stay readable even when the browser requests Desktop site.
    Scope is limited to #admin; no authentication, storage, CRUD or WhatsApp behavior changes. */
@@ -9668,13 +9668,12 @@ async function localApi(body){
   if(body.action==="deleteImage"){
     const path=String(body.path||"");
     if(!/^assets\/products\/(?:[a-zA-Z0-9._-]+|_unused\/[a-zA-Z0-9._-]+)$/.test(path)) throw new Error("Invalid image path.");
-    const file=await githubRequest("/repos/"+GITHUB_REPO+"/contents/"+path);
-    if(!file?.sha) throw new Error("Image was not found in GitHub.");
-    await githubRequest("/repos/"+GITHUB_REPO+"/contents/"+path,{
-      method:"DELETE",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({message:"Remove unused product image",sha:file.sha,branch:GITHUB_BRANCH})
-    });
+    const file=await githubRequest("/repos/"+GITHUB_REPO+"/contents/"+path+"?ref="+encodeURIComponent(GITHUB_BRANCH)+"&deleteCheck="+Date.now());
+    if(!file?.sha||file.type!=="file") throw new Error("Image was not found on the configured branch.");
+    if(body.expectedSha&&body.expectedSha!==file.sha)throw new Error("Image changed since it was selected. Refresh the list and try again.");
+    await githubRequest("/repos/"+GITHUB_REPO+"/contents/"+path,{method:"DELETE",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:"Remove unused product image",sha:file.sha,branch:GITHUB_BRANCH})});
+    const after=await githubRequest("/repos/"+GITHUB_REPO+"/contents/"+path+"?ref="+encodeURIComponent(GITHUB_BRANCH)+"&verifyDelete="+Date.now()).catch(error=>{if(error.status===404)return null;throw error;});
+    if(after&&after.sha)throw new Error("GitHub still reports the image after deletion.");
     return {ok:true};
   }
   throw new Error("Unknown action");
@@ -10079,9 +10078,8 @@ function updateStudioNav(activeView){
 }
 
 async function renderImageDangerZone(){
- const body=$("#studioBody");
- body.innerHTML='<section class="admin-settings-group" style="padding:16px;border:1px solid var(--line)"><h3>Image Danger Zone</h3><p>Only files in <code>assets/products/_unused/</code> are listed. Scanning never deletes files. Select files and confirm before permanent deletion.</p><button type="button" class="btn dark" id="scanUnusedImages">SCAN UNUSED FOLDER</button><p id="unusedImageStatus" role="status" aria-live="polite"></p><div id="unusedImageList"></div><button type="button" class="btn danger" id="deleteSelectedUnused" disabled>PERMANENTLY DELETE SELECTED</button></section>';
- const scan=$("#scanUnusedImages"),status=$("#unusedImageStatus"),list=$("#unusedImageList"),del=$("#deleteSelectedUnused");
+ const section=$("#studioBody")?.querySelector("#imageDangerZone");if(!section)return;
+ const scan=section.querySelector("#scanUnusedImages"),status=section.querySelector("#unusedImageStatus"),list=section.querySelector("#unusedImageList"),del=section.querySelector("#deleteSelectedUnused");
  const selected=()=>Array.from(list.querySelectorAll('input[type="checkbox"]:checked')).map(el=>el.value);
  const say=(t,bad=false)=>{status.textContent=t;status.style.color=bad?"#a32121":"";};
  scan.onclick=async()=>{scan.disabled=true;del.disabled=true;list.replaceChildren();say("Reading _unused folder…");try{
@@ -10095,20 +10093,24 @@ async function renderImageDangerZone(){
  del.onclick=async()=>{const paths=selected();if(!paths.length){say("Select at least one file.",true);return;}
   if(!await showAdminConfirm("Permanently delete images?","Permanently delete "+paths.length+" selected file(s) from assets/products/_unused/? This cannot be undone from Admin Studio.","DELETE FILES"))return;
   del.disabled=true;scan.disabled=true;let count=0;const failed=[];
-  for(const path of paths){try{const fresh=await githubRequest("/repos/"+GITHUB_REPO+"/contents/"+path+"?ref="+encodeURIComponent(GITHUB_BRANCH)+"&check="+Date.now());if(!fresh?.sha||fresh.type!=="file")throw new Error("File changed or unavailable.");await api({action:"deleteImage",path});count++;}catch(e){failed.push(path+": "+(e.message||"delete failed"));}}
-  await scan.click();say(count+" file(s) deleted."+(failed.length?" "+failed.length+" failed: "+failed.join("; "):""),failed.length>0);scan.disabled=false;del.disabled=selected().length===0;
+  for(const path of paths){try{
+   if(!/^assets\/products\/_unused\/[a-zA-Z0-9._-]+$/.test(path))throw new Error("Invalid quarantine path.");
+   const fresh=await githubRequest("/repos/"+GITHUB_REPO+"/contents/"+path+"?ref="+encodeURIComponent(GITHUB_BRANCH)+"&check="+Date.now());
+   if(!fresh?.sha||fresh.type!=="file")throw new Error("File changed or unavailable.");
+   const result=await api({action:"deleteImage",path,expectedSha:fresh.sha});if(!result?.ok)throw new Error("GitHub did not confirm deletion.");count++;
+  }catch(e){failed.push(path+": "+(e.message||"delete failed"));}}
+  await scan.click();
+  if(count===0&&failed.length)say("No files were deleted. "+failed.join("; "),true);
+  else if(failed.length)say(count+" file(s) deleted; "+failed.length+" failed: "+failed.join("; "),true);
+  else if(count)say(count+" file(s) permanently deleted.",false);
+  scan.disabled=false;del.disabled=selected().length===0;
  };
 }
-
 function showView(v){
   updateStudioNav(v);
   const studio=$("#studio");
   if(studio)studio.classList.toggle("admin-view-add",v==="add");
   const b=$("#studioBody");
-  if(v==="danger"){
-    renderImageDangerZone();
-    return;
-  }
   if(v==="products"){
     const productCounts={total:products.length,newArrival:products.filter(p=>p.newArrival).length,bestSeller:products.filter(p=>p.bestSeller).length,available:products.filter(p=>p.availability!==false).length};
     const knownColors=["Black","Blue","Brown","Gold","Green","Grey","Ivory","Maroon","Multi-colour","Orange","Pink","Purple","Red","Silver","White","Yellow"];
@@ -10248,12 +10250,13 @@ function showView(v){
       '</div></details>'+
       '<details class="admin-settings-group"><summary>Section Visibility</summary><div class="admin-settings-toggles">'+
       toggle('Show customer reviews section','showReviews')+toggle('Show Visual Journal section','showJournal')+toggle('Show store details section','showStore')+
-      '</div></details><button type="button" class="btn dark" id="saveSettings">SAVE ALL WEBSITE SETTINGS</button></div>';
+      '</div></details><section id="imageDangerZone" class="admin-settings-group" style="padding:16px;border:1px solid var(--line);margin-top:18px"><h3>Danger Zone</h3><p>Review and permanently delete only files already in <code>assets/products/_unused/</code>. This does not scan or move product images.</p><button type="button" class="btn dark" id="scanUnusedImages">SCAN UNUSED FOLDER</button><p id="unusedImageStatus" role="status" aria-live="polite"></p><div id="unusedImageList"></div><button type="button" class="btn danger" id="deleteSelectedUnused" disabled>PERMANENTLY DELETE SELECTED</button></section><button type="button" class="btn dark" id="saveSettings">SAVE ALL WEBSITE SETTINGS</button></div>';
     settingsFormBaseline={};
     all("#studioBody [data-setting-key]").forEach(input=>{settingsFormBaseline[input.dataset.settingKey]=input.type==="checkbox"?input.checked:input.value.trim();});
     settingsFormBaseline.name=$("#setName")?.value.trim()||"SRI SAI VANI";
     {const digits=String(settings.whatsapp||"").replace(/\D/g,"").replace(/^91(?=\d{10}$)/,"").slice(-10);settingsFormBaseline.whatsapp=digits.length===10?"91"+digits:"";}
     settingsFormBaseline.instagram=$("#setIg")?.value.trim()||"";
+    renderImageDangerZone();
   }
 }
 function edit(id){
@@ -10440,8 +10443,29 @@ async function imageHasKnownReferences(path){
 }
 async function cleanupReplacedImage(oldPath,newPath){
  if(!oldPath||oldPath===newPath||!/^assets\/products\/[a-zA-Z0-9._-]+$/.test(oldPath))return {deleted:false,reason:"not eligible"};
+ try{if(!(await verifyUploadedImageAccessible(newPath)))return {deleted:false,reason:"new image verification failed"};const latest=await githubReadJsonFresh("data/products.json");if(!Array.isArray(latest.value)||!latest.value.some(p=>String(p.image||"").trim()===newPath))return {deleted:false,reason:"replacement is not confirmed in the saved catalogue"};}catch(e){return {deleted:false,reason:"replacement or catalogue verification failed"};}
  if(await imageHasKnownReferences(oldPath))return {deleted:false,reason:"still referenced or reference check inconclusive"};
  try{await api({action:"deleteImage",path:oldPath});return {deleted:true};}catch(e){console.warn("Old image cleanup failed:",e);return {deleted:false,reason:e.message||"GitHub delete failed"};}
+}
+async function quarantineUploadedImage(path){
+ if(!/^assets\/products\/[a-zA-Z0-9._-]+$/.test(String(path||"")))return {moved:false,reason:"invalid product image path"};
+ if(await imageHasKnownReferences(path))return {moved:false,reason:"image is referenced or reference status is unknown"};
+ const source=await githubRequest("/repos/"+GITHUB_REPO+"/contents/"+path+"?ref="+encodeURIComponent(GITHUB_BRANCH)+"&quarantineSource="+Date.now());
+ if(!source||source.type!=="file"||!source.sha||!source.content||Number(source.size)<=0)return {moved:false,reason:"source image could not be verified"};
+ const encoded=String(source.content).replace(/\s/g,""),base=path.split("/").pop();let destination="assets/products/_unused/"+base;
+ for(let n=1;n<=20;n++){const check=await githubRequest("/repos/"+GITHUB_REPO+"/contents/"+destination+"?ref="+encodeURIComponent(GITHUB_BRANCH)+"&destinationCheck="+Date.now()).catch(error=>{if(error.status===404)return null;throw error;});if(!check)break;const dot=base.lastIndexOf(".");destination="assets/products/_unused/"+(dot>0?base.slice(0,dot)+"-"+n+base.slice(dot):base+"-"+n);}
+ const collision=await githubRequest("/repos/"+GITHUB_REPO+"/contents/"+destination+"?ref="+encodeURIComponent(GITHUB_BRANCH)+"&finalDestinationCheck="+Date.now()).catch(error=>{if(error.status===404)return null;throw error;});
+ if(collision)return {moved:false,reason:"could not find a unique quarantine filename"};
+ await githubRequest("/repos/"+GITHUB_REPO+"/contents/"+destination,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:"Quarantine unreferenced product image after failed save",content:encoded,branch:GITHUB_BRANCH})});
+ const copied=await githubRequest("/repos/"+GITHUB_REPO+"/contents/"+destination+"?ref="+encodeURIComponent(GITHUB_BRANCH)+"&verifyCopy="+Date.now());
+ if(copied?.type!=="file"||!copied.sha||Number(copied.size)!==Number(source.size)||!copied.download_url)return {moved:false,reason:"quarantine copy could not be verified; original retained"};
+ if(await imageHasKnownReferences(path))return {moved:false,reason:"image became referenced; both copies retained"};
+ const latestSource=await githubRequest("/repos/"+GITHUB_REPO+"/contents/"+path+"?ref="+encodeURIComponent(GITHUB_BRANCH)+"&sourceDeleteCheck="+Date.now());
+ if(!latestSource?.sha||latestSource.sha!==source.sha)return {moved:false,reason:"source changed during quarantine; both copies retained"};
+ await githubRequest("/repos/"+GITHUB_REPO+"/contents/"+path,{method:"DELETE",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:"Move unreferenced image to quarantine",sha:latestSource.sha,branch:GITHUB_BRANCH})});
+ const sourceAfter=await githubRequest("/repos/"+GITHUB_REPO+"/contents/"+path+"?ref="+encodeURIComponent(GITHUB_BRANCH)+"&verifyMove="+Date.now()).catch(error=>{if(error.status===404)return null;throw error;});
+ if(sourceAfter?.sha)return {moved:false,reason:"quarantine copy exists but source deletion could not be confirmed"};
+ return {moved:true,path:destination};
 }
 
 async function saveProduct(id){
@@ -10573,17 +10597,15 @@ async function saveProduct(id){
       render();
       showAdminToast("Save may have succeeded, but could not be confirmed. Refresh the catalogue and check before retrying.","error");
     }else{
-      // Cleanup is safe only when a fresh read succeeded, the intended product
-      // is absent, and no product references the uploaded image.
-      if(Array.isArray(latestProducts)){
-        products=latestProducts;
-        githubOriginalIds=new Set(products.map(x=>Number(x.id)));
-      }else{
-        products=oldProducts;
-      }
+      if(Array.isArray(latestProducts)){products=latestProducts;githubOriginalIds=new Set(products.map(x=>Number(x.id)));}else{products=oldProducts;}
       render();
-      // Retain newly uploaded images on any failed or uncertain save outcome.
-      showAdminToast("Could not save product. "+(e?.message||"Please try again.")+(uploadedImagePath?" The uploaded image was retained for safety.":""),"error");
+      let recoveryMessage=uploadedImagePath?" The uploaded image was retained for safety.":"";
+      const definitelyNotSaved=verificationSucceeded&&Array.isArray(latestProducts)&&!latestProducts.some(item=>Number(item.id)===Number(productToSave?.id)&&String(item.image||"").trim()===uploadedImagePath);
+      if(uploadedImagePath&&definitelyNotSaved){
+        try{const quarantine=await quarantineUploadedImage(uploadedImagePath);if(quarantine.moved)recoveryMessage=" The failed upload was safely moved to assets/products/_unused/.";else recoveryMessage=" The uploaded image was retained in place because quarantine was not safe or could not be completed: "+quarantine.reason+".";}
+        catch(quarantineError){recoveryMessage=" The uploaded image remains at its original path because quarantine failed: "+(quarantineError.message||"unknown error")+".";}
+      }else if(uploadedImagePath&&writeAttempted){recoveryMessage=" The save outcome is uncertain; the uploaded image was retained in place.";}
+      showAdminToast("Could not save product. "+(e?.message||"Please try again.")+recoveryMessage,"error");
     }
   }finally{
     if(btn){
