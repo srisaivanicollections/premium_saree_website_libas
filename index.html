@@ -10564,7 +10564,7 @@ async function saveProduct(id){
     let cleanupMessage="";
     if(uploadedImagePath && previousImagePath && previousImagePath!==uploadedImagePath){const cleanup=await cleanupReplacedImage(previousImagePath,uploadedImagePath);if(!cleanup.deleted)cleanupMessage=" Previous image retained: "+cleanup.reason+".";}
     showView("products");
-    showAdminToast((id?"Product updated successfully.":"Product added successfully.")+cleanupMessage,cleanupMessage?"error":"success");
+    showAdminToast((id?"Product updated successfully.":"Product added successfully.")+cleanupMessage,cleanupMessage?"warning":"success");
   }catch(e){
     let latestProducts=null;
     let exactMatch=false;
