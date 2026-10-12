@@ -9748,14 +9748,12 @@ async function load(){
   removeLegacyInstagramEmbed();
 
   // Load products independently: a settings failure must never discard valid products.
-  let productLoadError=null;
   try{
     const pr=await loadPublicJson("data/products.json");
     if(!Array.isArray(pr.value)||pr.value.length===0) throw new Error("Empty Git-backed catalog.");
     products=pr.value;
     githubOriginalIds=new Set(products.map(p=>Number(p.id)));
   }catch(e){
-    productLoadError=e;
     console.error("Public product catalogue load failed:",e);
     if(!Array.isArray(products)||!products.length){
       products=[];
