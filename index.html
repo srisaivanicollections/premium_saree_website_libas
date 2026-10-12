@@ -10171,27 +10171,6 @@ async function autoCleanupUnusedImagesIfThreshold(){
     unusedImageCleanupInProgress=false;
   }
 }
-function confirmUnusedImageCleanup(imageCount,totalSize){
-  return new Promise(resolve=>{
-    const overlay=document.createElement("div");
-    overlay.setAttribute("role","presentation");
-    overlay.style.cssText="position:fixed;inset:0;z-index:2147483000;background:rgba(20,18,16,.62);display:flex;align-items:center;justify-content:center;padding:18px;";
-    const dialog=document.createElement("section");
-    dialog.setAttribute("role","dialog");dialog.setAttribute("aria-modal","true");dialog.setAttribute("aria-labelledby","unusedCleanupTitle");
-    dialog.style.cssText="box-sizing:border-box;width:min(100%,420px);background:#FAF7F2;color:#1C1917;border:1px solid #E4D8C5;border-radius:18px;padding:22px;box-shadow:0 18px 60px rgba(28,25,23,.18);font-family:Montserrat,Inter,sans-serif;";
-    const title=document.createElement("h3");title.id="unusedCleanupTitle";title.textContent="Clean unused images?";title.style.cssText="margin:0 0 12px;font-family:\"Cormorant Garamond\",Georgia,serif;font-size:1.65rem;line-height:1.15;font-weight:500;color:#1C1917;";
-    const message=document.createElement("p");message.textContent="Delete "+imageCount+" unused "+(imageCount===1?"image":"images")+" ("+totalSize+")? Active product images will not be affected.";message.style.cssText="margin:0 0 22px;line-height:1.55;font-family:Montserrat,Inter,sans-serif;font-size:.92rem;color:#1C1917;";
-    const actions=document.createElement("div");actions.style.cssText="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;";
-    let settled=false;
-    const finish=value=>{if(settled)return;settled=true;document.removeEventListener("keydown",onKey);overlay.remove();resolve(value);};
-    const onKey=e=>{if(e.key==="Escape")finish(false);};
-    const makeButton=(label,yes)=>{const b=document.createElement("button");b.type="button";b.textContent=label;b.style.cssText="min-height:44px;padding:0 22px;border:1px solid "+(yes?"#1C1917":"#C8B28A")+";border-radius:8px;background:"+(yes?"#1C1917":"transparent")+";color:"+(yes?"#FAF7F2":"#1C1917")+";font-family:Montserrat,Inter,sans-serif;font-size:.9rem;font-weight:600;cursor:pointer;";b.addEventListener("click",()=>finish(yes));return b;};
-    const cancel=makeButton("Cancel",false),del=makeButton("Delete",true);
-    actions.append(cancel,del);dialog.append(title,message,actions);overlay.append(dialog);
-    overlay.addEventListener("click",e=>{if(e.target===overlay)finish(false);});
-    document.addEventListener("keydown",onKey);document.body.append(overlay);cancel.focus();
-  });
-}
 async function renderImageDangerZone(){
   const section=$("#studioBody")?.querySelector("#imageDangerZone");if(!section)return;
   const scan=section.querySelector("#scanUnusedImages"),cleanup=section.querySelector("#cleanupUnusedImages"),status=section.querySelector("#unusedImageStatus"),count=section.querySelector("#unusedImageCount");
@@ -10222,7 +10201,7 @@ async function renderImageDangerZone(){
       const totalBytes=files.reduce((sum,file)=>sum+Number(file.size||0),0);
       count.textContent=files.length+" "+(files.length===1?"image":"images")+" · "+formatMB(totalBytes)+" / 100 MB";
       if(totalBytes<UNUSED_IMAGE_CLEANUP_THRESHOLD_BYTES){cleanup.disabled=true;say("Cleanup threshold is not reached. No files were deleted.");return;}
-      if(!(await confirmUnusedImageCleanup(files.length,formatMB(totalBytes))))return;
+      if(!(await showAdminConfirm("Clean unused images?","Delete "+files.length+" unused "+(files.length===1?"image":"images")+" ("+formatMB(totalBytes)+")? Active product images will not be affected.","Delete")))return;
       cleanup.disabled=true;scan.disabled=true;say("Cleanup in progress…");
       const result=await autoCleanupUnusedImagesIfThreshold();
       const remaining=await listUnusedImageFiles();
