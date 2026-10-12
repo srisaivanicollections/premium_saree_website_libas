@@ -10250,16 +10250,23 @@ function edit(id){
     const originalDeleteText=btn?.textContent||"DELETE ITEM";
     if(btn){btn.disabled=true;btn.classList.add("is-busy");btn.textContent="DELETING...";}
     try{
-      products=oldProducts.filter(x=>Number(x.id)!==Number(id));
       await deleteProductFromGithub(id);
       render();
       showView("products");
       showAdminToast("Product deleted successfully.","success");
     }catch(e){
-      products=oldProducts;
+      if(Array.isArray(e?.latestProducts)){
+        products=e.latestProducts;
+        githubOriginalIds=new Set(products.map(x=>Number(x.id)));
+      }else{
+        // Keep the last known trustworthy state when GitHub cannot be read.
+        products=oldProducts;
+      }
       render();
       if(btn){btn.disabled=false;btn.classList.remove("is-busy");btn.textContent=originalDeleteText;}
-      showAdminToast("Could not delete product. "+(e?.message||"Please try again."),"error");
+      showAdminToast(e?.outcomeUncertain
+        ?"Deletion could not be confirmed. Refresh the catalogue before trying again."
+        :"Could not delete product. "+(e?.message||"Please try again."),"error");
     }
   };
 }
@@ -10268,14 +10275,42 @@ async function persistProduct(product){
 }
 async function deleteProductFromGithub(id){
   const deleteOperation=async()=>{
-    const result=await api({action:"deleteProduct",password:adminPassword,id:Number(id)});
-    if(!Array.isArray(result?.products))throw new Error("Delete completed without a confirmed catalogue response. Refresh before retrying.");
-    if(result.products.some(p=>Number(p.id)===Number(id)))throw new Error("Product deletion could not be confirmed.");
-    return result.products;
+    let requestError=null;
+    try{
+      const result=await api({action:"deleteProduct",password:adminPassword,id:Number(id)});
+      if(!Array.isArray(result?.products))throw new Error("GitHub did not return a valid catalogue after deletion.");
+    }catch(error){
+      requestError=error;
+    }
+
+    // Always verify deletion from a fresh GitHub read, even if the write
+    // response reported success. Never repeat a possibly successful delete.
+    let latest;
+    try{
+      latest=await githubReadJsonFresh("data/products.json");
+      if(!Array.isArray(latest.value))throw new Error("GitHub returned an invalid catalogue.");
+    }catch(readError){
+      const error=new Error("Deletion could not be independently confirmed.");
+      error.outcomeUncertain=true;
+      throw error;
+    }
+
+    const stillExists=latest.value.some(item=>Number(item.id)===Number(id));
+    if(!stillExists){
+      products=latest.value;
+      githubOriginalIds=new Set(products.map(p=>Number(p.id)));
+      return products;
+    }
+
+    const error=new Error(requestError
+      ?"The product is still in GitHub, so deletion was not completed."
+      :"GitHub still contains this product after the delete request.");
+    error.latestProducts=latest.value;
+    if(requestError)error.cause=requestError;
+    throw error;
   };
   catalogWriteQueue=catalogWriteQueue.then(deleteOperation,deleteOperation);
-  products=await catalogWriteQueue;
-  githubOriginalIds=new Set(products.map(p=>Number(p.id)));
+  return await catalogWriteQueue;
 }
 function showAdminConfirm(title,message,confirmLabel="CONFIRM"){
   return new Promise(resolve=>{
@@ -10344,9 +10379,9 @@ function nextProductId(){
   return id;
 }
 
-async function verifyProductPersistence(product){
+async function verifyProductPersistence(product,latestRead=null){
   // Use a cache-busted GitHub Contents API read, independent of the write response.
-  const latest=await githubReadJsonFresh("data/products.json");
+  const latest=latestRead||await githubReadJsonFresh("data/products.json");
   const list=Array.isArray(latest.value)?latest.value:[];
   const matches=list.filter(item=>Number(item.id)===Number(product.id));
   if(matches.length!==1){
@@ -10366,7 +10401,6 @@ async function verifyProductPersistence(product){
   }
   return latest.value;
 }
-
 async function saveProduct(id){
   const btn=$("#saveItem");
   const originalText=btn?.textContent||"SAVE ITEM";
@@ -10376,8 +10410,11 @@ async function saveProduct(id){
     btn.textContent="SAVING...";
   }
   const oldProducts=products.slice();
+  let writeAttempted=false;
   let writeReportedSuccess=false;
   let writeResponseProducts=null;
+  let uploadedImagePath="";
+  let productToSave=null;
   try{
     const name=$("#fName").value.trim();
     const categoryValue=$("#fCat").value;
@@ -10385,7 +10422,6 @@ async function saveProduct(id){
     const originalPrice=Number($("#fOriginal").value)||undefined;
     let image=$("#fImage").value.trim();
     const file=$("#fFile").files[0];
-    let uploadedImagePath="";
 
     if(!name)throw new Error("Please enter a product name.");
     if(!Number.isFinite(price)||price<=0)throw new Error("Please enter a valid price.");
@@ -10429,10 +10465,12 @@ async function saveProduct(id){
       bestSeller:$("#fBest").checked,
       availability:$("#fAvail").checked
     };
+    productToSave=p;
 
     // Serialize catalog writes. Two rapid Admin operations must never race
     // against each other with stale GitHub file SHAs.
     const write=async()=>{
+      writeAttempted=true;
       const result=await persistProduct(p);
       if(!Array.isArray(result?.products)) throw new Error("GitHub did not confirm the product write. Refresh and check the catalogue before retrying.");
       writeReportedSuccess=true;
@@ -10448,18 +10486,66 @@ async function saveProduct(id){
     showView("products");
     showAdminToast(id?"Product updated successfully.":"Product added successfully.","success");
   }catch(e){
-    // If the write returned successfully but read-back verification failed, do
-    // not delete an uploaded image or repeat the write: the product may exist.
-    if(writeReportedSuccess){
-      if(Array.isArray(writeResponseProducts)) products=writeResponseProducts;
+    let latestProducts=null;
+    let exactMatch=false;
+    let targetMatches=[];
+    let verificationSucceeded=false;
+    if(writeAttempted && productToSave){
+      try{
+        const latest=await githubReadJsonFresh("data/products.json");
+        if(Array.isArray(latest.value)){
+          latestProducts=latest.value;
+          targetMatches=latestProducts.filter(item=>Number(item.id)===Number(productToSave.id));
+          verificationSucceeded=true;
+          if(targetMatches.length===1){
+            try{
+              await verifyProductPersistence(productToSave,latest);
+              exactMatch=true;
+            }catch(_){
+              exactMatch=false;
+            }
+          }
+        }
+      }catch(verificationError){
+        console.warn("Could not resolve the product save outcome:",verificationError);
+      }
+    }
+
+    if(exactMatch){
+      products=latestProducts;
       githubOriginalIds=new Set(products.map(x=>Number(x.id)));
       render();
-      showAdminToast("Save may have succeeded, but could not be independently confirmed. Refresh the catalogue and check before retrying. "+(e?.message||""),"error");
-    }else{
-      products=oldProducts;
+      showView("products");
+      showAdminToast(id?"Product updated successfully.":"Product added successfully.","success");
+    }else if(writeReportedSuccess || (writeAttempted && (!verificationSucceeded || targetMatches.length>0))){
+      // A conflicting record or failed read is inconclusive. Keep the uploaded
+      // image and never repeat a write that may already have succeeded.
+      if(Array.isArray(latestProducts)){
+        products=latestProducts;
+        githubOriginalIds=new Set(products.map(x=>Number(x.id)));
+      }else if(Array.isArray(writeResponseProducts)){
+        products=writeResponseProducts;
+        githubOriginalIds=new Set(products.map(x=>Number(x.id)));
+      }
       render();
-      if(uploadedImagePath){
-        try{await api({action:"deleteImage",password:adminPassword,path:uploadedImagePath});}catch(cleanupError){console.warn("Uploaded image cleanup failed:",cleanupError);}
+      showAdminToast("Save may have succeeded, but could not be confirmed. Refresh the catalogue and check before retrying.","error");
+    }else{
+      // Cleanup is safe only when a fresh read succeeded, the intended product
+      // is absent, and no product references the uploaded image.
+      if(Array.isArray(latestProducts)){
+        products=latestProducts;
+        githubOriginalIds=new Set(products.map(x=>Number(x.id)));
+      }else{
+        products=oldProducts;
+      }
+      render();
+      const imageIsReferenced=uploadedImagePath&&Array.isArray(latestProducts)&&latestProducts.some(item=>item.image===uploadedImagePath);
+      if(uploadedImagePath && writeAttempted && verificationSucceeded && targetMatches.length===0 && !imageIsReferenced){
+        try{await api({action:"deleteImage",password:adminPassword,path:uploadedImagePath});}
+        catch(cleanupError){console.warn("Uploaded image cleanup failed:",cleanupError);}
+      }else if(uploadedImagePath && !writeAttempted){
+        try{await api({action:"deleteImage",password:adminPassword,path:uploadedImagePath});}
+        catch(cleanupError){console.warn("Uploaded image cleanup failed:",cleanupError);}
       }
       showAdminToast("Could not save product. "+(e?.message||"Please try again."),"error");
     }
