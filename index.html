@@ -9667,7 +9667,7 @@ async function localApi(body){
   }
   if(body.action==="deleteImage"){
     const path=String(body.path||"");
-    if(!/^assets\\/products\\/(?:[a-zA-Z0-9._-]+|_unused\\/[a-zA-Z0-9._-]+)$/.test(path)) throw new Error("Invalid image path.");
+    if(!/^assets\/products\/(?:[a-zA-Z0-9._-]+|_unused\/[a-zA-Z0-9._-]+)$/.test(path)) throw new Error("Invalid image path.");
     const file=await githubRequest("/repos/"+GITHUB_REPO+"/contents/"+path);
     if(!file?.sha) throw new Error("Image was not found in GitHub.");
     await githubRequest("/repos/"+GITHUB_REPO+"/contents/"+path,{
