@@ -9711,9 +9711,10 @@ async function api(body){
   return localApi(body);
 }
 async function loadPublicJson(path){
-  // Prefer the uncached GitHub Contents API so refreshes see the current main-branch
-  // catalogue immediately, rather than a stale GitHub Pages/raw CDN copy.
-  // Static hosts remain fallback sources if the public API is unavailable.
+  // The GitHub Contents API is the source of truth for products. If it is
+  // unavailable, do not silently accept a possibly stale Pages/CDN catalogue:
+  // showing an explicit temporary-unavailable state is safer than hiding a
+  // recently saved product after refresh.
   let lastError=null;
   try{
     const result=await publicGitHubReadJson(path);
@@ -9729,6 +9730,12 @@ async function loadPublicJson(path){
     lastError=e;
   }
 
+  // Settings may fall back to static copies because a stale text setting is
+  // less destructive than a stale product list. Product records must not.
+  if(path.endsWith("products.json")){
+    throw new Error("The latest product catalogue could not be reached. Please refresh in a moment.");
+  }
+
   const sources=[
     path,
     "https://raw.githubusercontent.com/"+GITHUB_REPO+"/"+GITHUB_BRANCH+"/"+path
@@ -9740,18 +9747,12 @@ async function loadPublicJson(path){
       const r=await fetch(url,{cache:"no-store",headers:{"Accept":"application/json"}});
       if(!r.ok) throw new Error("HTTP "+r.status);
       const value=await r.json();
-      if(path.endsWith("products.json") && !Array.isArray(value)){
-        throw new Error("Product catalog format is invalid.");
-      }
-      if(path.endsWith("products.json") && value.length===0){
-        throw new Error("Product catalog is empty.");
-      }
       return {value};
     }catch(e){
       lastError=e;
     }
   }
-  throw lastError||new Error("Public catalog could not be loaded.");
+  throw lastError||new Error("Public catalogue settings could not be loaded.");
 }
 async function removeLegacyInstagramEmbed(){
   document.querySelectorAll('iframe[src*="instagram.com"], iframe[src*="instagramcdn.com"], .instagram-media, .instagram-embed').forEach(function(el){ el.remove(); });
