@@ -10459,9 +10459,20 @@ async function imageHasKnownReferences(path){
   ]);
   if(!Array.isArray(c.value)||!st.value||typeof st.value!=="object"||!html?.content)return true;
   const contains=(v,seen=new Set())=>{if(v===path)return true;if(!v||typeof v!=="object"||seen.has(v))return false;seen.add(v);return Object.values(v).some(x=>contains(x,seen));};
-  const source= new TextDecoder().decode(Uint8Array.from(atob(String(html.content).replace(/\\s/g,"")),ch=>ch.charCodeAt(0)));
-  const literalReference=source.includes('src="'+path+'"')||source.includes("src=\'"+path+"\'")||source.includes('href="'+path+'"')||source.includes("href=\'"+path+"\'")||source.includes('url("'+path+'")')||source.includes("url(\'"+path+"\')")||source.includes('image:"'+path+'"')||source.includes("image:\'"+path+"\'")||source.includes('logo:"'+path+'"')||source.includes("logo:\'"+path+"\'");
-  return c.value.some(p=>contains(p))||contains(st.value)||literalReference;
+  const source=new TextDecoder().decode(Uint8Array.from(atob(String(html.content).replace(/\\s/g,"")),ch=>ch.charCodeAt(0)));
+  // Inspect rendered markup attributes and CSS only. Do not treat comments,
+  // arbitrary JavaScript strings, or documentation examples as live references.
+  const doc=new DOMParser().parseFromString(source,"text/html");
+  const attrReference=Array.from(doc.querySelectorAll("[src],[href],[srcset],[style]")).some(el=>{
+   for(const name of ["src","href","srcset","style"]){
+    const value=el.getAttribute(name)||"";
+    if(value.split(/[\\s,]+/).some(part=>part===path||part.startsWith(path+"?")||part.startsWith(path+"#")))return true;
+    if(name==="style"&&value.includes(path))return true;
+   }
+   return false;
+  });
+  const cssReference=Array.from(doc.querySelectorAll("style")).some(el=>el.textContent.includes("url("+path+")")||el.textContent.includes("url('"+path+"')")||el.textContent.includes('url("'+path+'")'));
+  return c.value.some(p=>contains(p))||contains(st.value)||attrReference||cssReference;
  }catch(e){console.warn("Could not prove image is unreferenced; retaining it:",e);return true;}
 }
 async function cleanupReplacedImage(oldPath,newPath){
@@ -10588,7 +10599,7 @@ async function saveProduct(id){
     let cleanupMessage="";
     if(uploadedImagePath && previousImagePath && previousImagePath!==uploadedImagePath){const cleanup=await cleanupReplacedImage(previousImagePath,uploadedImagePath);if(!cleanup.deleted)cleanupMessage=" Previous image retained: "+cleanup.reason+".";}
     showView("products");
-    showAdminToast((id?"Product updated successfully.":"Product added successfully.")+cleanupMessage,cleanupMessage?"warning":"success");
+    showAdminToast((id?"Product updated successfully.":"Product added successfully.")+(cleanupMessage?" "+cleanupMessage.replace(/^ Previous image retained: /,"The previous image was retained safely: "):""),"success");
   }catch(e){
     let latestProducts=null;
     let exactMatch=false;
