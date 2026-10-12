@@ -9716,12 +9716,10 @@ async function loadPublicJson(path){
     lastError=e;
   }
 
-  // Settings may fall back to static copies because a stale text setting is
-  // less destructive than a stale product list. Product records must not.
-  if(path.endsWith("products.json")){
-    throw new Error("The latest product catalogue could not be reached. Please refresh in a moment.");
-  }
-
+  // If the Contents API is rate-limited or temporarily unavailable, fall back
+  // to the published static JSON. Validate the product payload before using it.
+  // The static copy can lag briefly after an Admin save, but is safer than an
+  // empty storefront during an API outage.
   const sources=[
     path,
     "https://raw.githubusercontent.com/"+GITHUB_REPO+"/"+GITHUB_BRANCH+"/"+path
@@ -9733,6 +9731,9 @@ async function loadPublicJson(path){
       const r=await fetch(url,{cache:"no-store",headers:{"Accept":"application/json"}});
       if(!r.ok) throw new Error("HTTP "+r.status);
       const value=await r.json();
+      if(path.endsWith("products.json") && (!Array.isArray(value)||value.length===0)){
+        throw new Error("Fallback product catalogue is invalid or empty.");
+      }
       return {value};
     }catch(e){
       lastError=e;
@@ -9770,6 +9771,8 @@ return true;
     products=[];
     settings={name:"SRI SAI VANI",whatsapp:"",instagram:"https://www.instagram.com/sri_sai_vani_collections/"};
     apply();
+    // Keep category navigation available even when both product sources fail.
+    renderTabs();
     const grid=$("#products");
     if(grid)grid.innerHTML='<div class="lux-empty"><strong>Collection temporarily unavailable</strong><br><span>Please refresh in a moment.</span></div>';
     return false;
