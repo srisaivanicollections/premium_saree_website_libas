@@ -10245,7 +10245,6 @@ function edit(id){
   }
   $("#deleteItem").onclick=async()=>{
     if(!(await showAdminConfirm("Delete this product?","This action cannot be undone.","DELETE ITEM")))return;
-    const oldProducts=products.slice();
     const btn=$("#deleteItem");
     const originalDeleteText=btn?.textContent||"DELETE ITEM";
     if(btn){btn.disabled=true;btn.classList.add("is-busy");btn.textContent="DELETING...";}
@@ -10258,9 +10257,6 @@ function edit(id){
       if(Array.isArray(e?.latestProducts)){
         products=e.latestProducts;
         githubOriginalIds=new Set(products.map(x=>Number(x.id)));
-      }else{
-        // Keep the last known trustworthy state when GitHub cannot be read.
-        products=oldProducts;
       }
       render();
       if(btn){btn.disabled=false;btn.classList.remove("is-busy");btn.textContent=originalDeleteText;}
@@ -10412,7 +10408,6 @@ async function saveProduct(id){
   const oldProducts=products.slice();
   let writeAttempted=false;
   let writeReportedSuccess=false;
-  let writeResponseProducts=null;
   let uploadedImagePath="";
   let productToSave=null;
   try{
@@ -10474,7 +10469,6 @@ async function saveProduct(id){
       const result=await persistProduct(p);
       if(!Array.isArray(result?.products)) throw new Error("GitHub did not confirm the product write. Refresh and check the catalogue before retrying.");
       writeReportedSuccess=true;
-      writeResponseProducts=result.products;
       // Never treat the write response alone as proof of persistence.
       const verifiedProducts=await verifyProductPersistence(p);
       products=verifiedProducts;
@@ -10523,9 +10517,7 @@ async function saveProduct(id){
       if(Array.isArray(latestProducts)){
         products=latestProducts;
         githubOriginalIds=new Set(products.map(x=>Number(x.id)));
-      }else if(Array.isArray(writeResponseProducts)){
-        products=writeResponseProducts;
-        githubOriginalIds=new Set(products.map(x=>Number(x.id)));
+      }
       }
       render();
       showAdminToast("Save may have succeeded, but could not be confirmed. Refresh the catalogue and check before retrying.","error");
