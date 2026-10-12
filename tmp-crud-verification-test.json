@@ -1,0 +1,8 @@
+[
+  {
+    "id": 900001,
+    "name": "Temporary CRUD Test Product",
+    "price": 123,
+    "image": "assets/products/crud-test-placeholder.png"
+  }
+]
