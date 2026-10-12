@@ -9686,7 +9686,7 @@ async function localApi(body){
     if(after&&after.sha){
       // One more fresh read protects against a stale response immediately after DELETE.
       try{const finalCheck=await githubRequest("/repos/"+GITHUB_REPO+"/contents/"+path+"?ref="+encodeURIComponent(GITHUB_BRANCH)+"&verifyDeleteFinal="+Date.now());if(finalCheck?.sha)throw new Error("GitHub still reports the image after deletion.");}
-      catch(finalError){if(finalError.status===404)return {ok:true};throw finalError;}
+      catch(finalError){if(finalError.status===404)return {ok:true};if(finalError.message==="GitHub still reports the image after deletion.")throw finalError;const uncertain=new Error("Deletion was submitted, but the final verification request failed. Refresh the list before retrying.");uncertain.uncertain=true;throw uncertain;}
     }
     return {ok:true};
   }
