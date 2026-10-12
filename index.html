@@ -10250,7 +10250,7 @@ function showView(v){
       '</div></details>'+
       '<details class="admin-settings-group"><summary>Section Visibility</summary><div class="admin-settings-toggles">'+
       toggle('Show customer reviews section','showReviews')+toggle('Show Visual Journal section','showJournal')+toggle('Show store details section','showStore')+
-      '</div></details><section id="imageDangerZone" class="admin-settings-group" style="padding:16px;border:1px solid var(--line);margin-top:18px"><h3>Danger Zone</h3><p>Review and permanently delete only files already in <code>assets/products/_unused/</code>. This does not scan or move product images.</p><button type="button" class="btn dark" id="scanUnusedImages">SCAN UNUSED FOLDER</button><p id="unusedImageStatus" role="status" aria-live="polite"></p><div id="unusedImageList"></div><button type="button" class="btn danger" id="deleteSelectedUnused" disabled>PERMANENTLY DELETE SELECTED</button></section><button type="button" class="btn dark" id="saveSettings">SAVE ALL WEBSITE SETTINGS</button></div>';
+      '</div></details><section id="imageDangerZone" class="admin-settings-group" style="padding:16px;border:1px solid var(--line);margin-top:18px"><h3>Danger Zone</h3><p>Review and permanently delete only files already in <code>assets/products/_unused/</code>. This does not scan or move product images.</p><button type="button" class="btn dark" id="scanUnusedImages">SCAN UNUSED FOLDER</button><p id="unusedImageStatus" role="status" aria-live="polite"></p><div id="unusedImageList"></div><button type="button" class="btn danger" id="deleteSelectedUnused" disabled>PERMANENTLY DELETE SELECTED</button><button type="button" class="btn dark" id="saveSettings">SAVE ALL WEBSITE SETTINGS</button></section></div>';
     settingsFormBaseline={};
     all("#studioBody [data-setting-key]").forEach(input=>{settingsFormBaseline[input.dataset.settingKey]=input.type==="checkbox"?input.checked:input.value.trim();});
     settingsFormBaseline.name=$("#setName")?.value.trim()||"SRI SAI VANI";
@@ -10436,9 +10436,16 @@ async function verifyUploadedImageAccessible(path){
 }
 async function imageHasKnownReferences(path){
  if(!path)return true;
- try{const [c,st]=await Promise.all([githubReadJsonFresh("data/products.json"),githubReadJsonFresh("data/settings.json")]);if(!Array.isArray(c.value)||!st.value||typeof st.value!=="object")return true;
- const contains=(v,seen=new Set())=>{if(v===path)return true;if(!v||typeof v!=="object"||seen.has(v))return false;seen.add(v);return Object.values(v).some(x=>contains(x,seen));};
- return c.value.some(p=>contains(p))||contains(st.value);
+ try{
+  const [c,st,html]=await Promise.all([
+   githubReadJsonFresh("data/products.json"),
+   githubReadJsonFresh("data/settings.json"),
+   githubRequest("/repos/"+GITHUB_REPO+"/contents/index.html?ref="+encodeURIComponent(GITHUB_BRANCH)+"&referenceCheck="+Date.now())
+  ]);
+  if(!Array.isArray(c.value)||!st.value||typeof st.value!=="object"||!html?.content)return true;
+  const contains=(v,seen=new Set())=>{if(v===path)return true;if(!v||typeof v!=="object"||seen.has(v))return false;seen.add(v);return Object.values(v).some(x=>contains(x,seen));};
+  const source= new TextDecoder().decode(Uint8Array.from(atob(String(html.content).replace(/\\s/g,"")),ch=>ch.charCodeAt(0)));
+  return c.value.some(p=>contains(p))||contains(st.value)||source.includes(path);
  }catch(e){console.warn("Could not prove image is unreferenced; retaining it:",e);return true;}
 }
 async function cleanupReplacedImage(oldPath,newPath){
