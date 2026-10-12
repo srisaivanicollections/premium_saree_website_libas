@@ -10084,7 +10084,7 @@ async function renderImageDangerZone(){
  const scan=section.querySelector("#scanUnusedImages"),status=section.querySelector("#unusedImageStatus"),list=section.querySelector("#unusedImageList"),del=section.querySelector("#deleteSelectedUnused");
  const selected=()=>Array.from(list.querySelectorAll('input[type="checkbox"]:checked')).map(el=>el.value);
  const say=(t,bad=false)=>{status.textContent=t;status.style.color=bad?"#a32121":"";};
- scan.onclick=async()=>{scan.disabled=true;del.disabled=true;list.replaceChildren();say("Reading _unused folder…");try{
+ const refreshFiles=async()=>{scan.disabled=true;del.disabled=true;list.replaceChildren();say("Reading _unused folder…");try{
   const result=await githubRequest("/repos/"+GITHUB_REPO+"/contents/assets/products/_unused?ref="+encodeURIComponent(GITHUB_BRANCH)+"&scan="+Date.now());
   if(!Array.isArray(result))throw new Error("_unused is not a folder.");
   const files=result.filter(f=>f.type==="file"&&/^assets\/products\/_unused\/[a-zA-Z0-9._-]+$/.test(f.path||"")&&f.sha&&Number(f.size)>0);
@@ -10092,6 +10092,7 @@ async function renderImageDangerZone(){
   list.innerHTML=files.map(f=>'<label style="display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--line);overflow-wrap:anywhere"><input type="checkbox" value="'+esc(f.path)+'" style="width:auto;margin:3px 0"><span><strong>'+esc(f.name)+'</strong><br><small>'+Math.ceil(f.size/1024)+' KB · '+esc(f.path)+'</small></span></label>').join("");
   del.disabled=false;say(files.length+" file(s) found. Nothing has been deleted.");
  }catch(e){say("Could not fully read folder. No files changed. "+(e.message||""),true);}finally{scan.disabled=false;}};
+ scan.onclick=refreshFiles;
  del.onclick=async()=>{const paths=selected();if(!paths.length){say("Select at least one file.",true);return;}
   if(!await showAdminConfirm("Permanently delete images?","Permanently delete "+paths.length+" selected file(s) from assets/products/_unused/? This cannot be undone from Admin Studio.","DELETE FILES"))return;
   del.disabled=true;scan.disabled=true;let count=0;const failed=[];
@@ -10101,7 +10102,7 @@ async function renderImageDangerZone(){
    if(!fresh?.sha||fresh.type!=="file")throw new Error("File changed or unavailable.");
    const result=await api({action:"deleteImage",path,expectedSha:fresh.sha});if(!result?.ok)throw new Error("GitHub did not confirm deletion.");count++;
   }catch(e){failed.push(path+": "+(e.message||"delete failed"));}}
-  await scan.click();
+  await refreshFiles();
   if(count===0&&failed.length)say("No files were deleted. "+failed.join("; "),true);
   else if(failed.length)say(count+" file(s) deleted; "+failed.length+" failed: "+failed.join("; "),true);
   else if(count)say(count+" file(s) permanently deleted.",false);
