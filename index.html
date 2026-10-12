@@ -10212,7 +10212,7 @@ async function renderImageDangerZone(){
       }else{
         say(result.triggered?result.deleted+" unused image(s) deleted after confirmation.":"Threshold not reached; no files deleted.");
       }
-    }catch(e){say("Cleanup could not be completed safely. "+(e.message||"Refresh the count before retrying."),true);}
+    }catch(e){console.warn("Unused-image cleanup failed safely:",e);say("Cleanup could not be completed safely. Refresh the count before retrying.",true);}
     finally{scan.disabled=false;await refreshCount();}
   };
   await refreshCount();
