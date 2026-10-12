@@ -1,5 +1,17 @@
 [
   {
+    "id": 1791820207477,
+    "name": "Abc",
+    "category": "Sarees",
+    "color": "",
+    "price": 1000,
+    "image": "assets/products/1791820204337-f9bd851acc94-IMG-20261012-WA0005.jpg",
+    "dateAdded": "2026-10-12T15:50:07.477Z",
+    "newArrival": true,
+    "bestSeller": false,
+    "availability": true
+  },
+  {
     "id": 1791811630242,
     "name": "Antique necklace",
     "category": "Jewelry",
