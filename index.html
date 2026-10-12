@@ -10190,7 +10190,7 @@ async function renderImageDangerZone(){
     }catch(e){
       count.textContent="Count unavailable";
       cleanup.disabled=true;
-      say("Could not verify the unused folder. "+(e.message||""),true);
+      console.warn("Unused-image inventory scan failed:",e);say("Could not verify the unused folder. Refresh the count and try again.",true);
     }finally{scan.disabled=unusedImageCleanupInProgress;}
   };
   scan.onclick=refreshCount;
