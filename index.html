@@ -9696,7 +9696,7 @@ async function localApi(body){
 async function api(body){
   return localApi(body);
 }
-async async function loadPublicJson(path){
+async function loadPublicJson(path){
   // The GitHub Contents API is the source of truth for products. If it is
   // unavailable, do not silently accept a possibly stale Pages/CDN catalogue:
   // showing an explicit temporary-unavailable state is safer than hiding a
