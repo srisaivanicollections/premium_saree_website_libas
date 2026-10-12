@@ -9681,7 +9681,7 @@ async function localApi(body){
       if(error.status===404)return {ok:true};
       // Retry transient verification failures before surfacing an uncertain outcome.
       try{after=await githubRequest("/repos/"+GITHUB_REPO+"/contents/"+path+"?ref="+encodeURIComponent(GITHUB_BRANCH)+"&verifyDeleteRetry="+Date.now());}
-      catch(retryError){if(retryError.status===404)return {ok:true};throw new Error("Deletion was submitted, but GitHub could not confirm the final state. Refresh the list before retrying.");}
+      catch(retryError){if(retryError.status===404)return {ok:true};const uncertain=new Error("Deletion outcome is uncertain because GitHub could not verify the final state. Refresh the list before retrying.");uncertain.uncertain=true;throw uncertain;}
     }
     if(after&&after.sha){
       // One more fresh read protects against a stale response immediately after DELETE.
@@ -10107,15 +10107,16 @@ async function renderImageDangerZone(){
  scan.onclick=refreshFiles;
  del.onclick=async()=>{const paths=selected();if(!paths.length){say("Select at least one file.",true);return;}
   if(!await showAdminConfirm("Permanently delete images?","Permanently delete "+paths.length+" selected file(s) from assets/products/_unused/? This cannot be undone from Admin Studio.","DELETE FILES"))return;
-  del.disabled=true;scan.disabled=true;let count=0;const failed=[];
+  del.disabled=true;scan.disabled=true;let count=0;const failed=[];const uncertain=[];
   for(const path of paths){try{
    if(!/^assets\/products\/_unused\/[a-zA-Z0-9._-]+$/.test(path))throw new Error("Invalid quarantine path.");
    const fresh=await githubRequest("/repos/"+GITHUB_REPO+"/contents/"+path+"?ref="+encodeURIComponent(GITHUB_BRANCH)+"&check="+Date.now());
    if(!fresh?.sha||fresh.type!=="file")throw new Error("File changed or unavailable.");
    const result=await api({action:"deleteImage",path,expectedSha:fresh.sha});if(!result?.ok)throw new Error("GitHub did not confirm deletion.");count++;
-  }catch(e){failed.push(path+": "+(e.message||"delete failed"));}}
+  }catch(e){(e?.uncertain?uncertain:failed).push(path+": "+(e.message||"delete failed"));}}
   await refreshFiles();
-  if(count===0&&failed.length)say("No files were deleted. "+failed.join("; "),true);
+  if(uncertain.length)say((count?count+" deletion(s) confirmed. ":"")+"Deletion outcome could not be verified for "+uncertain.length+" file(s). The list was refreshed; check whether each file remains before retrying. "+uncertain.join("; ")+(failed.length?" Other failures: "+failed.join("; "):""),true);
+  else if(count===0&&failed.length)say("No files were confirmed deleted. "+failed.join("; "),true);
   else if(failed.length)say(count+" file(s) deleted; "+failed.length+" failed: "+failed.join("; "),true);
   else if(count)say(count+" file(s) permanently deleted.",false);
   scan.disabled=false;del.disabled=selected().length===0;
