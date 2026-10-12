@@ -11256,14 +11256,19 @@ document.addEventListener("click",async e=>{const t=e.target.closest("[data-tab]
     else nextSettings[key]=input.value.trim();
   });
   delete nextSettings.githubToken;
-  const hasChanges=Object.entries(nextSettings).some(([key,value])=>JSON.stringify(value)!==JSON.stringify(settingsFormBaseline[key]));
-  if(!hasChanges){showAdminToast("No changes to save.","success");return;}
+  // Submit only fields the Admin actually changed. The backend re-reads the
+  // latest settings on every retry, so unrelated concurrent settings survive.
+  const changedSettings={};
+  for(const [key,value] of Object.entries(nextSettings)){
+    if(JSON.stringify(value)!==JSON.stringify(settingsFormBaseline[key]))changedSettings[key]=value;
+  }
+  if(!Object.keys(changedSettings).length){showAdminToast("No changes to save.","success");return;}
   const btn=e.target;
   const oldText=btn.textContent;
   btn.disabled=true;
   btn.textContent="SAVING...";
   try{
-    const saveSettingsOperation=async()=>api({action:"saveSettings",password:adminPassword,settings:nextSettings});
+    const saveSettingsOperation=async()=>api({action:"saveSettings",password:adminPassword,settings:changedSettings});
     settingsWriteQueue=settingsWriteQueue.then(saveSettingsOperation,saveSettingsOperation);
     const result=await settingsWriteQueue;
     if(!result?.settings) throw new Error("Settings were saved but could not be verified. Refresh before retrying.");
