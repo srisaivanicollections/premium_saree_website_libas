@@ -10570,7 +10570,7 @@ async function saveProduct(id){
           if(targetMatches.length===1){
             try{
               await verifyProductPersistence(productToSave,latest);
-              exactMatch=true;
+              exactMatch=!uploadedImagePath || await verifyUploadedImageAccessible(uploadedImagePath);
             }catch(_){
               exactMatch=false;
             }
@@ -10587,6 +10587,11 @@ async function saveProduct(id){
       render();
       showView("products");
       showAdminToast(id?"Product updated successfully.":"Product added successfully.","success");
+    }else if(Array.isArray(latestProducts)&&targetMatches.length===1&&writeReportedSuccess&&uploadedImagePath&&String(targetMatches[0].image||"").trim()===uploadedImagePath){
+      products=latestProducts;
+      githubOriginalIds=new Set(products.map(x=>Number(x.id)));
+      render();
+      showAdminToast("Product was saved, but the new image could not be verified. The previous image was retained. Check the image before retrying.","error");
     }else if(writeReportedSuccess || (writeAttempted && (!verificationSucceeded || targetMatches.length>0))){
       // A conflicting record or failed read is inconclusive. Keep the uploaded
       // image and never repeat a write that may already have succeeded.
