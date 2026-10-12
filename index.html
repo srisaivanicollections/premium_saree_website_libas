@@ -9446,6 +9446,8 @@ function getSavedGithubToken(){
    This also protects older cached page instances from a missing global binding. */
 window.getSavedGithubToken=getSavedGithubToken;
 let products=[],settings={},category="Sarees",adminPassword="",githubOriginalIds=new Set();
+// Settings may only be edited after a successful authoritative GitHub read.
+let settingsAuthoritativeLoaded=false;
 let settingsFormBaseline={};
 let catalogPage=0;
 const CATALOG_PAGE_SIZE=20;
@@ -10233,6 +10235,33 @@ function showView(v){
   const studio=$("#studio");
   if(studio)studio.classList.toggle("admin-view-add",v==="add");
   const b=$("#studioBody");
+  if(v==="settings"&&!settingsAuthoritativeLoaded){
+    b.innerHTML='<section class="admin-settings-group" role="status" aria-live="polite" style="padding:20px"><h3>Settings are read-only</h3><p>The latest website settings could not be verified from GitHub. No default values will be saved. Retry the settings read to safely unlock editing.</p><button type="button" class="btn dark" id="retryAuthoritativeSettings">RETRY SETTINGS READ</button><p id="retryAuthoritativeSettingsStatus" role="status" aria-live="polite"></p></section>';
+    const retry=$("#retryAuthoritativeSettings");
+    retry.onclick=async()=>{
+      if(retry.disabled)return;
+      retry.disabled=true;
+      retry.textContent="CHECKING GITHUB...";
+      const status=$("#retryAuthoritativeSettingsStatus");
+      if(status)status.textContent="Reading the latest settings…";
+      try{
+        const fresh=await githubReadJsonFresh("data/settings.json");
+        if(!fresh.value||typeof fresh.value!=="object"||Array.isArray(fresh.value))throw new Error("GitHub returned invalid settings.");
+        settings={...fresh.value};
+        delete settings.githubToken;
+        settingsAuthoritativeLoaded=true;
+        apply();
+        showView("settings");
+        showAdminToast("Latest website settings loaded. Editing is now enabled.","success");
+      }catch(error){
+        settingsAuthoritativeLoaded=false;
+        if(status)status.textContent="Settings are still locked. "+(error?.message||"GitHub could not verify settings. Try again later.");
+        retry.disabled=false;
+        retry.textContent="RETRY SETTINGS READ";
+      }
+    };
+    return;
+  }
   if(v==="products"){
     const productCounts={total:products.length,newArrival:products.filter(p=>p.newArrival).length,bestSeller:products.filter(p=>p.bestSeller).length,available:products.filter(p=>p.availability!==false).length};
     const knownColors=["Black","Blue","Brown","Gold","Green","Grey","Ivory","Maroon","Multi-colour","Orange","Pink","Purple","Red","Silver","White","Yellow"];
@@ -10936,7 +10965,11 @@ async function connectGithubStorage(){
 
     // Validate the token against both Git-backed files before opening Admin Studio.
     await githubReadJson("data/products.json");
-    await githubReadJson("data/settings.json");
+    const settingsRead=await githubReadJsonFresh("data/settings.json");
+    if(!settingsRead.value||typeof settingsRead.value!=="object"||Array.isArray(settingsRead.value))throw new Error("GitHub settings are invalid. Settings editing remains locked.");
+    settings={...settingsRead.value};
+    delete settings.githubToken;
+    settingsAuthoritativeLoaded=true;
 
     otpAdminSession=true;
     adminSessionActive=true;
@@ -11093,7 +11126,9 @@ async function verifyAdminOtp(){
     }
 
     // Load the catalogue independently from optional site settings. A transient
-    // settings read failure must not discard a valid product catalogue.
+    // settings read failure must not discard a valid product catalogue. Settings
+    // remain read-only until an authoritative GitHub read succeeds.
+    settingsAuthoritativeLoaded=false;
     try{
       const catalog=await githubReadJsonFresh("data/products.json");
       if(!Array.isArray(catalog.value)||catalog.value.length===0)throw new Error("GitHub product catalogue is empty or invalid.");
@@ -11105,11 +11140,14 @@ async function verifyAdminOtp(){
     }
     try{
       const siteSettings=await githubReadJsonFresh("data/settings.json");
-      settings=(siteSettings.value&&typeof siteSettings.value==="object")?{...siteSettings.value}:{};
+      if(!siteSettings.value||typeof siteSettings.value!=="object"||Array.isArray(siteSettings.value))throw new Error("GitHub settings are invalid.");
+      settings={...siteSettings.value};
+      settingsAuthoritativeLoaded=true;
     }catch(settingsError){
-      console.warn("Admin settings could not be loaded; using safe defaults:",settingsError);
+      console.warn("Admin settings could not be loaded; settings editing is locked until a fresh read succeeds:",settingsError);
       settings={name:"SRI SAI VANI",whatsapp:"",instagram:"https://www.instagram.com/sri_sai_vani_collections/"};
-      setStorageStatus("Products loaded. Settings could not be refreshed, so safe defaults are in use.",true);
+      settingsAuthoritativeLoaded=false;
+      setStorageStatus("Products loaded. Settings could not be refreshed. Settings editing is locked until you retry.",false);
     }
     delete settings.githubToken;
     apply();
@@ -11136,6 +11174,7 @@ function logoutAdmin(){
   adminLogoutLock=true;
   adminSessionActive=false;
   otpAdminSession=false;
+  settingsAuthoritativeLoaded=false;
   otpAdminEmail="";
   closeAdminModal();
   resetOtpScreen();
@@ -11200,6 +11239,11 @@ window.addEventListener("pageshow",()=>{
 all("[data-view]").forEach(b=>b.onclick=()=>showView(b.dataset.view));
 document.addEventListener("click",async e=>{const t=e.target.closest("[data-tab]");if(t){if(!isCategoryEnabled(t.dataset.tab))return;category=t.dataset.tab;catalogPage=0;render()}const c=e.target.closest("[data-cat]");if(c){if(!isCategoryEnabled(c.dataset.cat))return;category=c.dataset.cat;catalogPage=0;$("#nav").classList.remove("open");render()}const eb=e.target.closest(".edit");if(eb)edit(Number(eb.dataset.id));if(e.target.id==="saveSettings"){
   e.preventDefault();
+  if(!settingsAuthoritativeLoaded){
+    showAdminToast("Settings are locked because the latest GitHub settings were not verified. Retry the settings read before editing.","error");
+    showView("settings");
+    return;
+  }
   const nextSettings={
     name:$("#setName").value.trim()||"SRI SAI VANI",
     whatsapp:(()=>{const digits=$("#setWa").value.replace(/\D/g,"").slice(0,10);return digits.length===10?"91"+digits:"";})(),
