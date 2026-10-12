@@ -10520,10 +10520,10 @@ async function imageHasKnownReferences(path){
  }catch(e){console.warn("Could not prove image is unreferenced; retaining it:",e);return true;}
 }
 async function cleanupReplacedImage(oldPath,newPath){
- if(!oldPath||oldPath===newPath||!/^assets\/products\/[a-zA-Z0-9._-]+$/.test(oldPath))return {deleted:false,reason:"not eligible"};
- try{if(!(await verifyUploadedImageAccessible(newPath)))return {deleted:false,reason:"new image verification failed"};const latest=await githubReadJsonFresh("data/products.json");if(!Array.isArray(latest.value)||!latest.value.some(p=>String(p.image||"").trim()===newPath))return {deleted:false,reason:"replacement is not confirmed in the saved catalogue"};}catch(e){return {deleted:false,reason:"replacement or catalogue verification failed"};}
- if(await imageHasKnownReferences(oldPath))return {deleted:false,reason:"still referenced or reference check inconclusive"};
- try{await api({action:"deleteImage",path:oldPath});return {deleted:true};}catch(e){console.warn("Old image cleanup failed:",e);return {deleted:false,reason:e.message||"GitHub delete failed"};}
+ if(!oldPath||oldPath===newPath||!/^assets\/products\/[a-zA-Z0-9._-]+$/.test(oldPath))return {moved:false,reason:"not eligible"};
+ try{if(!(await verifyUploadedImageAccessible(newPath)))return {moved:false,reason:"new image verification failed"};const latest=await githubReadJsonFresh("data/products.json");if(!Array.isArray(latest.value)||!latest.value.some(p=>String(p.image||"").trim()===newPath))return {moved:false,reason:"replacement is not confirmed in the saved catalogue"};}catch(e){return {moved:false,reason:"replacement or catalogue verification failed"};}
+ if(await imageHasKnownReferences(oldPath))return {moved:false,reason:"still referenced or reference check inconclusive"};
+ try{return await quarantineUploadedImage(oldPath);}catch(e){console.warn("Old image move failed:",e);return {moved:false,reason:e.message||"Could not move old image"};}
 }
 async function quarantineUploadedImage(path){
  if(!/^assets\/products\/[a-zA-Z0-9._-]+$/.test(String(path||"")))return {moved:false,reason:"invalid product image path"};
@@ -10554,8 +10554,6 @@ async function quarantineUploadedImage(path){
  await githubRequest("/repos/"+GITHUB_REPO+"/contents/"+path,{method:"DELETE",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:"Move unreferenced image to quarantine",sha:latestSource.sha,branch:GITHUB_BRANCH})});
  const sourceAfter=await githubRequest("/repos/"+GITHUB_REPO+"/contents/"+path+"?ref="+encodeURIComponent(GITHUB_BRANCH)+"&verifyMove="+Date.now()).catch(error=>{if(error.status===404)return null;throw error;});
  if(sourceAfter?.sha)return {moved:false,reason:"quarantine copy exists but source deletion could not be confirmed"};
- const cleanup=await autoCleanupUnusedImagesIfThreshold().catch(error=>({triggered:false,error}));
- if(cleanup?.triggered&&(cleanup.failed?.length||cleanup.uncertain?.length))console.warn("Automatic unused-image cleanup had unverified failures:",cleanup);
  return {moved:true,path:destination};
 }
 
@@ -10643,7 +10641,7 @@ async function saveProduct(id){
     catalogWriteQueue=catalogWriteQueue.then(write,write);
     await catalogWriteQueue;
     let cleanupMessage="";
-    if(uploadedImagePath && previousImagePath && previousImagePath!==uploadedImagePath){const cleanup=await cleanupReplacedImage(previousImagePath,uploadedImagePath);if(!cleanup.deleted)cleanupMessage=" Previous image retained: "+cleanup.reason+".";}
+    if(uploadedImagePath && previousImagePath && previousImagePath!==uploadedImagePath){const cleanup=await cleanupReplacedImage(previousImagePath,uploadedImagePath);if(!cleanup.moved)cleanupMessage=" Previous image retained: "+cleanup.reason+".";}
     showView("products");
     showAdminToast((id?"Product updated successfully.":"Product added successfully.")+(cleanupMessage?" "+cleanupMessage.replace(/^ Previous image retained: /,"The previous image was retained safely: "):""),"success");
   }catch(e){
@@ -10704,11 +10702,7 @@ async function saveProduct(id){
       if(Array.isArray(latestProducts)){products=latestProducts;githubOriginalIds=new Set(products.map(x=>Number(x.id)));}else{products=oldProducts;}
       render();
       let recoveryMessage=uploadedImagePath?" The uploaded image was retained for safety.":"";
-      const definitelyNotSaved=verificationSucceeded&&Array.isArray(latestProducts)&&!latestProducts.some(item=>Number(item.id)===Number(productToSave?.id)&&String(item.image||"").trim()===uploadedImagePath);
-      if(uploadedImagePath&&definitelyNotSaved){
-        try{const quarantine=await quarantineUploadedImage(uploadedImagePath);if(quarantine.moved)recoveryMessage=" The failed upload was safely moved to assets/products/_unused/.";else recoveryMessage=" The uploaded image was retained in place because quarantine was not safe or could not be completed: "+quarantine.reason+".";}
-        catch(quarantineError){recoveryMessage=" The uploaded image remains at its original path because quarantine failed: "+(quarantineError.message||"unknown error")+".";}
-      }else if(uploadedImagePath&&writeAttempted){recoveryMessage=" The save outcome is uncertain; the uploaded image was retained in place.";}
+      if(uploadedImagePath&&writeAttempted)recoveryMessage=" The save outcome may be uncertain; both the previous image and uploaded image were retained. Verify the product before retrying.";
       showAdminToast("Could not save product. "+(e?.message||"Please try again.")+recoveryMessage,"error");
     }
   }finally{
