@@ -10092,7 +10092,7 @@ function updateStudioNav(activeView){
   });
 }
 
-const UNUSED_IMAGE_CLEANUP_THRESHOLD_BYTES=100*1024*1024;
+const UNUSED_IMAGE_CLEANUP_THRESHOLD_BYTES=100*1000*1000;
 const UNUSED_IMAGE_FOLDER="assets/products/_unused";
 function isSafeUnusedImagePath(path){
   if(typeof path!=="string"||!path.startsWith(UNUSED_IMAGE_FOLDER+"/"))return false;
@@ -10144,7 +10144,7 @@ async function renderImageDangerZone(){
       const result=await autoCleanupUnusedImagesIfThreshold();
       const files=await listUnusedImageFiles();
       const totalBytes=files.reduce((sum,file)=>sum+Number(file.size||0),0);
-      const formatMB=bytes=>(bytes/1024/1024).toLocaleString(undefined,{maximumFractionDigits:1})+" MB";
+      const formatMB=bytes=>(bytes/1000000).toLocaleString(undefined,{maximumFractionDigits:1})+" MB";
       count.textContent=files.length+" images · "+formatMB(totalBytes)+" / 100 MB";
       if(result.triggered){
         if(result.failed.length||result.uncertain.length){
@@ -10554,6 +10554,8 @@ async function quarantineUploadedImage(path){
  await githubRequest("/repos/"+GITHUB_REPO+"/contents/"+path,{method:"DELETE",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:"Move unreferenced image to quarantine",sha:latestSource.sha,branch:GITHUB_BRANCH})});
  const sourceAfter=await githubRequest("/repos/"+GITHUB_REPO+"/contents/"+path+"?ref="+encodeURIComponent(GITHUB_BRANCH)+"&verifyMove="+Date.now()).catch(error=>{if(error.status===404)return null;throw error;});
  if(sourceAfter?.sha)return {moved:false,reason:"quarantine copy exists but source deletion could not be confirmed"};
+ const cleanup=await autoCleanupUnusedImagesIfThreshold().catch(error=>({triggered:false,error}));
+ if(cleanup?.triggered&&(cleanup.failed?.length||cleanup.uncertain?.length))console.warn("Automatic unused-image cleanup had unverified failures:",cleanup);
  return {moved:true,path:destination};
 }
 
