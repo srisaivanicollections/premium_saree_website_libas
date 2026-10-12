@@ -10884,9 +10884,9 @@ const syncCatalogSortIcon=()=>{
   const direction=catalogSort.value;
   catalogSortBox.classList.toggle("is-active",direction==="new-arrivals"||direction==="low-high"||direction==="high-low");
   if(!icon)return;
+  icon.setAttribute("viewBox",direction==="new-arrivals"?"0 0 24 24":"0 0 42 42");
   if(direction==="new-arrivals"){
     icon.innerHTML='<circle cx="12" cy="12" r="9"></circle><polyline points="12 7 12 12 15.5 14"></polyline>';
-    icon.setAttribute("viewBox","0 0 24 24");
     icon.setAttribute("width","18");
     icon.setAttribute("height","18");
     icon.setAttribute("fill","none");
