@@ -10882,9 +10882,19 @@ const syncCatalogSortIcon=()=>{
   if(!catalogSort||!catalogSortBox)return;
   const icon=catalogSortBox.querySelector(".lux-mobile-sort-icon");
   const direction=catalogSort.value;
-  catalogSortBox.classList.toggle("is-active",direction==="low-high"||direction==="high-low");
+  catalogSortBox.classList.toggle("is-active",direction==="new-arrivals"||direction==="low-high"||direction==="high-low");
   if(!icon)return;
-  if(direction==="low-high"){
+  if(direction==="new-arrivals"){
+    icon.innerHTML='<circle cx="12" cy="12" r="9"></circle><polyline points="12 7 12 12 15.5 14"></polyline>';
+    icon.setAttribute("viewBox","0 0 24 24");
+    icon.setAttribute("width","18");
+    icon.setAttribute("height","18");
+    icon.setAttribute("fill","none");
+    icon.setAttribute("stroke","currentColor");
+    icon.setAttribute("stroke-width","2");
+    icon.setAttribute("stroke-linecap","round");
+    icon.setAttribute("stroke-linejoin","round");
+  }else if(direction==="low-high"){
     icon.innerHTML='<path d="M10 25V8m0 0-4 4m4-4 4 4"></path><text x="17" y="27" fill="currentColor" stroke="none" font-family="Arial,sans-serif" font-size="17" font-weight="600">₹</text>';
   }else if(direction==="high-low"){
     icon.innerHTML='<path d="M10 8v17m0 0-4-4m4 4 4-4"></path><text x="17" y="27" fill="currentColor" stroke="none" font-family="Arial,sans-serif" font-size="17" font-weight="600">₹</text>';
