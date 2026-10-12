@@ -10635,12 +10635,7 @@ async function quarantineUploadedImage(path){
  await githubRequest("/repos/"+GITHUB_REPO+"/contents/"+path,{method:"DELETE",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:"Move unreferenced image to quarantine",sha:latestSource.sha,branch:GITHUB_BRANCH})});
  const sourceAfter=await githubRequest("/repos/"+GITHUB_REPO+"/contents/"+path+"?ref="+encodeURIComponent(GITHUB_BRANCH)+"&verifyMove="+Date.now()).catch(error=>{if(error.status===404)return null;throw error;});
  if(sourceAfter?.sha)return {moved:false,reason:"quarantine copy exists but source deletion could not be confirmed"};
- // A verified quarantine can push the folder over 100 MB. Trigger cleanup
- // immediately; cleanup failure must not turn a successful product save into failure.
- try{
-   const cleanup=await autoCleanupUnusedImagesIfThreshold();
-   if(cleanup.failed.length||cleanup.uncertain.length)console.warn("Automatic unused-image cleanup stopped safely:",cleanup.failed[0]||cleanup.uncertain[0]);
- }catch(cleanupError){console.warn("Automatic unused-image cleanup could not run:",cleanupError);}
+ // Keep the quarantined image available for deliberate manual cleanup in Admin Studio.
  return {moved:true,path:destination};
 }
 
