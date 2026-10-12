@@ -1,0 +1,2 @@
+# Reserved for manually quarantined product images.
+# Danger Zone scans this folder and never deletes during scanning.
