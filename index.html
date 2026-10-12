@@ -10116,53 +10116,78 @@ async function listUnusedImageFiles(){
   }
   return found;
 }
+let unusedImageCleanupInProgress=false;
 async function autoCleanupUnusedImagesIfThreshold(){
-  const files=await listUnusedImageFiles();
-  const totalBytes=files.reduce((sum,file)=>sum+Number(file.size||0),0);
-  if(totalBytes<UNUSED_IMAGE_CLEANUP_THRESHOLD_BYTES)return {checked:files.length,totalBytes,deleted:0,triggered:false,failed:[],uncertain:[]};
-  let deleted=0;const failed=[];const uncertain=[];
-  for(const file of files){
-    try{
-      const fresh=await githubRequest("/repos/"+GITHUB_REPO+"/contents/"+file.path+"?ref="+encodeURIComponent(GITHUB_BRANCH)+"&autoCleanupCheck="+Date.now());
-      if(!fresh?.sha||fresh.type!=="file")throw new Error("File changed or unavailable.");
-      const result=await api({action:"deleteImage",path:file.path,expectedSha:fresh.sha});
-      if(!result?.ok)throw new Error("GitHub did not confirm deletion.");
-      deleted++;
-    }catch(e){
-      (e?.uncertain?uncertain:failed).push(file.path+": "+(e.message||"delete failed"));
+  if(unusedImageCleanupInProgress)throw new Error("Unused-image cleanup is already running.");
+  unusedImageCleanupInProgress=true;
+  try{
+    const files=await listUnusedImageFiles();
+    const totalBytes=files.reduce((sum,file)=>sum+Number(file.size||0),0);
+    if(totalBytes<UNUSED_IMAGE_CLEANUP_THRESHOLD_BYTES)return {checked:files.length,totalBytes,deleted:0,triggered:false,failed:[],uncertain:[]};
+    let deleted=0;const failed=[];const uncertain=[];
+    for(const file of files){
+      try{
+        const fresh=await githubRequest("/repos/"+GITHUB_REPO+"/contents/"+file.path+"?ref="+encodeURIComponent(GITHUB_BRANCH)+"&autoCleanupCheck="+Date.now());
+        if(!fresh?.sha||fresh.type!=="file")throw new Error("File changed or unavailable.");
+        const result=await api({action:"deleteImage",path:file.path,expectedSha:fresh.sha});
+        if(!result?.ok)throw new Error("GitHub did not confirm deletion.");
+        deleted++;
+      }catch(e){
+        (e?.uncertain?uncertain:failed).push(file.path+": "+(e.message||"delete failed"));
+        // Stop on the first unverified result. Do not continue destructive work
+        // while the state of the current file is uncertain.
+        break;
+      }
     }
+    return {checked:files.length,totalBytes,deleted,triggered:true,failed,uncertain};
+  }finally{
+    unusedImageCleanupInProgress=false;
   }
-  return {checked:files.length,totalBytes,deleted,triggered:true,failed,uncertain};
 }
 async function renderImageDangerZone(){
   const section=$("#studioBody")?.querySelector("#imageDangerZone");if(!section)return;
-  const scan=section.querySelector("#scanUnusedImages"),status=section.querySelector("#unusedImageStatus"),count=section.querySelector("#unusedImageCount");
+  const scan=section.querySelector("#scanUnusedImages"),cleanup=section.querySelector("#cleanupUnusedImages"),status=section.querySelector("#unusedImageStatus"),count=section.querySelector("#unusedImageCount");
   const say=(t,bad=false)=>{status.textContent=t;status.style.color=bad?"#a32121":"";};
+  const formatMB=bytes=>(bytes/1000000).toLocaleString(undefined,{maximumFractionDigits:1})+" MB";
   const refreshCount=async()=>{
+    if(unusedImageCleanupInProgress)return;
     scan.disabled=true;say("Checking unused-image count…");
     try{
-      const result=await autoCleanupUnusedImagesIfThreshold();
       const files=await listUnusedImageFiles();
       const totalBytes=files.reduce((sum,file)=>sum+Number(file.size||0),0);
-      const formatMB=bytes=>(bytes/1000000).toLocaleString(undefined,{maximumFractionDigits:1})+" MB";
       count.textContent=files.length+" images · "+formatMB(totalBytes)+" / 100 MB";
-      if(result.triggered){
-        if(result.failed.length||result.uncertain.length){
-          say("Automatic cleanup triggered at 100 MB. "+result.deleted+" deleted; "+(result.failed.length+result.uncertain.length)+" could not be confirmed. Remaining: "+files.length+" images · "+formatMB(totalBytes)+". Refresh to retry.",true);
-        }else{
-          say("Automatic cleanup triggered at 100 MB. "+result.deleted+" image(s) deleted; remaining size: "+formatMB(totalBytes)+".");
-        }
-      }else if(files.length===0){
-        say("The unused folder is empty.");
-      }else{
-        say("Cleanup runs automatically when the folder reaches 100 MB.");
-      }
+      cleanup.disabled=totalBytes<UNUSED_IMAGE_CLEANUP_THRESHOLD_BYTES;
+      if(files.length===0)say("The unused folder is empty.");
+      else if(totalBytes<UNUSED_IMAGE_CLEANUP_THRESHOLD_BYTES)say("Cleanup becomes available at 100 MB. Scanning does not delete files.");
+      else say("Threshold reached. Review the count, then choose CLEAN UNUSED IMAGES to proceed.");
     }catch(e){
       count.textContent="Count unavailable";
+      cleanup.disabled=true;
       say("Could not verify the unused folder. "+(e.message||""),true);
-    }finally{scan.disabled=false;}
+    }finally{scan.disabled=unusedImageCleanupInProgress;}
   };
   scan.onclick=refreshCount;
+  cleanup.onclick=async()=>{
+    if(unusedImageCleanupInProgress)return;
+    try{
+      const files=await listUnusedImageFiles();
+      const totalBytes=files.reduce((sum,file)=>sum+Number(file.size||0),0);
+      count.textContent=files.length+" images · "+formatMB(totalBytes)+" / 100 MB";
+      if(totalBytes<UNUSED_IMAGE_CLEANUP_THRESHOLD_BYTES){cleanup.disabled=true;say("Cleanup threshold is not reached. No files were deleted.");return;}
+      if(!confirm("Delete all "+files.length+" files inside assets/products/_unused/ ("+formatMB(totalBytes)+")? Active product images outside this folder will not be touched."))return;
+      cleanup.disabled=true;scan.disabled=true;say("Cleanup in progress…");
+      const result=await autoCleanupUnusedImagesIfThreshold();
+      const remaining=await listUnusedImageFiles();
+      const remainingBytes=remaining.reduce((sum,file)=>sum+Number(file.size||0),0);
+      count.textContent=remaining.length+" images · "+formatMB(remainingBytes)+" / 100 MB";
+      if(result.failed.length||result.uncertain.length){
+        say(result.deleted+" deleted before cleanup stopped. "+(result.failed[0]||result.uncertain[0])+" Refresh the count before trying again.",true);
+      }else{
+        say(result.triggered?result.deleted+" unused image(s) deleted after confirmation.":"Threshold not reached; no files deleted.");
+      }
+    }catch(e){say("Cleanup could not be completed safely. "+(e.message||"Refresh the count before retrying."),true);}
+    finally{scan.disabled=false;await refreshCount();}
+  };
   await refreshCount();
 }
 function showView(v){
@@ -10309,7 +10334,7 @@ function showView(v){
       '</div></details>'+
       '<details class="admin-settings-group"><summary>Section Visibility</summary><div class="admin-settings-toggles">'+
       toggle('Show customer reviews section','showReviews')+toggle('Show Visual Journal section','showJournal')+toggle('Show store details section','showStore')+
-      '</div></details><button type="button" class="btn dark" id="saveSettings">SAVE ALL WEBSITE SETTINGS</button><section id="imageDangerZone" class="admin-settings-group" style="padding:16px;border:1px solid var(--line);margin-top:18px"><h3>Unused Image Cleanup</h3><p>Images in <code>assets/products/_unused/</code> are counted by total file size. When the folder reaches 100 MB, all files in it, including subfolders, are automatically deleted.</p><p id="unusedImageCount" role="status" aria-live="polite">Checking count…</p><button type="button" class="btn dark" id="scanUnusedImages">REFRESH COUNT</button><p id="unusedImageStatus" role="status" aria-live="polite"></p></section></div>';
+      '</div></details><button type="button" class="btn dark" id="saveSettings">SAVE ALL WEBSITE SETTINGS</button><section id="imageDangerZone" class="admin-settings-group" style="padding:16px;border:1px solid var(--line);margin-top:18px"><h3>Unused Image Cleanup</h3><p>Images in <code>assets/products/_unused/</code> are counted by total file size. At 100 MB, cleanup becomes available. Scanning is read-only; deletion requires explicit confirmation and affects only this folder.</p><p id="unusedImageCount" role="status" aria-live="polite">Checking count…</p><button type="button" class="btn dark" id="scanUnusedImages">REFRESH COUNT</button> <button type="button" class="btn dark" id="cleanupUnusedImages" disabled>CLEAN UNUSED IMAGES</button><p id="unusedImageStatus" role="status" aria-live="polite"></p></section></div>';
     settingsFormBaseline={};
     all("#studioBody [data-setting-key]").forEach(input=>{settingsFormBaseline[input.dataset.settingKey]=input.type==="checkbox"?input.checked:input.value.trim();});
     settingsFormBaseline.name=$("#setName")?.value.trim()||"SRI SAI VANI";
