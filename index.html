@@ -9540,7 +9540,17 @@ async function mutateGithubJson(path,mutator,commitMessage,maxAttempts=5){
     if(next===null)return {value:current.value,unchanged:true};
     try{
       await githubWriteJson(path,next,current.sha,attempt===0?commitMessage:commitMessage+" (retry "+attempt+")");
-      return {value:next,unchanged:false};
+      // Read the committed file back from GitHub so callers use authoritative state.
+      let verified;
+      try{
+        verified=await githubReadJsonFresh(path);
+      }catch(verifyError){
+        const error=new Error("GitHub accepted the change, but verification failed. Refresh the catalogue before retrying.");
+        error.verificationInconclusive=true;
+        error.cause=verifyError;
+        throw error;
+      }
+      return {value:verified.value,unchanged:false};
     }catch(error){
       lastError=error;
       if(!isGithubShaConflict(error)||attempt===maxAttempts-1)throw error;
@@ -9584,12 +9594,26 @@ async function localApi(body){
     validateProductInput(incoming);
     const id=Number(incoming.id);
     if(!id)throw new Error("Invalid product ID.");
+    const isUpdate=body.isUpdate===true;
     const saved=await mutateGithubJson("data/products.json",value=>{
       const list=Array.isArray(value)?value:[];
       const exists=list.some(p=>Number(p.id)===id);
-      return exists?list.map(p=>Number(p.id)===id?incoming:p):[incoming,...list];
-    }, "Save product");
-    return {ok:true,products:saved.value};
+      if(isUpdate&&!exists){
+        throw new Error("This product no longer exists in GitHub. Refresh the catalogue before editing again.");
+      }
+      if(!isUpdate&&exists){
+        throw new Error("This product ID already exists. Refresh the catalogue and try again.");
+      }
+      return isUpdate
+        ? list.map(p=>Number(p.id)===id?incoming:p)
+        : [incoming,...list];
+    }, isUpdate?"Update product":"Add product");
+    const verified=Array.isArray(saved.value)?saved.value:[];
+    const savedProduct=verified.find(p=>Number(p.id)===id);
+    if(!savedProduct||JSON.stringify(savedProduct)!==JSON.stringify(incoming)){
+      throw new Error("GitHub did not confirm the exact product data. Refresh the catalogue before retrying.");
+    }
+    return {ok:true,products:verified};
   }
   if(body.action==="deleteProduct"){
     const id=Number(body.id);
@@ -9601,7 +9625,11 @@ async function localApi(body){
       if(!next.length)throw new Error("Cannot delete the last remaining catalog item.");
       return next;
     },"Delete product");
-    return {ok:true,products:saved.value};
+    const verified=Array.isArray(saved.value)?saved.value:[];
+    if(verified.some(p=>Number(p.id)===id)){
+      throw new Error("GitHub still contains this product. Refresh the catalogue before retrying.");
+    }
+    return {ok:true,products:verified};
   }
   if(body.action==="saveSettings"){
     const incoming=(body.settings&&typeof body.settings==="object")?body.settings:{};
@@ -10257,8 +10285,8 @@ function edit(id){
     }
   };
 }
-async function persistProduct(product){
-  return api({action:"saveProduct",password:adminPassword,product});
+async function persistProduct(product,isUpdate=false){
+  return api({action:"saveProduct",password:adminPassword,product,isUpdate});
 }
 async function deleteProductFromGithub(id){
   const deleteOperation=async()=>{
@@ -10412,7 +10440,7 @@ async function saveProduct(id){
     // Serialize catalog writes. Two rapid Admin operations must never race
     // against each other with stale GitHub file SHAs.
     const write=async()=>{
-      const result=await persistProduct(p);
+      const result=await persistProduct(p,Boolean(id));
       if(!Array.isArray(result?.products)) throw new Error("GitHub saved the product but did not return the updated catalogue. Refresh before retrying.");
       products=result.products;
       githubOriginalIds=new Set(products.map(x=>Number(x.id)));
