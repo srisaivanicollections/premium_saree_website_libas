@@ -9683,43 +9683,49 @@ async function api(body){
   return localApi(body);
 }
 async function loadPublicJson(path){
-  // Prefer the same-origin GitHub Pages file. This is the deployed site's
-  // authoritative public catalog and avoids raw.githubusercontent.com
-  // propagation/rate-limit/cache differences.
+  // The GitHub Contents API is the source of truth for products. If it is
+  // unavailable, do not silently accept a possibly stale Pages/CDN catalogue:
+  // showing an explicit temporary-unavailable state is safer than hiding a
+  // recently saved product after refresh.
+  let lastError=null;
+  try{
+    const result=await publicGitHubReadJson(path);
+    const value=result.value;
+    if(path.endsWith("products.json") && !Array.isArray(value)){
+      throw new Error("Product catalog format is invalid.");
+    }
+    if(path.endsWith("products.json") && value.length===0){
+      throw new Error("Product catalog is empty.");
+    }
+    return {value};
+  }catch(e){
+    lastError=e;
+  }
+
+  // Settings may fall back to static copies because a stale text setting is
+  // less destructive than a stale product list. Product records must not.
+  if(path.endsWith("products.json")){
+    throw new Error("The latest product catalogue could not be reached. Please refresh in a moment.");
+  }
+
   const sources=[
     path,
     "https://raw.githubusercontent.com/"+GITHUB_REPO+"/"+GITHUB_BRANCH+"/"+path
   ];
-  let lastError=null;
-
   for(const base of sources){
     try{
       const separator=base.includes("?")?"&":"?";
       const url=base+separator+"cb="+Date.now();
-      const r=await fetch(url,{
-        cache:"no-store",
-        headers:{"Accept":"application/json"}
-      });
-
+      const r=await fetch(url,{cache:"no-store",headers:{"Accept":"application/json"}});
       if(!r.ok) throw new Error("HTTP "+r.status);
-
       const value=await r.json();
-      if(path.endsWith("products.json") && !Array.isArray(value)){
-        throw new Error("Product catalog format is invalid.");
-      }
-      if(path.endsWith("products.json") && Array.isArray(value) && value.length===0){
-        throw new Error("Product catalog is empty.");
-      }
-
       return {value};
     }catch(e){
       lastError=e;
     }
   }
-
-  throw lastError||new Error("Public catalog could not be loaded.");
+  throw lastError||new Error("Public catalogue settings could not be loaded.");
 }
-
 async function removeLegacyInstagramEmbed(){
   document.querySelectorAll('iframe[src*="instagram.com"], iframe[src*="instagramcdn.com"], .instagram-media, .instagram-embed').forEach(function(el){ el.remove(); });
 }
@@ -10747,14 +10753,26 @@ async function verifyAdminOtp(){
       return false;
     }
 
-    // Token presence is not enough. Validate the existing device token
-    // against the Git-backed files before opening Admin Studio.
+    // Validate access, then refresh the Admin catalogue/settings from the
+    // latest GitHub commit before rendering the product list. Never rely on
+    // the public storefront's possibly stale in-memory catalogue after login.
     try{
-      await githubReadJson("data/products.json");
-      await githubReadJson("data/settings.json");
+      const [catalog,siteSettings]=await Promise.all([
+        githubReadJsonFresh("data/products.json"),
+        githubReadJsonFresh("data/settings.json")
+      ]);
+      if(!Array.isArray(catalog.value)||catalog.value.length===0){
+        throw new Error("GitHub product catalogue is empty or invalid.");
+      }
+      products=catalog.value;
+      githubOriginalIds=new Set(products.map(p=>Number(p.id)));
+      settings=(siteSettings.value&&typeof siteSettings.value==="object")?{...siteSettings.value}:{};
+      delete settings.githubToken;
+      apply();
+      render();
     }catch(storageError){
       setStorageStatus(
-        storageError?.message||"The saved GitHub token could not be verified on this device."
+        storageError?.message||"The latest GitHub catalogue could not be loaded on this device."
       );
       return false;
     }
