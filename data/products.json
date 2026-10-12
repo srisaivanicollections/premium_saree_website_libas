@@ -1,17 +1,5 @@
 [
   {
-    "id": 1791818715637,
-    "name": "Pink saree",
-    "category": "Sarees",
-    "color": "",
-    "price": 1000,
-    "image": "assets/products/1791818712006-a1222465be4f-file_00000000cc648211b80babc1f3ec2a2f.png",
-    "dateAdded": "2026-10-12T15:25:15.637Z",
-    "newArrival": true,
-    "bestSeller": true,
-    "availability": true
-  },
-  {
     "id": 1791811630242,
     "name": "Antique necklace",
     "category": "Jewelry",
