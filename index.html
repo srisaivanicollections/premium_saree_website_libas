@@ -10688,10 +10688,10 @@ async function saveProduct(id){
       githubOriginalIds=new Set(products.map(x=>Number(x.id)));
       render();
       showAdminToast("Product was saved, but the new image could not be verified. The previous image was retained. Check the image before retrying.","error");
-    }else if(writeReportedSuccess || (writeAttempted && (!verificationSucceeded || (targetMatches.length>0 && !oldProducts.some(old=>Number(old.id)===Number(productToSave?.id) && targetMatches.length===1 && JSON.stringify(old)===JSON.stringify(targetMatches[0]))))){
+    }else if(writeReportedSuccess || (writeAttempted && (!verificationSucceeded || (targetMatches.length>0 && !oldProducts.some(old=>Number(old.id)===Number(productToSave?.id) && targetMatches.length===1 && JSON.stringify(old)===JSON.stringify(targetMatches[0])))))){
       // A changed/conflicting record or failed read is inconclusive. An unchanged
-      // pre-edit record means the attempted edit was not persisted, so an orphaned
-      // new upload can proceed through the guarded quarantine path below.
+      // pre-edit record means the attempted edit was not persisted. Keep the uploaded
+      // image in place until the save outcome is explicitly resolved.
       if(Array.isArray(latestProducts)){
         products=latestProducts;
         githubOriginalIds=new Set(products.map(x=>Number(x.id)));
