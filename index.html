@@ -10518,7 +10518,6 @@ async function saveProduct(id){
         products=latestProducts;
         githubOriginalIds=new Set(products.map(x=>Number(x.id)));
       }
-      }
       render();
       showAdminToast("Save may have succeeded, but could not be confirmed. Refresh the catalogue and check before retrying.","error");
     }else{
