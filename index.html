@@ -10216,7 +10216,7 @@ async function renderImageDangerZone(){
       const files=await listUnusedImageFiles();
       const totalBytes=files.reduce((sum,file)=>sum+Number(file.size||0),0);
       count.textContent=files.length+" images · "+formatMB(totalBytes)+" / 100 MB";
-      if(totalBytes<UNUSED_IMAGE_CLEANUP_THRESHOLD_BYTES){cleanup.disabled=true;say("Cleanup threshold is not reached. No files were deleted.");return;}
+      if(files.length===0){cleanup.disabled=true;say("The unused folder is empty.");return;}
       if(!confirm("Delete all "+files.length+" supported image files inside assets/products/_unused/ ("+formatMB(totalBytes)+")? Active product images outside this folder will not be touched."))return;
       cleanup.disabled=true;scan.disabled=true;say("Cleanup in progress…");
       const result=await autoCleanupUnusedImagesIfThreshold(true);
