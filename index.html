@@ -10448,7 +10448,8 @@ async function imageHasKnownReferences(path){
   if(!Array.isArray(c.value)||!st.value||typeof st.value!=="object"||!html?.content)return true;
   const contains=(v,seen=new Set())=>{if(v===path)return true;if(!v||typeof v!=="object"||seen.has(v))return false;seen.add(v);return Object.values(v).some(x=>contains(x,seen));};
   const source= new TextDecoder().decode(Uint8Array.from(atob(String(html.content).replace(/\\s/g,"")),ch=>ch.charCodeAt(0)));
-  return c.value.some(p=>contains(p))||contains(st.value)||source.includes(path);
+  const literalReference=source.includes('src="'+path+'"')||source.includes("src=\'"+path+"\'")||source.includes('href="'+path+'"')||source.includes("href=\'"+path+"\'")||source.includes('url("'+path+'")')||source.includes("url(\'"+path+"\')")||source.includes('image:"'+path+'"')||source.includes("image:\'"+path+"\'")||source.includes('logo:"'+path+'"')||source.includes("logo:\'"+path+"\'");
+  return c.value.some(p=>contains(p))||contains(st.value)||literalReference;
  }catch(e){console.warn("Could not prove image is unreferenced; retaining it:",e);return true;}
 }
 async function cleanupReplacedImage(oldPath,newPath){
@@ -10461,8 +10462,19 @@ async function quarantineUploadedImage(path){
  if(!/^assets\/products\/[a-zA-Z0-9._-]+$/.test(String(path||"")))return {moved:false,reason:"invalid product image path"};
  if(await imageHasKnownReferences(path))return {moved:false,reason:"image is referenced or reference status is unknown"};
  const source=await githubRequest("/repos/"+GITHUB_REPO+"/contents/"+path+"?ref="+encodeURIComponent(GITHUB_BRANCH)+"&quarantineSource="+Date.now());
- if(!source||source.type!=="file"||!source.sha||!source.content||Number(source.size)<=0)return {moved:false,reason:"source image could not be verified"};
- const encoded=String(source.content).replace(/\s/g,""),base=path.split("/").pop();let destination="assets/products/_unused/"+base;
+ if(!source||source.type!=="file"||!source.sha||!source.download_url||Number(source.size)<=0)return {moved:false,reason:"source image could not be verified"};
+ // The Contents API may omit inline Base64 for files larger than 1 MB. Download
+ // raw bytes and encode in chunks to support the existing 5 MB upload limit.
+ let encoded;
+ try{
+  const response=await fetch(source.download_url,{cache:"no-store"});
+  if(!response.ok)throw new Error("Raw image download failed ("+response.status+").");
+  const bytes=new Uint8Array(await response.arrayBuffer());
+  if(bytes.byteLength!==Number(source.size))throw new Error("Downloaded image size does not match GitHub metadata.");
+  let binary="";for(let offset=0;offset<bytes.length;offset+=0x8000)binary+=String.fromCharCode(...bytes.subarray(offset,Math.min(offset+0x8000,bytes.length)));
+  encoded=btoa(binary);
+ }catch(e){return {moved:false,reason:"could not safely read image bytes: "+(e.message||"download failed")};}
+ const base=path.split("/").pop();let destination="assets/products/_unused/"+base;
  for(let n=1;n<=20;n++){const check=await githubRequest("/repos/"+GITHUB_REPO+"/contents/"+destination+"?ref="+encodeURIComponent(GITHUB_BRANCH)+"&destinationCheck="+Date.now()).catch(error=>{if(error.status===404)return null;throw error;});if(!check)break;const dot=base.lastIndexOf(".");destination="assets/products/_unused/"+(dot>0?base.slice(0,dot)+"-"+n+base.slice(dot):base+"-"+n);}
  const collision=await githubRequest("/repos/"+GITHUB_REPO+"/contents/"+destination+"?ref="+encodeURIComponent(GITHUB_BRANCH)+"&finalDestinationCheck="+Date.now()).catch(error=>{if(error.status===404)return null;throw error;});
  if(collision)return {moved:false,reason:"could not find a unique quarantine filename"};
