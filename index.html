@@ -9674,7 +9674,15 @@ async function localApi(body){
     if(!file?.sha||file.type!=="file") throw new Error("Image was not found on the configured branch.");
     if(body.expectedSha&&body.expectedSha!==file.sha)throw new Error("Image changed since it was selected. Refresh the list and try again.");
     await githubRequest("/repos/"+GITHUB_REPO+"/contents/"+path,{method:"DELETE",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:"Remove unused product image",sha:file.sha,branch:GITHUB_BRANCH})});
-    const after=await githubRequest("/repos/"+GITHUB_REPO+"/contents/"+path+"?ref="+encodeURIComponent(GITHUB_BRANCH)+"&verifyDelete="+Date.now()).catch(error=>{if(error.status===404)return null;throw error;});
+    let after;
+    try{
+      after=await githubRequest("/repos/"+GITHUB_REPO+"/contents/"+path+"?ref="+encodeURIComponent(GITHUB_BRANCH)+"&verifyDelete="+Date.now());
+    }catch(error){
+      if(error.status===404)return {ok:true};
+      // Retry transient verification failures before surfacing an uncertain outcome.
+      try{after=await githubRequest("/repos/"+GITHUB_REPO+"/contents/"+path+"?ref="+encodeURIComponent(GITHUB_BRANCH)+"&verifyDeleteRetry="+Date.now());}
+      catch(retryError){if(retryError.status===404)return {ok:true};throw new Error("Deletion was submitted, but GitHub could not confirm the final state. Refresh the list before retrying.");}
+    }
     if(after&&after.sha)throw new Error("GitHub still reports the image after deletion.");
     return {ok:true};
   }
