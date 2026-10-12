@@ -9052,7 +9052,7 @@ body:not(#admin) [style*="font-size:7px"]{font-size:8px!important}
             <path d="M14 9v24m0-24-4 4m4-4 4 4M28 33V9m0 24-4-4m4 4 4-4"></path>
           </svg>
           <select id="price" class="lux-price-select" aria-label="Sort products">
-            <option value="" selected>Default order</option>
+            <option value="" selected>Sort by</option>
             <option value="new-arrivals">New Arrival (Newest First)</option>
             <option value="low-high">Price: Low to High</option>
             <option value="high-low">Price: High to Low</option>
@@ -11500,7 +11500,7 @@ if(catalogReset)catalogReset.onclick=()=>{
 <script>
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("./sw.js?v=20261012-sortby-new-arrival-cache18", { updateViaCache: "none" }).catch(error => {
+    navigator.serviceWorker.register("./sw.js?v=20261012-catalog-toolbar-fix-cache19", { updateViaCache: "none" }).catch(error => {
       console.warn("Offline support could not be enabled:", error);
     });
   });
