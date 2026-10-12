@@ -9770,11 +9770,17 @@ return true;
     }
     products=[];
     settings={name:"SRI SAI VANI",whatsapp:"",instagram:"https://www.instagram.com/sri_sai_vani_collections/"};
-    apply();
-    // Keep category navigation available even when both product sources fail.
-    renderTabs();
+    // A secondary settings/theme error must never prevent the catalogue's
+    // failure state from being rendered. Keep this path independent of apply().
+    try{apply();}catch(applyError){console.error("Storefront settings could not be applied:",applyError);}
+    // Always restore category navigation and a visible status if data loading fails.
+    try{renderTabs();}catch(tabError){console.error("Catalogue tabs could not be rendered:",tabError);}
     const grid=$("#products");
-    if(grid)grid.innerHTML='<div class="lux-empty"><strong>Collection temporarily unavailable</strong><br><span>Please refresh in a moment.</span></div>';
+    if(grid){
+      grid.style.display="grid";
+      grid.style.minHeight="96px";
+      grid.innerHTML='<div class="lux-empty"><strong>Collection temporarily unavailable</strong><br><span>Please refresh in a moment.</span></div>';
+    }
     return false;
   }
 }
