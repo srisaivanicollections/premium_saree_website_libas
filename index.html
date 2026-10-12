@@ -10558,6 +10558,8 @@ async function saveProduct(id){
   }catch(e){
     let latestProducts=null;
     let exactMatch=false;
+    let recordMatches=false;
+    let imageVerificationFailed=false;
     let targetMatches=[];
     let verificationSucceeded=false;
     if(writeAttempted && productToSave){
@@ -10570,7 +10572,12 @@ async function saveProduct(id){
           if(targetMatches.length===1){
             try{
               await verifyProductPersistence(productToSave,latest);
-              exactMatch=!uploadedImagePath || await verifyUploadedImageAccessible(uploadedImagePath);
+              recordMatches=true;
+              exactMatch=true;
+              if(uploadedImagePath){
+                try{if(!(await verifyUploadedImageAccessible(uploadedImagePath))){imageVerificationFailed=true;exactMatch=false;}}
+                catch(imageError){imageVerificationFailed=true;exactMatch=false;}
+              }
             }catch(_){
               exactMatch=false;
             }
@@ -10587,7 +10594,7 @@ async function saveProduct(id){
       render();
       showView("products");
       showAdminToast(id?"Product updated successfully.":"Product added successfully.","success");
-    }else if(Array.isArray(latestProducts)&&targetMatches.length===1&&writeReportedSuccess&&uploadedImagePath&&String(targetMatches[0].image||"").trim()===uploadedImagePath){
+    }else if(recordMatches&&imageVerificationFailed){
       products=latestProducts;
       githubOriginalIds=new Set(products.map(x=>Number(x.id)));
       render();
