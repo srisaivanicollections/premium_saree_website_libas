@@ -9667,7 +9667,8 @@ async function localApi(body){
   }
   if(body.action==="deleteImage"){
     const path=String(body.path||"");
-    if(!/^assets\/products\/(?:[a-zA-Z0-9._-]+|_unused\/[a-zA-Z0-9._-]+)$/.test(path)) throw new Error("Invalid image path.");
+    const activeImagePath=/^assets\/products\/[a-zA-Z0-9._-]+$/.test(path);
+    if(!activeImagePath&&!isSafeUnusedImagePath(path)) throw new Error("Invalid image path.");
     // Recheck references at the destructive-operation boundary. Quarantined files are handled by explicit Danger Zone confirmation.
     if(!path.startsWith("assets/products/_unused/")&&await imageHasKnownReferences(path))throw new Error("Image is still referenced or its reference status could not be verified.");
     const file=await githubRequest("/repos/"+GITHUB_REPO+"/contents/"+path+"?ref="+encodeURIComponent(GITHUB_BRANCH)+"&deleteCheck="+Date.now());
@@ -10091,15 +10092,34 @@ function updateStudioNav(activeView){
   });
 }
 
+const UNUSED_IMAGE_CLEANUP_THRESHOLD_BYTES=100*1024*1024;
+const UNUSED_IMAGE_FOLDER="assets/products/_unused";
+function isSafeUnusedImagePath(path){
+  if(typeof path!=="string"||!path.startsWith(UNUSED_IMAGE_FOLDER+"/"))return false;
+  const parts=path.split("/");
+  return parts[0]==="assets"&&parts[1]==="products"&&parts[2]==="_unused"&&parts.length>3&&parts.slice(3).every(part=>/^[a-zA-Z0-9._-]+$/.test(part)&&part!=="."&&part!=="..");
+}
 async function listUnusedImageFiles(){
-  const result=await githubRequest("/repos/"+GITHUB_REPO+"/contents/assets/products/_unused?ref="+encodeURIComponent(GITHUB_BRANCH)+"&scan="+Date.now());
-  if(!Array.isArray(result))throw new Error("_unused is not a folder.");
-  return result.filter(f=>f.type==="file"&&/^assets\/products\/_unused\/[a-zA-Z0-9._-]+$/.test(f.path||"")&&f.sha&&Number(f.size)>0);
+  const found=[];
+  const pending=[UNUSED_IMAGE_FOLDER];
+  const visited=new Set();
+  while(pending.length){
+    const dir=pending.pop();
+    if(visited.has(dir))continue;
+    visited.add(dir);
+    const result=await githubRequest("/repos/"+GITHUB_REPO+"/contents/"+dir+"?ref="+encodeURIComponent(GITHUB_BRANCH)+"&scan="+Date.now());
+    if(!Array.isArray(result))throw new Error("Could not verify unused-image folder: "+dir);
+    for(const item of result){
+      if(item.type==="dir"&&isSafeUnusedImagePath(item.path+"/placeholder"))pending.push(item.path);
+      else if(item.type==="file"&&isSafeUnusedImagePath(item.path)&&item.sha&&Number.isFinite(Number(item.size))&&Number(item.size)>=0)found.push(item);
+    }
+  }
+  return found;
 }
 async function autoCleanupUnusedImagesIfThreshold(){
-  const threshold=100;
   const files=await listUnusedImageFiles();
-  if(files.length<threshold)return {checked:files.length,deleted:0,triggered:false,failed:[],uncertain:[]};
+  const totalBytes=files.reduce((sum,file)=>sum+Number(file.size||0),0);
+  if(totalBytes<UNUSED_IMAGE_CLEANUP_THRESHOLD_BYTES)return {checked:files.length,totalBytes,deleted:0,triggered:false,failed:[],uncertain:[]};
   let deleted=0;const failed=[];const uncertain=[];
   for(const file of files){
     try{
@@ -10112,7 +10132,7 @@ async function autoCleanupUnusedImagesIfThreshold(){
       (e?.uncertain?uncertain:failed).push(file.path+": "+(e.message||"delete failed"));
     }
   }
-  return {checked:files.length,deleted,triggered:true,failed,uncertain};
+  return {checked:files.length,totalBytes,deleted,triggered:true,failed,uncertain};
 }
 async function renderImageDangerZone(){
   const section=$("#studioBody")?.querySelector("#imageDangerZone");if(!section)return;
@@ -10123,17 +10143,19 @@ async function renderImageDangerZone(){
     try{
       const result=await autoCleanupUnusedImagesIfThreshold();
       const files=await listUnusedImageFiles();
-      count.textContent=files.length+" / 100 images";
+      const totalBytes=files.reduce((sum,file)=>sum+Number(file.size||0),0);
+      const formatMB=bytes=>(bytes/1024/1024).toLocaleString(undefined,{maximumFractionDigits:1})+" MB";
+      count.textContent=files.length+" images · "+formatMB(totalBytes)+" / 100 MB";
       if(result.triggered){
         if(result.failed.length||result.uncertain.length){
-          say("Automatic cleanup triggered at 100 images. "+result.deleted+" deleted; "+(result.failed.length+result.uncertain.length)+" could not be confirmed. Current count: "+files.length+". Refresh the count before taking further action.",true);
+          say("Automatic cleanup triggered at 100 MB. "+result.deleted+" deleted; "+(result.failed.length+result.uncertain.length)+" could not be confirmed. Remaining: "+files.length+" images · "+formatMB(totalBytes)+". Refresh to retry.",true);
         }else{
-          say("Automatic cleanup triggered at 100 images. "+result.deleted+" image(s) deleted; current count: "+files.length+".");
+          say("Automatic cleanup triggered at 100 MB. "+result.deleted+" image(s) deleted; remaining size: "+formatMB(totalBytes)+".");
         }
       }else if(files.length===0){
         say("The unused folder is empty.");
       }else{
-        say("Cleanup runs automatically when the folder reaches 100 images.");
+        say("Cleanup runs automatically when the folder reaches 100 MB.");
       }
     }catch(e){
       count.textContent="Count unavailable";
@@ -10287,7 +10309,7 @@ function showView(v){
       '</div></details>'+
       '<details class="admin-settings-group"><summary>Section Visibility</summary><div class="admin-settings-toggles">'+
       toggle('Show customer reviews section','showReviews')+toggle('Show Visual Journal section','showJournal')+toggle('Show store details section','showStore')+
-      '</div></details><button type="button" class="btn dark" id="saveSettings">SAVE ALL WEBSITE SETTINGS</button><section id="imageDangerZone" class="admin-settings-group" style="padding:16px;border:1px solid var(--line);margin-top:18px"><h3>Unused Image Cleanup</h3><p>Images moved to <code>assets/products/_unused/</code> are counted here. When the folder reaches 100 images, all files in that folder are automatically deleted.</p><p id="unusedImageCount" role="status" aria-live="polite">Checking count…</p><button type="button" class="btn dark" id="scanUnusedImages">REFRESH COUNT</button><p id="unusedImageStatus" role="status" aria-live="polite"></p></section></div>';
+      '</div></details><button type="button" class="btn dark" id="saveSettings">SAVE ALL WEBSITE SETTINGS</button><section id="imageDangerZone" class="admin-settings-group" style="padding:16px;border:1px solid var(--line);margin-top:18px"><h3>Unused Image Cleanup</h3><p>Images in <code>assets/products/_unused/</code> are counted by total file size. When the folder reaches 100 MB, all files in it, including subfolders, are automatically deleted.</p><p id="unusedImageCount" role="status" aria-live="polite">Checking count…</p><button type="button" class="btn dark" id="scanUnusedImages">REFRESH COUNT</button><p id="unusedImageStatus" role="status" aria-live="polite"></p></section></div>';
     settingsFormBaseline={};
     all("#studioBody [data-setting-key]").forEach(input=>{settingsFormBaseline[input.dataset.settingKey]=input.type==="checkbox"?input.checked:input.value.trim();});
     settingsFormBaseline.name=$("#setName")?.value.trim()||"SRI SAI VANI";
@@ -10532,9 +10554,7 @@ async function quarantineUploadedImage(path){
  await githubRequest("/repos/"+GITHUB_REPO+"/contents/"+path,{method:"DELETE",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:"Move unreferenced image to quarantine",sha:latestSource.sha,branch:GITHUB_BRANCH})});
  const sourceAfter=await githubRequest("/repos/"+GITHUB_REPO+"/contents/"+path+"?ref="+encodeURIComponent(GITHUB_BRANCH)+"&verifyMove="+Date.now()).catch(error=>{if(error.status===404)return null;throw error;});
  if(sourceAfter?.sha)return {moved:false,reason:"quarantine copy exists but source deletion could not be confirmed"};
- const cleanup=await autoCleanupUnusedImagesIfThreshold().catch(error=>({triggered:false,error}));
-  if(cleanup?.triggered&&(cleanup.failed?.length||cleanup.uncertain?.length))console.warn("Automatic unused-image cleanup had unverified failures:",cleanup);
-  return {moved:true,path:destination};
+ return {moved:true,path:destination};
 }
 
 async function saveProduct(id){
