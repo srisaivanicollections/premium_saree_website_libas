@@ -200,8 +200,8 @@ async function sendOrderNotification(env, order) {
   const html = '<!doctype html><html lang="en"><body style="margin:0;padding:20px 16px;background:#faf7f2;color:#1c1917;font-family:Arial,Helvetica,sans-serif">' +
     '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;max-width:640px;margin:0 auto;background:#ffffff;border:1px solid #e4d8c5;border-radius:12px;border-collapse:separate">' +
     '<tr><td align="center" style="padding:26px 24px 22px;border-bottom:1px solid #e4d8c5">' +
-    '<p style="margin:0;color:#1c1917;font-family:Georgia,Times New Roman,serif;font-size:21px;line-height:.95;font-weight:500;letter-spacing:3px">SRI SAI VANI</p>' +
-    '<p style="margin:5px 0 0;color:#1c1917;font-family:Arial,Helvetica,sans-serif;font-size:9px;line-height:1;letter-spacing:2px">COLLECTIONS</p>' +
+    '<p style="margin:0;color:#1c1917;font-family:Cormorant Garamond,Georgia,serif;font-size:21px;line-height:.85;font-weight:500;letter-spacing:.12em">SRI SAI VANI</p>' +
+    '<p style="margin:5px 0 0;color:#1c1917;font-family:Inter,Arial,sans-serif;font-size:7px;line-height:1;letter-spacing:.31em;color:#78716c">COLLECTIONS</p>' +
     '</td></tr>' +
     '<tr><td align="center" style="padding:22px 24px 20px;border-bottom:1px solid #e4d8c5">' +
     '<h1 style="font-family:Georgia,Times New Roman,serif;font-size:24px;line-height:1.2;font-weight:400;margin:0">Order Details</h1></td></tr>' +
