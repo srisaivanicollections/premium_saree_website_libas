@@ -180,7 +180,7 @@ async function submitOrder(request, env, origin, payload) {
   // product is subsequently removed or marked unavailable.
   const existing = await env.ORDERS_DB.prepare("SELECT order_ref, payload_json, notification_status FROM orders WHERE idempotency_key = ?").bind(idempotencyKey).first();
   if (existing) {
-    order = JSON.parse(existing.payload_json);
+    const order = JSON.parse(existing.payload_json);
     if (existing.notification_status !== "sent") {
       try {
         await sendOrderNotification(env, order);
