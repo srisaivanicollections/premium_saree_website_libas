@@ -65,3 +65,21 @@
  .ssv-cart-item img{width:68px;height:88px}
 }
 @media(prefers-reduced-motion:reduce){#ssv-cart-drawer,#ssv-cart-toast,#shop .ssv-add-cart{transition:none}}
+
+/* Premium clear-bag action and confirmation, scoped to the guest bag drawer. */
+.ssv-cart-head-actions{display:flex;align-items:center;gap:12px;flex:0 0 auto;min-width:0}
+#ssv-clear-bag{padding:8px 0;border:0;background:transparent;color:#786B61;font:500 11px/1.2 Inter,Arial,sans-serif;white-space:nowrap;text-decoration:underline;text-decoration-color:#C8B28A;text-underline-offset:4px;cursor:pointer}
+#ssv-clear-bag:hover{color:#1C1917;text-decoration-color:#B38E5D}
+#ssv-clear-bag:focus-visible,.ssv-clear-dialog button:focus-visible{outline:2px solid #B38E5D;outline-offset:3px}
+#ssv-clear-bag[hidden]{display:none}
+.ssv-clear-dialog-layer[hidden]{display:none}
+.ssv-clear-dialog-layer{position:absolute;inset:0;z-index:5;display:grid;place-items:center;padding:20px}
+.ssv-clear-dialog-backdrop{position:absolute;inset:0;background:rgba(24,18,16,.42)}
+.ssv-clear-dialog{position:relative;width:min(100%,360px);padding:26px 24px 20px;background:#FAF7F2;border:1px solid #E4D8C5;box-shadow:0 18px 55px rgba(0,0,0,.18)}
+.ssv-clear-dialog h3{margin:0 0 10px;color:#1C1917;font:500 27px/1.1 "Cormorant Garamond",Georgia,serif}
+.ssv-clear-dialog p{margin:0 0 22px;color:#625D55;font:400 12px/1.65 Inter,Arial,sans-serif}
+.ssv-clear-dialog-actions{display:flex;justify-content:flex-end;gap:10px}
+.ssv-clear-dialog-actions button{min-height:40px;padding:0 13px;border:1px solid #C8B28A;background:transparent;color:#1C1917;font:600 10px/1.2 Inter,Arial,sans-serif;letter-spacing:.04em;cursor:pointer}
+.ssv-clear-dialog-actions .ssv-clear-confirm{border-color:#6B2925;background:#6B2925;color:#FAF7F2}
+.ssv-clear-dialog-actions .ssv-clear-confirm:hover{border-color:#55201D;background:#55201D}
+@media(max-width:380px){.ssv-cart-head{gap:8px}.ssv-cart-head h2{font-size:26px}.ssv-cart-head-actions{gap:8px}#ssv-clear-bag{font-size:10px}.ssv-cart-close{flex:0 0 38px}.ssv-clear-dialog{padding:23px 17px 17px}.ssv-clear-dialog-actions{gap:7px}.ssv-clear-dialog-actions button{padding:0 9px}}
