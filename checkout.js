@@ -13,7 +13,13 @@
     try{
       const raw=JSON.parse(localStorage.getItem(CART_KEY)||"[]");
       if(!Array.isArray(raw))return [];
-      return raw.filter(row=>Number.isSafeInteger(Number(row.id))&&Number(row.id)>0&&Number.isInteger(Number(row.quantity))&&Number(row.quantity)>0&&Number(row.quantity)<=20).map(row=>({id:Number(row.id),quantity:Math.min(MAX_QUANTITY,Number(row.quantity))}));
+      // Preserve valid legacy cart rows and safely cap their quantity at the current limit.
+      // Persist the normalized shape immediately so stale values cannot return on reload.
+      const normalized=raw
+        .filter(row=>row&&Number.isSafeInteger(Number(row.id))&&Number(row.id)>0&&Number.isInteger(Number(row.quantity))&&Number(row.quantity)>0)
+        .map(row=>({id:Number(row.id),quantity:Math.min(MAX_QUANTITY,Number(row.quantity))}));
+      localStorage.setItem(CART_KEY,JSON.stringify(normalized));
+      return normalized;
     }catch(_){return [];}
   }
   function saveCart(){try{localStorage.setItem(CART_KEY,JSON.stringify(cart.map(row=>({id:row.id,quantity:row.quantity}))))}catch(_){}}
