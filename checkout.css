@@ -66,6 +66,18 @@
 }
 @media(prefers-reduced-motion:reduce){#ssv-cart-drawer,#ssv-cart-toast,#shop .ssv-add-cart{transition:none}}
 
+/* Desktop bag footer: equal side-by-side actions. Mobile keeps its existing stacked layout. */
+@media (min-width:601px){
+ .ssv-cart-footer{display:flex;align-items:stretch;gap:12px}
+ .ssv-cart-footer>#ssv-proceed-checkout,
+ .ssv-cart-footer>.ssv-continue{flex:1 1 0;width:auto;min-width:0;min-height:48px;margin:0;box-sizing:border-box}
+ .ssv-cart-footer>.ssv-continue{display:flex;align-items:center;justify-content:center;padding:0 10px;border:1px solid #E4D8C5;text-decoration:none;letter-spacing:.08em;font:600 11px/1.2 Inter,Arial,sans-serif;text-transform:uppercase}
+}
+@media(max-width:600px){
+ .ssv-cart-footer{display:block}
+ .ssv-cart-footer>.ssv-continue{display:block;margin:13px auto 0}
+}
+
 /* Premium clear-bag action and confirmation, scoped to the guest bag drawer. */
 .ssv-cart-head-actions{display:flex;align-items:center;gap:12px;flex:0 0 auto;min-width:0}
 #ssv-clear-bag{padding:8px 0;border:0;background:transparent;color:#786B61;font:500 11px/1.2 Inter,Arial,sans-serif;white-space:nowrap;text-decoration:underline;text-decoration-color:#C8B28A;text-underline-offset:4px;cursor:pointer}
