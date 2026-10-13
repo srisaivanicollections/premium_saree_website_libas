@@ -173,6 +173,24 @@ async function submitOrder(request, env, origin, payload) {
   if (!env.ORDERS_DB) return jsonResponse({ success: false, message: "Order storage is not configured yet." }, 503, origin);
   const idempotencyKey = String(request.headers.get("Idempotency-Key") || payload?.idempotencyKey || "");
   if (!/^[0-9a-f-]{36}$/i.test(idempotencyKey)) return jsonResponse({ success: false, message: "Refresh checkout and try again." }, 400, origin);
+  if (!env.OTP_STORE) return jsonResponse({ success: false, message: "Order rate limiting is not configured yet." }, 503, origin);
+
+  // Resolve retries before checking today's catalogue or the repeated payload.
+  // A saved order must remain retrievable by its idempotency key even if a
+  // product is subsequently removed or marked unavailable.
+  const existing = await env.ORDERS_DB.prepare("SELECT order_ref, payload_json, notification_status FROM orders WHERE idempotency_key = ?").bind(idempotencyKey).first();
+  if (existing) {
+    order = JSON.parse(existing.payload_json);
+    if (existing.notification_status !== "sent") {
+      try {
+        await sendOrderNotification(env, order);
+        await env.ORDERS_DB.prepare("UPDATE orders SET notification_status = 'sent' WHERE idempotency_key = ?").bind(idempotencyKey).run();
+      } catch {
+        return jsonResponse({ success: true, accepted: true, reference: existing.order_ref, notificationPending: true, message: "Your order is saved. Store notification is pending." }, 202, origin);
+      }
+    }
+    return jsonResponse({ success: true, accepted: true, reference: existing.order_ref, message: "Your order has been received." }, 200, origin);
+  }
   const customer = payload?.customer || {};
   const shipping = payload?.shipping || {};
   const fullName = cleanOrderText(customer.fullName, 100);
@@ -213,20 +231,7 @@ async function submitOrder(request, env, origin, payload) {
     if (!product || product.availability === false || product.inStock === false || product.outOfStock === true) return jsonResponse({ success: false, message: "A selected item is no longer available. Please refresh your cart." }, 409, origin);
     items.push({ id: row.id, name: cleanOrderText(product.name, 120), quantity: row.quantity });
   }
-  const existing = await env.ORDERS_DB.prepare("SELECT order_ref, payload_json, notification_status FROM orders WHERE idempotency_key = ?").bind(idempotencyKey).first();
   let order;
-  if (existing) {
-    order = JSON.parse(existing.payload_json);
-    if (existing.notification_status !== "sent") {
-      try {
-        await sendOrderNotification(env, order);
-        await env.ORDERS_DB.prepare("UPDATE orders SET notification_status = 'sent' WHERE idempotency_key = ?").bind(idempotencyKey).run();
-      } catch {
-        return jsonResponse({ success: true, accepted: true, reference: existing.order_ref, notificationPending: true, message: "Your order is saved. Store notification is pending." }, 202, origin);
-      }
-    }
-    return jsonResponse({ success: true, accepted: true, reference: existing.order_ref, message: "Your order has been received." }, 200, origin);
-  }
   // Basic per-IP throttling for new guest orders. Uses a dedicated KV prefix,
   // so it cannot collide with OTP, cooldown, or verification-attempt records.
   const clientIp = request.headers.get("CF-Connecting-IP") || "unknown";
@@ -293,11 +298,6 @@ export default {
       return jsonResponse({ success: false, message: "Origin not allowed." }, 403);
     }
 
-    if (!env.OTP_STORE || !env.RESEND_API_KEY) {
-      console.error("Worker configuration is missing OTP_STORE or RESEND_API_KEY.");
-      return jsonResponse({ success: false, message: "OTP service is not configured." }, 500, origin);
-    }
-
     let payload;
     try {
       payload = await request.json();
@@ -306,7 +306,17 @@ export default {
     }
 
     const action = String(payload?.action || "").trim().toLowerCase();
-    if (action === "submitOrder") return submitOrder(request, env, origin, payload);
+
+    // Order checkout is a separate action on the same Worker. Do not require
+    // the Admin OTP Resend secret for orders; OTP configuration remains
+    // enforced below, unchanged, for the existing send/verify flow.
+    if (action === "submitorder") return submitOrder(request, env, origin, payload);
+
+    if (!env.OTP_STORE || !env.RESEND_API_KEY) {
+      console.error("Worker configuration is missing OTP_STORE or RESEND_API_KEY.");
+      return jsonResponse({ success: false, message: "OTP service is not configured." }, 500, origin);
+    }
+
     const email = normalizeEmail(payload?.email);
 
     if (!isValidEmail(email)) {
