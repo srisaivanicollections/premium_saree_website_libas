@@ -7,7 +7,7 @@ Guest checkout uses the existing Cloudflare Worker and Resend API. **No database
 1. Keep the existing **`OTP_STORE`** binding for the Admin OTP flow. Checkout does not read or write it.
 2. Keep the existing secrets **`RESEND_API_KEY`** and **`RESEND_API_KEY_SRISAI`** unchanged. Checkout uses `RESEND_API_KEY_SRISAI` to notify `srisaivanicollections@gmail.com`; the existing OTP routes continue using their existing configuration.
 3. Verify the Resend account can send from the configured sender. The order code currently uses `Sri Sai Vani Orders <onboarding@resend.dev>`. If Resend rejects it, use an approved sender for order notifications without changing the OTP sender.
-4. Deploy `otp/otp-worker.js` manually to a test Worker first, after reviewing the diff. Committing to GitHub does not deploy the Worker.
+4. Deploy `otp/worker.js` manually to a test Worker first, after reviewing the diff. Committing to GitHub does not deploy the Worker.
 
 ## Email-only order flow
 
