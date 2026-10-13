@@ -207,7 +207,7 @@ async function sendOrderNotification(env, order) {
     '<tr><td style="padding:8px 12px 4px"><table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#faf7f2;border:1px solid #eee6dc;border-radius:8px"><tr>' +
     '<td width="48%" valign="top" style="padding:10px 12px;border-right:1px solid #e4d8c5">' +
     '<p style="margin:0 0 4px;color:#8b6338;font-size:10px;letter-spacing:1px;text-transform:uppercase">Customer</p>' +
-    '<p style="margin:0 0 5px;font-size:14px;line-height:1.3;font-weight:600;color:#1c1917">' + orderEscapeHtml(order.customer.fullName) + '</p>' +
+    '<p style="margin:0 0 5px;font-size:14px;line-height:1.3;font-weight:600;color:#1c1917">' + orderEscapeHtml(order.customer.fullName.toUpperCase()) + '</p>' +
     '<p style="margin:0;font-size:12px;line-height:1.4"><a href="tel:' + orderEscapeHtml(order.customer.mobile) + '" style="color:#8b6338;text-decoration:underline">' + orderEscapeHtml(order.customer.mobile) + '</a></p></td>' +
     '<td width="52%" valign="top" style="padding:10px 12px">' +
     '<p style="margin:0 0 4px;color:#8b6338;font-size:10px;letter-spacing:1px;text-transform:uppercase">Shipping Address</p>' +
