@@ -195,7 +195,7 @@ async function sendOrderNotification(env, order) {
     '<tr><td align="center" style="padding:26px 24px 22px;border-bottom:1px solid #e4d8c5">' +
     '<p style="margin:0;color:#1c1917;font-family:Georgia,Times New Roman,serif;font-size:25px;line-height:.95;font-weight:500;letter-spacing:3px">SRI SAI VANI</p>' +
     '<p style="margin:7px 0 0;color:#1c1917;font-family:Arial,Helvetica,sans-serif;font-size:10px;line-height:1;letter-spacing:2.5px">COLLECTIONS</p>' +
-    '<p style="margin:10px 0 0;color:#8b6338;font-family:Arial,Helvetica,sans-serif;font-size:9px;line-height:1;letter-spacing:3px">PREMIUM SAREES</p>' +
+    '' +
     '<h1 style="font-family:Georgia,Times New Roman,serif;font-size:34px;line-height:1.2;font-weight:400;margin:28px 0 8px">Order Details</h1>' +
     '<p style="margin:0;color:#625d55;font-size:15px;line-height:1.6">Please find the order information below.</p></td></tr>' +
     '<tr><td style="padding:20px 24px 8px"><table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#faf7f2;border:1px solid #eee6dc;border-radius:8px"><tr>' +
