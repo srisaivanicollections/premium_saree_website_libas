@@ -9,3 +9,12 @@ CREATE TABLE IF NOT EXISTS orders (
   created_at TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at);
+
+-- Atomic notification lease prevents concurrent requests and Cron retries from
+-- sending the same order email at the same time. Re-running this script is safe.
+CREATE TABLE IF NOT EXISTS order_notification_claims (
+  order_ref TEXT PRIMARY KEY,
+  claim_token TEXT NOT NULL,
+  claimed_at INTEGER NOT NULL,
+  FOREIGN KEY (order_ref) REFERENCES orders(order_ref) ON DELETE CASCADE
+);
