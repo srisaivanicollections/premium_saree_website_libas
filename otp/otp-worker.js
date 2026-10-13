@@ -169,72 +169,33 @@ async function sendOrderNotification(env, order) {
     throw new Error("Order notification could not be sent.");
   }
 }
-const ORDER_NOTIFICATION_LEASE_MS = 5 * 60 * 1000;
-
-// D1 atomically grants one sender a short lease for each order. A failed send
-// releases the lease; a crashed sender becomes retryable after the lease expires.
-async function deliverOrderNotification(env, order) {
-  const claimToken = crypto.randomUUID();
-  const now = Date.now();
-  const claim = await env.ORDERS_DB.prepare(`
-    INSERT INTO order_notification_claims (order_ref, claim_token, claimed_at)
-    VALUES (?, ?, ?)
-    ON CONFLICT(order_ref) DO UPDATE SET
-      claim_token = excluded.claim_token,
-      claimed_at = excluded.claimed_at
-    WHERE order_notification_claims.claimed_at <= ?
-    RETURNING claim_token
-  `).bind(order.reference, claimToken, now, now - ORDER_NOTIFICATION_LEASE_MS).first();
-
-  if (claim?.claim_token !== claimToken) return { sent: false, busy: true };
-
-  try {
-    await sendOrderNotification(env, order);
-  } catch (error) {
-    // Release only our own claim so an immediate retry or cron run can recover.
-    try {
-      await env.ORDERS_DB.prepare(
-        "DELETE FROM order_notification_claims WHERE order_ref = ? AND claim_token = ?"
-      ).bind(order.reference, claimToken).run();
-    } catch (_) {}
-    throw error;
-  }
-
-  // If this update fails after the email provider accepted the message, keep
-  // the lease until expiry to avoid an immediate duplicate notification.
-  await env.ORDERS_DB.prepare(
-    "UPDATE orders SET notification_status = 'sent' WHERE order_ref = ?"
-  ).bind(order.reference).run();
-  await env.ORDERS_DB.prepare(
-    "DELETE FROM order_notification_claims WHERE order_ref = ? AND claim_token = ?"
-  ).bind(order.reference, claimToken).run();
-  return { sent: true, busy: false };
-}
+// Sequential retries are deduplicated with a small KV marker only. Cloudflare KV
+// is not transactional, so concurrent duplicate requests or an ambiguous Resend
+// timeout can still produce duplicate owner emails. No customer details are stored in KV.
+const ORDER_SENT_KEY_PREFIX = "order-sent:";
+const ORDER_SENT_TTL_SECONDS = 30 * 24 * 60 * 60;
 
 async function submitOrder(request, env, origin, payload) {
-  if (!env.ORDERS_DB) return jsonResponse({ success: false, message: "Order storage is not configured yet." }, 503, origin);
+  if (!env.OTP_STORE) return jsonResponse({ success: false, message: "Order rate limiting is not configured yet." }, 503, origin);
+  if (!env.RESEND_API_KEY_SRISAI) return jsonResponse({ success: false, message: "Order notification email is not configured." }, 503, origin);
+
   const idempotencyKey = String(request.headers.get("Idempotency-Key") || payload?.idempotencyKey || "");
   if (!/^[0-9a-f-]{36}$/i.test(idempotencyKey)) return jsonResponse({ success: false, message: "Refresh checkout and try again." }, 400, origin);
-  if (!env.OTP_STORE) return jsonResponse({ success: false, message: "Order rate limiting is not configured yet." }, 503, origin);
 
-  // Resolve retries before checking today's catalogue or the repeated payload.
-  // A saved order must remain retrievable by its idempotency key even if a
-  // product is subsequently removed or marked unavailable.
-  const existing = await env.ORDERS_DB.prepare("SELECT order_ref, payload_json, notification_status FROM orders WHERE idempotency_key = ?").bind(idempotencyKey).first();
-  if (existing) {
-    const order = JSON.parse(existing.payload_json);
-    if (existing.notification_status !== "sent") {
-      try {
-        const delivery = await deliverOrderNotification(env, order);
-        if (!delivery.sent) {
-          return jsonResponse({ success: true, accepted: true, reference: existing.order_ref, notificationPending: true, message: "Your order is saved. Store notification is pending." }, 202, origin);
-        }
-      } catch {
-        return jsonResponse({ success: true, accepted: true, reference: existing.order_ref, notificationPending: true, message: "Your order is saved. Store notification is pending." }, 202, origin);
-      }
+  const sentKey = ORDER_SENT_KEY_PREFIX + idempotencyKey;
+  // Return the prior reference for ordinary sequential retries without storing
+  // the customer's name, phone number, address, or order payload in KV.
+  try {
+    const sentRaw = await env.OTP_STORE.get(sentKey);
+    if (sentRaw) {
+      const sent = JSON.parse(sentRaw);
+      if (sent?.reference) return jsonResponse({ success: true, accepted: true, reference: sent.reference, message: "Your order has been received." }, 200, origin);
     }
-    return jsonResponse({ success: true, accepted: true, reference: existing.order_ref, message: "Your order has been received." }, 200, origin);
+  } catch (error) {
+    console.error("Could not check order retry marker:", error instanceof Error ? error.message : "Unknown error");
+    return jsonResponse({ success: false, message: "We could not verify this order attempt. Please retry." }, 503, origin);
   }
+
   const customer = payload?.customer || {};
   const shipping = payload?.shipping || {};
   const fullName = cleanOrderText(customer.fullName, 100);
@@ -250,6 +211,7 @@ async function submitOrder(request, env, origin, payload) {
   if (fullName.length < 2 || !validOrderMobile(mobile)) return jsonResponse({ success: false, message: "Enter a valid name and mobile number." }, 400, origin);
   if (!fields.houseStreet || !fields.city || !fields.district || !fields.state || !/^[1-9][0-9]{5}$/.test(fields.pinCode)) return jsonResponse({ success: false, message: "Complete all required shipping address fields and enter a valid PIN code." }, 400, origin);
   if (Object.values(fields).some(value => value.length > 180)) return jsonResponse({ success: false, message: "One or more address fields are too long." }, 400, origin);
+
   const submitted = payload?.items;
   if (!Array.isArray(submitted) || submitted.length < 1 || submitted.length > ORDER_MAX_ITEMS) return jsonResponse({ success: false, message: "Your cart is empty or too large." }, 400, origin);
   const seen = new Set();
@@ -257,8 +219,10 @@ async function submitOrder(request, env, origin, payload) {
   for (const row of submitted) {
     const productId = Number(row?.id), quantity = Number(row?.quantity);
     if (!Number.isSafeInteger(productId) || productId <= 0 || !Number.isInteger(quantity) || quantity < 1 || quantity > ORDER_MAX_QUANTITY || seen.has(productId)) return jsonResponse({ success: false, message: "Cart items are invalid. Please review your cart." }, 400, origin);
-    seen.add(productId); ids.push({ id: productId, quantity });
+    seen.add(productId);
+    ids.push({ id: productId, quantity });
   }
+
   let catalog;
   try {
     const response = await fetch(ORDER_CATALOG_URL, { headers: { "Accept": "application/json" } });
@@ -268,6 +232,7 @@ async function submitOrder(request, env, origin, payload) {
     return jsonResponse({ success: false, message: "The product catalogue could not be verified. Please try again." }, 503, origin);
   }
   if (!Array.isArray(catalog)) return jsonResponse({ success: false, message: "The product catalogue could not be verified." }, 503, origin);
+
   const productsById = new Map(catalog.map(product => [Number(product.id), product]));
   const items = [];
   for (const row of ids) {
@@ -275,9 +240,9 @@ async function submitOrder(request, env, origin, payload) {
     if (!product || product.availability === false || product.inStock === false || product.outOfStock === true) return jsonResponse({ success: false, message: "A selected item is no longer available. Please refresh your cart." }, 409, origin);
     items.push({ id: row.id, name: cleanOrderText(product.name, 120), quantity: row.quantity });
   }
-  let order;
-  // Basic per-IP throttling for new guest orders. Uses a dedicated KV prefix,
-  // so it cannot collide with OTP, cooldown, or verification-attempt records.
+
+  // Basic per-IP throttling uses a dedicated prefix in the existing OTP KV.
+  // It does not change or overwrite OTP keys.
   const clientIp = request.headers.get("CF-Connecting-IP") || "unknown";
   const ipDigest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(clientIp));
   const ipHash = Array.from(new Uint8Array(ipDigest)).map(byte => byte.toString(16).padStart(2, "0")).join("").slice(0, 32);
@@ -286,39 +251,29 @@ async function submitOrder(request, env, origin, payload) {
   if (rateCount >= 5) return jsonResponse({ success: false, message: "Too many order attempts. Please wait before trying again." }, 429, origin);
   await env.OTP_STORE.put(rateKey, String(rateCount + 1), { expirationTtl: 3600 });
 
-  const reference = "SSV-" + new Date().toISOString().slice(0,10).replace(/-/g,"") + "-" + crypto.randomUUID().slice(0,8).toUpperCase();
-  order = {
-    reference,
+  const order = {
+    reference: "SSV-" + new Date().toISOString().slice(0,10).replace(/-/g,"") + "-" + crypto.randomUUID().slice(0,8).toUpperCase(),
     createdAt: new Date().toISOString(),
     customer: { fullName, mobile },
     shipping: fields,
     items
   };
+
   try {
-    await env.ORDERS_DB.prepare("INSERT INTO orders (order_ref, idempotency_key, payload_json, notification_status, created_at) VALUES (?, ?, ?, 'pending', ?)").bind(reference, idempotencyKey, JSON.stringify(order), order.createdAt).run();
-  } catch (error) {
-    const duplicate = await env.ORDERS_DB.prepare("SELECT order_ref, payload_json, notification_status FROM orders WHERE idempotency_key = ?").bind(idempotencyKey).first();
-    if (!duplicate) {
-      console.error("Order persistence failed:", error instanceof Error ? error.message : "Unknown error");
-      return jsonResponse({ success: false, message: "We could not save your order. Your cart has been kept; please try again." }, 503, origin);
-    }
-    // Another request with the same key won the insert race. Do not send
-    // a second notification from this request; the winning request or the
-    // scheduled retry owns delivery for this saved order.
-    if (duplicate.notification_status === "sent") {
-      return jsonResponse({ success: true, accepted: true, reference: duplicate.order_ref, message: "Your order has been received." }, 200, origin);
-    }
-    return jsonResponse({ success: true, accepted: true, reference: duplicate.order_ref, notificationPending: true, message: "Your order is saved. Store notification is pending." }, 202, origin);
-  }
-  try {
-    const delivery = await deliverOrderNotification(env, order);
-    if (!delivery.sent) {
-      return jsonResponse({ success: true, accepted: true, reference: order.reference, notificationPending: true, message: "Your order is saved. Store notification is pending." }, 202, origin);
-    }
+    await sendOrderNotification(env, order);
   } catch {
-    return jsonResponse({ success: true, accepted: true, reference: order.reference, notificationPending: true, message: "Your order is saved. Store notification is pending." }, 202, origin);
+    return jsonResponse({ success: false, message: "We could not send your order to the store. Your cart has been kept; please retry." }, 502, origin);
   }
-  return jsonResponse({ success: true, accepted: true, reference: order.reference, message: "Your order has been received." }, 201, origin);
+
+  // Store only a reference marker, not personal/order data. If this KV write
+  // fails after Resend accepted the email, still acknowledge the sent order.
+  try {
+    await env.OTP_STORE.put(sentKey, JSON.stringify({ reference: order.reference }), { expirationTtl: ORDER_SENT_TTL_SECONDS });
+  } catch (error) {
+    console.error("Order email was sent but retry marker could not be saved:", error instanceof Error ? error.message : "Unknown error");
+  }
+
+  return jsonResponse({ success: true, accepted: true, reference: order.reference, message: "Your order has been sent to the store." }, 201, origin);
 }
 
 export default {
@@ -485,16 +440,5 @@ export default {
 
     return jsonResponse({ success: false, message: "Unsupported action." }, 400, origin);
   },
-  async scheduled(controller, env, ctx) {
-    if (!env.ORDERS_DB || !env.RESEND_API_KEY_SRISAI) return;
-    const pending = await env.ORDERS_DB.prepare("SELECT order_ref, payload_json FROM orders WHERE notification_status = 'pending' ORDER BY created_at ASC LIMIT 20").all();
-    for (const row of (pending.results || [])) {
-      try {
-        const order = JSON.parse(row.payload_json);
-        await deliverOrderNotification(env, order);
-      } catch (error) {
-        console.error("Scheduled order notification retry failed for", row.order_ref, error instanceof Error ? error.message : "Unknown error");
-      }
-    }
-  },
+
 };
