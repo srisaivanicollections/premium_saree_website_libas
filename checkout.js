@@ -49,7 +49,28 @@
       media.appendChild(button);
     });
   }
-  function updateCount(){const badge=$("#ssv-cart-count");if(!badge)return;badge.textContent=String(count());badge.hidden=count()===0;const trigger=$("#ssv-cart-trigger");if(trigger)trigger.setAttribute("aria-label","Open cart, "+count()+" items")}
+  function updateCount(){
+    const badge=$("#ssv-cart-count");
+    if(badge){badge.textContent=String(count());badge.hidden=count()===0}
+    const trigger=$("#ssv-cart-trigger");
+    if(trigger)trigger.setAttribute("aria-label","Open cart, "+count()+" items");
+    // Keep each product's icon synchronized with the actual cart contents.
+    // The existing add-to-cart toast and click behavior remain unchanged.
+    document.querySelectorAll("#products [data-add-cart]").forEach(button=>{
+      const id=Number(button.dataset.addCart);
+      const row=cart.find(item=>item.id===id);
+      const product=getProduct(id);
+      const inCart=Boolean(row);
+      button.innerHTML=inCart
+        ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.2 4.2L19 7"></path></svg>'
+        : '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>';
+      button.setAttribute("aria-label",inCart
+        ? "In cart: "+(product?.name||"product")+". Add another"
+        : "Add "+(product?.name||"product")+" to cart");
+      button.title=inCart?"In cart · click to add another":"Add to cart";
+      button.classList.toggle("is-in-cart",inCart);
+    });
+  }
   function showToast(message){const toast=$("#ssv-cart-toast");if(!toast)return;toast.textContent=message;toast.classList.add("is-visible");clearTimeout(toastTimer);toastTimer=setTimeout(()=>toast.classList.remove("is-visible"),1800)}
   function openCart(){const layer=$("#ssv-cart-layer");if(!layer)return;layer.classList.add("is-open");document.body.style.overflow="hidden";renderCart();setTimeout(()=>$("#ssv-cart-drawer")?.focus(),0)}
   function closeCart(){const layer=$("#ssv-cart-layer");if(!layer)return;layer.classList.remove("is-open");document.body.style.overflow="";$("#ssv-cart-trigger")?.focus()}
