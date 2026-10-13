@@ -136,30 +136,66 @@ function validOrderMobile(value) {
 function orderEscapeHtml(value) {
   return String(value).replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
 }
+function orderImageUrl(value) {
+  const image = String(value || "").trim();
+  if (/^assets\/products\/[a-zA-Z0-9_./%-]+$/.test(image)) {
+    return "https://srisaivanicollections.github.io/" + image.split("/").map((part, index) => index === 0 ? part : encodeURIComponent(decodeURIComponent(part))).join("/");
+  }
+  if (/^https:\/\/[a-zA-Z0-9.-]+(?::[0-9]+)?(?:\/[^\s"'<>]*)?$/.test(image)) return image;
+  return "";
+}
 async function sendOrderNotification(env, order) {
   if (!env.RESEND_API_KEY_SRISAI) throw new Error("Order notification email is not configured.");
   const itemLines = order.items.map(item => "• " + item.name + " × " + item.quantity).join("\n");
   const address = [order.shipping.houseStreet, order.shipping.landmark, order.shipping.city, order.shipping.district, order.shipping.state, order.shipping.pinCode].filter(Boolean).join(", ");
   const text = [
-    "New Sri Sai Vani Collections order",
-    "Order reference: " + order.reference,
+    "SRI SAI VANI COLLECTIONS",
+    "New Store Order",
+    "INTERNAL ORDER REFERENCE: " + order.reference,
     "Submitted: " + order.createdAt,
     "",
-    "Items:",
+    "ITEMS",
     itemLines,
     "",
-    "Customer: " + order.customer.fullName,
+    "CUSTOMER",
+    order.customer.fullName,
     "Mobile: " + order.customer.mobile,
-    "Shipping address: " + address
+    "",
+    "SHIPPING ADDRESS",
+    address
   ].join("\n");
-  const html = "<!doctype html><html><body style=\"font-family:Arial,sans-serif;color:#1c1917\"><h2>New store order</h2><p><strong>Reference:</strong> " + orderEscapeHtml(order.reference) + "<br><strong>Submitted:</strong> " + orderEscapeHtml(order.createdAt) + "</p><h3>Items</h3><ul>" + order.items.map(item => "<li>" + orderEscapeHtml(item.name) + " × " + item.quantity + "</li>").join("") + "</ul><h3>Customer</h3><p>" + orderEscapeHtml(order.customer.fullName) + "<br>Mobile: " + orderEscapeHtml(order.customer.mobile) + "</p><h3>Shipping address</h3><p>" + orderEscapeHtml(address) + "</p></body></html>";
+  const itemRows = order.items.map(item => {
+    const imageUrl = orderImageUrl(item.image);
+    const imageCell = imageUrl
+      ? '<td width="64" valign="middle" style="padding:10px 12px 10px 0;width:64px"><img src="' + orderEscapeHtml(imageUrl) + '" width="56" height="70" alt="' + orderEscapeHtml(item.name) + '" style="display:block;width:56px;height:70px;object-fit:cover;border:1px solid #e4d8c5;border-radius:4px"></td>'
+      : '<td width="64" valign="middle" style="padding:10px 12px 10px 0;width:64px"><div style="width:56px;height:70px;background:#f4f0e9;border:1px solid #e4d8c5;border-radius:4px"></div></td>';
+    return '<tr>' + imageCell + '<td valign="middle" style="padding:10px 0;border-bottom:1px solid #e4d8c5;font-size:14px;line-height:1.5;color:#1c1917">' +
+      '<strong style="font-weight:600">' + orderEscapeHtml(item.name) + '</strong><br><span style="color:#625d55">Quantity: ' + item.quantity + '</span></td></tr>';
+  }).join("");
+  const html = '<!doctype html><html lang="en"><body style="margin:0;padding:20px;background:#faf7f2;color:#1c1917;font-family:Arial,Helvetica,sans-serif">' +
+    '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width:560px;margin:0 auto;background:#ffffff;border:1px solid #e4d8c5;border-collapse:separate">' +
+    '<tr><td style="padding:24px 24px 20px;border-bottom:1px solid #e4d8c5">' +
+    '<p style="margin:0 0 4px;color:#7b6848;font-size:11px;letter-spacing:2px;font-weight:700">SRI SAI VANI</p>' +
+    '<p style="margin:0;color:#625d55;font-size:10px;letter-spacing:2.5px">COLLECTIONS</p>' +
+    '<h1 style="font-size:22px;line-height:1.3;font-weight:600;margin:22px 0 14px">New Store Order</h1>' +
+    '<p style="margin:0 0 5px;color:#7b6848;font-size:10px;letter-spacing:1.2px">INTERNAL ORDER REFERENCE</p>' +
+    '<p style="margin:0;font-size:17px;font-weight:700;letter-spacing:.5px">' + orderEscapeHtml(order.reference) + '</p>' +
+    '<p style="margin:10px 0 0;color:#625d55;font-size:12px">Submitted ' + orderEscapeHtml(order.createdAt) + '</p></td></tr>' +
+    '<tr><td style="padding:20px 24px 8px"><h2 style="font-size:14px;letter-spacing:.7px;margin:0 0 8px">ITEMS</h2>' +
+    '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">' + itemRows + '</table></td></tr>' +
+    '<tr><td style="padding:18px 24px 8px"><h2 style="font-size:14px;letter-spacing:.7px;margin:0 0 10px">CUSTOMER</h2>' +
+    '<p style="font-size:14px;line-height:1.6;margin:0 0 4px">' + orderEscapeHtml(order.customer.fullName) + '</p>' +
+    '<p style="font-size:14px;line-height:1.6;margin:0"><a href="tel:' + orderEscapeHtml(order.customer.mobile) + '" style="color:#1c1917;text-decoration:underline">' + orderEscapeHtml(order.customer.mobile) + '</a></p></td></tr>' +
+    '<tr><td style="padding:14px 24px 24px"><h2 style="font-size:14px;letter-spacing:.7px;margin:0 0 10px">SHIPPING ADDRESS</h2>' +
+    '<p style="font-size:14px;line-height:1.7;margin:0;color:#1c1917">' + orderEscapeHtml(address) + '</p></td></tr>' +
+    '</table></body></html>';
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: { "Authorization": "Bearer " + env.RESEND_API_KEY_SRISAI, "Content-Type": "application/json" },
     body: JSON.stringify({
       from: "Sri Sai Vani Orders <onboarding@resend.dev>",
       to: [ORDER_NOTIFICATION_TO],
-      subject: "New store order " + order.reference,
+      subject: "New Store Order | " + order.reference,
       text,
       html
     })
@@ -214,12 +250,12 @@ async function submitOrder(request, env, origin, payload) {
   for (const row of ids) {
     const product = productsById.get(row.id);
     if (!product || product.availability === false || product.inStock === false || product.outOfStock === true) return jsonResponse({ success: false, message: "A selected item is no longer available. Please refresh your cart." }, 409, origin);
-    items.push({ id: row.id, name: cleanOrderText(product.name, 120), quantity: row.quantity });
+    items.push({ id: row.id, name: cleanOrderText(product.name, 120), image: cleanOrderText(product.image, 500), quantity: row.quantity });
   }
 
   const order = {
     reference: "SSV-" + new Date().toISOString().slice(0,10).replace(/-/g,"") + "-" + crypto.randomUUID().slice(0,8).toUpperCase(),
-    createdAt: new Date().toISOString(),
+    createdAt: new Intl.DateTimeFormat("en-IN", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Kolkata" }).format(new Date()) + " IST",
     customer: { fullName, mobile },
     shipping: fields,
     items
