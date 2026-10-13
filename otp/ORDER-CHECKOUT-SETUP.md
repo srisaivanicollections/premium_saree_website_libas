@@ -1,22 +1,22 @@
 # Guest order checkout Worker setup
 
-The existing Admin OTP flow remains in \`otp/otp-worker.js\`. The \`submitOrder\` action is a separate branch; do not remove or rename OTP actions or their bindings.
+Guest checkout uses the existing Cloudflare Worker and existing KV namespace. **No D1 database, SQL schema, database binding, or Cron Trigger is required.**
 
-## Cloudflare setup before enabling checkout
+## Required Worker configuration
 
-1. Create a **D1 database** for store orders.
-2. Run \`orders-schema.sql\` against that database before deploying the Worker. The script is safe to re-run and creates the notification-claim table used to prevent concurrent duplicate emails.
-3. Bind the database to the existing \`ssv-admin-otp\` Worker with binding name **\`ORDERS_DB\`**.
-4. Keep existing \`OTP_STORE\`, \`RESEND_API_KEY\`, and \`RESEND_API_KEY_SRISAI\` bindings/secrets unchanged.
-5. Verify that the existing Resend account can send to \`srisaivanicollections@gmail.com\` and that its configured sender is permitted. The code reuses the existing \`onboarding@resend.dev\` sender currently used for OTP; if Resend rejects order mail, use a sender/domain already verified in your account, without changing the OTP sender.
-6. Deploy \`otp/otp-worker.js\` manually to Cloudflare after reviewing the diff.
+1. Keep the existing KV namespace binding **`OTP_STORE`** unchanged.
+2. Keep the existing secrets **`RESEND_API_KEY`** and **`RESEND_API_KEY_SRISAI`** unchanged. Checkout uses `RESEND_API_KEY_SRISAI` to notify `srisaivanicollections@gmail.com`; the existing OTP routes retain their current account-selection logic.
+3. Verify that the Resend account can send from the configured sender. The order code currently uses `Sri Sai Vani Orders <onboarding@resend.dev>`. If Resend rejects it, use an approved sender for the order email without changing the OTP sender.
+4. Deploy `otp/otp-worker.js` manually to a test Worker first, after reviewing the diff. Committing to GitHub does not deploy the Worker.
 
-## Order API
+## Order API and privacy
 
-POST to the existing Worker URL with JSON action \`submitOrder\`, an \`Idempotency-Key\` UUID, product IDs and quantities, customer full name/mobile, and shipping fields. No customer email is collected. The Worker validates product availability against the public GitHub catalogue, stores orders in D1, and sends an owner-only notification. Email content deliberately excludes prices.
+POST to the existing Worker URL with JSON action `submitOrder`, an `Idempotency-Key` UUID, product IDs and quantities, customer full name/mobile, and shipping fields. No customer email is collected. The Worker validates product availability against the public GitHub catalogue and sends an owner-only notification. Email content deliberately excludes prices.
 
-The same idempotency key may be submitted again after an ambiguous network failure. The Worker returns the original reference and retries a pending notification rather than inserting a second order.
+The existing KV namespace is reused for per-IP rate limiting and a 30-day idempotency marker containing only the order reference. Customer name, mobile, address, and the full order payload are not saved in KV. Sequential retries after a successful request return the same reference when the marker is available.
 
-## Important limitation
+## Important limitation without a database
 
-A D1 database is required before orders can be accepted. Without the \`ORDERS_DB\` binding, the endpoint returns a configuration error and does not claim the order was placed. Verify the Resend sender before production use. Do not enable checkout for customers until a real end-to-end test confirms D1 persistence and owner email delivery.
+This is email-only, not a durable order-management system. Cloudflare KV is not transactional, so simultaneous duplicate requests or a timeout after Resend accepted the email can still result in duplicate owner notifications. Failed sends are not queued for automatic retry; the customer keeps the cart and can submit again. Do not describe the checkout as exactly-once or as a guaranteed order ledger.
+
+Test actual Resend delivery and the existing Admin OTP flow in a test Worker before using checkout in production.
