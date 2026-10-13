@@ -258,7 +258,13 @@ async function submitOrder(request, env, origin, payload) {
       console.error("Order persistence failed:", error instanceof Error ? error.message : "Unknown error");
       return jsonResponse({ success: false, message: "We could not save your order. Your cart has been kept; please try again." }, 503, origin);
     }
-    order = JSON.parse(duplicate.payload_json);
+    // Another request with the same key won the insert race. Do not send
+    // a second notification from this request; the winning request or the
+    // scheduled retry owns delivery for this saved order.
+    if (duplicate.notification_status === "sent") {
+      return jsonResponse({ success: true, accepted: true, reference: duplicate.order_ref, message: "Your order has been received." }, 200, origin);
+    }
+    return jsonResponse({ success: true, accepted: true, reference: duplicate.order_ref, notificationPending: true, message: "Your order is saved. Store notification is pending." }, 202, origin);
   }
   try {
     await sendOrderNotification(env, order);
