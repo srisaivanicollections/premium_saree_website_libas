@@ -90,8 +90,8 @@
   function showToast(message){const toast=$("#ssv-cart-toast");if(!toast)return;toast.textContent=message;toast.classList.add("is-visible");clearTimeout(toastTimer);toastTimer=setTimeout(()=>toast.classList.remove("is-visible"),1800)}
   function openCart(){const layer=$("#ssv-cart-layer");if(!layer)return;layer.classList.add("is-open");document.body.style.overflow="hidden";renderCart();setTimeout(()=>$("#ssv-cart-drawer")?.focus(),0)}
   function closeCart(){const layer=$("#ssv-cart-layer");if(!layer)return;closeClearBagDialog(false);closeOrderClosePrompt(false);layer.classList.remove("is-open");document.body.style.overflow="";$("#ssv-cart-trigger")?.focus()}
-  function openOrderClosePrompt(){const prompt=$("#ssv-order-close-prompt");if(!prompt)return;prompt.hidden=false;prompt.querySelector(".ssv-order-close-dialog")?.focus()}
-  function closeOrderClosePrompt(restoreFocus=true){const prompt=$("#ssv-order-close-prompt");if(!prompt)return;prompt.hidden=true;if(restoreFocus)$("#ssv-cart-drawer")?.focus()}
+  function openOrderClosePrompt(){const prompt=$("#ssv-order-close-prompt"),drawer=$("#ssv-cart-drawer");if(!prompt)return;drawer?.setAttribute("aria-modal","false");prompt.hidden=false;prompt.querySelector("[data-order-close-download]")?.focus()}
+  function closeOrderClosePrompt(restoreFocus=true){const prompt=$("#ssv-order-close-prompt"),drawer=$("#ssv-cart-drawer");if(!prompt)return;prompt.hidden=true;drawer?.setAttribute("aria-modal","true");if(restoreFocus)$("#ssv-cart-drawer")?.focus()}
   function handleCloseAfterOrder(){if(lastSubmittedOrder){openOrderClosePrompt();return}closeCart()}
   function closeWithoutOrderDownload(){lastSubmittedOrder=null;closeOrderClosePrompt(false);closeCart()}
   function downloadAndCloseOrder(){if(!lastSubmittedOrder)return;if(downloadOrderDetails()!==true)return;lastSubmittedOrder=null;closeOrderClosePrompt();}
@@ -168,7 +168,7 @@
       try{localStorage.removeItem(CART_KEY)}catch(_){}
       cart=[];updateCount();
       const content=$("#ssv-cart-content"),footer=$("#ssv-cart-footer");if(footer)footer.style.display="none";
-      content.innerHTML='<div class="ssv-order-success"><span class="ssv-success-mark" aria-hidden="true">✓</span><h3>Order received</h3><p>Your order request has been emailed to the store. We will contact you on your mobile number to confirm availability, delivery, and the final amount.</p><div class="ssv-order-ref">'+esc(data.reference||"Order received")+'</div><button type="button" class="ssv-checkout-submit ssv-download-order" data-download-order>Download order details (PDF)</button><p class="ssv-order-download-note">Choose “Save as PDF” in the print options.</p><button type="button" class="ssv-order-continue" data-cart-close>Continue shopping</button></div>';
+      content.innerHTML='<div class="ssv-order-success"><span class="ssv-success-mark" aria-hidden="true">✓</span><h3>Order received</h3><p>Your order request has been emailed to the store. We will contact you on your mobile number to confirm availability, delivery, and the final amount.</p><div class="ssv-order-ref">'+esc(data.reference||"Order received")+'</div><button type="button" class="ssv-checkout-submit ssv-download-order" data-download-order>Save order details</button><p class="ssv-order-download-note">Opens a printable summary.</p><button type="button" class="ssv-order-continue" data-cart-close>Continue shopping</button></div>';
     }catch(error){showStatus(error?.message||"Order submission failed. Your cart has been kept.");}
     finally{submitting=false;if(button&&button.isConnected){button.disabled=false;button.textContent="Submit Order"}}
   }
@@ -196,11 +196,12 @@
     if(orderPrompt&&!orderPrompt.hidden){
       if(event.key==="Escape"){event.preventDefault();closeOrderClosePrompt();return}
       if(event.key==="Tab"){
-        const focusable=Array.from(orderPrompt.querySelectorAll('button:not([disabled])')).filter(el=>!el.hidden);
+        const focusable=Array.from(orderPrompt.querySelectorAll('button:not([disabled]),[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])')).filter(el=>!el.hidden&&el.getAttribute("aria-hidden")!=="true");
         if(!focusable.length){event.preventDefault();orderPrompt.querySelector(".ssv-order-close-dialog")?.focus();return}
-        const first=focusable[0],last=focusable[focusable.length-1];
-        if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus();return}
-        if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();return}
+        const first=focusable[0],last=focusable[focusable.length-1],active=document.activeElement;
+        if(!orderPrompt.contains(active)){event.preventDefault();(event.shiftKey?last:first).focus();return}
+        if(event.shiftKey&&active===first){event.preventDefault();last.focus();return}
+        if(!event.shiftKey&&active===last){event.preventDefault();first.focus();return}
       }
       return;
     }
