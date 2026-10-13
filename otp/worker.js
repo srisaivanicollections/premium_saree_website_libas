@@ -125,7 +125,7 @@ async function sendOtpEmail(env, email, otp) {
 const ORDER_NOTIFICATION_TO = "srisaivanicollections@gmail.com";
 const ORDER_CATALOG_URL = "https://raw.githubusercontent.com/srisaivanicollections/srisaivanicollections.github.io/main/data/products.json";
 const ORDER_MAX_ITEMS = 40;
-const ORDER_MAX_QUANTITY = 20;
+const ORDER_MAX_QUANTITY = 10;
 
 function cleanOrderText(value, maxLength = 160) {
   return String(value ?? "").replace(/[\u0000-\u001f\u007f]/g, " ").replace(/\s+/g, " ").trim().slice(0, maxLength);

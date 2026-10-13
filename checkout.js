@@ -3,6 +3,7 @@
   "use strict";
   const WORKER_URL = "https://ssv-admin-otp.vinith-paithari.workers.dev";
   const CART_KEY = "ssv_guest_cart_v1";
+  const MAX_QUANTITY = 10;
   const $ = (selector, root=document) => root.querySelector(selector);
   const esc = value => String(value ?? "").replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
   let cart = readCart();
@@ -12,7 +13,15 @@
     try{
       const raw=JSON.parse(localStorage.getItem(CART_KEY)||"[]");
       if(!Array.isArray(raw))return [];
-      return raw.filter(row=>Number.isSafeInteger(Number(row.id))&&Number(row.id)>0&&Number.isInteger(Number(row.quantity))&&Number(row.quantity)>0&&Number(row.quantity)<=20).map(row=>({id:Number(row.id),quantity:Number(row.quantity)}));
+      // Preserve valid legacy cart rows and safely cap their quantity at the current limit.
+      // Persist the normalized shape immediately so stale values cannot return on reload.
+      const normalized=raw
+        .filter(row=>row&&Number.isSafeInteger(Number(row.id))&&Number(row.id)>0&&Number.isInteger(Number(row.quantity))&&Number(row.quantity)>0)
+        .map(row=>({id:Number(row.id),quantity:Math.min(MAX_QUANTITY,Number(row.quantity))}));
+      // Storage may be readable even when writes are blocked or quota-limited.
+      // Keep the in-memory cart usable if persisting normalization fails.
+      try{localStorage.setItem(CART_KEY,JSON.stringify(normalized))}catch(_){}
+      return normalized;
     }catch(_){return [];}
   }
   function saveCart(){try{localStorage.setItem(CART_KEY,JSON.stringify(cart.map(row=>({id:row.id,quantity:row.quantity}))))}catch(_){}}
@@ -38,7 +47,8 @@
     if(!$("#ssv-cart-toast")){const toast=document.createElement("div");toast.id="ssv-cart-toast";toast.setAttribute("role","status");toast.setAttribute("aria-live","polite");document.body.appendChild(toast)}
   }
   function attachCardButtons(){
-    const grid=$("#products");if(!grid)return;
+    const grid=$("#products");if(!grid)return false;
+    let added=false;
     grid.querySelectorAll(".lux-item-media").forEach(media=>{
       if(media.querySelector(".ssv-add-cart"))return;
       const img=$("img",media);if(!img)return;
@@ -47,9 +57,34 @@
       const button=document.createElement("button");button.type="button";button.className="ssv-add-cart";button.dataset.addCart=String(product.id);button.setAttribute("aria-label","Add "+product.name+" to cart");button.title="Add to cart";
       button.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>';
       media.appendChild(button);
+      added=true;
+    });
+    return added;
+  }
+  function updateCount(){
+    const badge=$("#ssv-cart-count");
+    if(badge){badge.textContent=String(count());badge.hidden=count()===0}
+    const trigger=$("#ssv-cart-trigger");
+    if(trigger)trigger.setAttribute("aria-label","Open cart, "+count()+" items");
+    // Keep each product's icon synchronized with the actual cart contents.
+    // The existing add-to-cart toast and click behavior remain unchanged.
+    document.querySelectorAll("#products [data-add-cart]").forEach(button=>{
+      const id=Number(button.dataset.addCart);
+      const row=cart.find(item=>item.id===id);
+      const product=getProduct(id);
+      const inCart=Boolean(row);
+      button.innerHTML=(inCart
+        ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.2 4.2L19 7"></path></svg>'
+        : '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>')+(inCart
+          ? '<span aria-hidden="true" style="position:absolute;top:-3px;right:-3px;display:grid;place-items:center;min-width:16px;height:16px;padding:0 3px;box-sizing:border-box;border-radius:99px;background:#6E2735;color:#fff;font:600 10px/1 Inter,Arial,sans-serif;box-shadow:0 0 0 1px #FAF7F2">' + row.quantity + '</span>'
+          : "");
+      button.setAttribute("aria-label",inCart
+        ? "In cart: "+(product?.name||"product")+", quantity "+row.quantity+". Add one more"
+        : "Add "+(product?.name||"product")+" to cart");
+      button.title=inCart?"In cart · quantity "+row.quantity+" · click to add another":"Add to cart";
+      button.classList.toggle("is-in-cart",inCart);
     });
   }
-  function updateCount(){const badge=$("#ssv-cart-count");if(!badge)return;badge.textContent=String(count());badge.hidden=count()===0;const trigger=$("#ssv-cart-trigger");if(trigger)trigger.setAttribute("aria-label","Open cart, "+count()+" items")}
   function showToast(message){const toast=$("#ssv-cart-toast");if(!toast)return;toast.textContent=message;toast.classList.add("is-visible");clearTimeout(toastTimer);toastTimer=setTimeout(()=>toast.classList.remove("is-visible"),1800)}
   function openCart(){const layer=$("#ssv-cart-layer");if(!layer)return;layer.classList.add("is-open");document.body.style.overflow="hidden";renderCart();setTimeout(()=>$("#ssv-cart-drawer")?.focus(),0)}
   function closeCart(){const layer=$("#ssv-cart-layer");if(!layer)return;layer.classList.remove("is-open");document.body.style.overflow="";$("#ssv-cart-trigger")?.focus()}
@@ -101,17 +136,21 @@
   }
   document.addEventListener("click",event=>{
     const add=event.target.closest("[data-add-cart]");
-    if(add){const id=Number(add.dataset.addCart),p=getProduct(id);if(!p)return;const row=cart.find(x=>x.id===id);if(row){if(row.quantity>=20){showToast("Maximum quantity reached");return}row.quantity++}else cart.push({id,quantity:1});saveCart();updateCount();showToast("Added to cart");if($("#ssv-cart-layer")?.classList.contains("is-open"))renderCart();return}
+    if(add){const id=Number(add.dataset.addCart),p=getProduct(id);if(!p)return;const row=cart.find(x=>x.id===id);if(row){if(row.quantity>=MAX_QUANTITY){showToast("Maximum quantity reached (10)");return}row.quantity++}else cart.push({id,quantity:1});saveCart();updateCount();showToast("Added to cart");if($("#ssv-cart-layer")?.classList.contains("is-open"))renderCart();return}
     if(event.target.closest("#ssv-cart-trigger")){openCart();return}
     if(event.target.closest("[data-cart-close]")){closeCart();return}
-    const qty=event.target.closest("[data-qty]");if(qty){const row=cart.find(x=>x.id===Number(qty.dataset.id));if(row){row.quantity=Math.max(0,Math.min(20,row.quantity+Number(qty.dataset.qty)));if(!row.quantity)cart=cart.filter(x=>x!==row);saveCart();renderCart()}return}
+    const qty=event.target.closest("[data-qty]");if(qty){const row=cart.find(x=>x.id===Number(qty.dataset.id));if(row){const delta=Number(qty.dataset.qty);if(delta>0&&row.quantity>=MAX_QUANTITY){showToast("Maximum quantity reached (10)");return}row.quantity=Math.max(0,Math.min(MAX_QUANTITY,row.quantity+delta));if(!row.quantity)cart=cart.filter(x=>x!==row);saveCart();renderCart()}return}
     const remove=event.target.closest("[data-remove]");if(remove){cart=cart.filter(x=>x.id!==Number(remove.dataset.remove));saveCart();renderCart();return}
     if(event.target.closest("#ssv-proceed-checkout")){showCheckout();return}
     if(event.target.closest("#ssv-back-to-cart")){const form=$("#ssv-checkout-form");form?.classList.remove("is-visible");renderCart();return}
   });
   document.addEventListener("submit",event=>{if(event.target?.id==="ssv-checkout-form"){event.preventDefault();submitCheckout(event.target)}});
   document.addEventListener("keydown",event=>{if(event.key==="Escape"&&$("#ssv-cart-layer")?.classList.contains("is-open"))closeCart()});
-  const observer=new MutationObserver(()=>{attachCardButtons();updateCount()});
+  // Observe catalogue rendering only to discover newly-created product cards.
+  // updateCount() changes button contents, so it must not run on every DOM mutation.
+  const observer=new MutationObserver(()=>{
+    if(attachCardButtons())updateCount();
+  });
   function init(){injectStylesAndShell();attachCardButtons();updateCount();observer.observe($("#products")||document.body,{childList:true,subtree:true});}
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init,{once:true});else init();
 })();
