@@ -18,7 +18,9 @@
       const normalized=raw
         .filter(row=>row&&Number.isSafeInteger(Number(row.id))&&Number(row.id)>0&&Number.isInteger(Number(row.quantity))&&Number(row.quantity)>0)
         .map(row=>({id:Number(row.id),quantity:Math.min(MAX_QUANTITY,Number(row.quantity))}));
-      localStorage.setItem(CART_KEY,JSON.stringify(normalized));
+      // Storage may be readable even when writes are blocked or quota-limited.
+      // Keep the in-memory cart usable if persisting normalization fails.
+      try{localStorage.setItem(CART_KEY,JSON.stringify(normalized))}catch(_){}
       return normalized;
     }catch(_){return [];}
   }
