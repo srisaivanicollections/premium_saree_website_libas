@@ -5,7 +5,7 @@ The existing Admin OTP flow remains in \`otp/otp-worker.js\`. The \`submitOrder\
 ## Cloudflare setup before enabling checkout
 
 1. Create a **D1 database** for store orders.
-2. Run \`orders-schema.sql\` against that database once.
+2. Run \`orders-schema.sql\` against that database before deploying the Worker. The script is safe to re-run and creates the notification-claim table used to prevent concurrent duplicate emails.
 3. Bind the database to the existing \`ssv-admin-otp\` Worker with binding name **\`ORDERS_DB\`**.
 4. Keep existing \`OTP_STORE\`, \`RESEND_API_KEY\`, and \`RESEND_API_KEY_SRISAI\` bindings/secrets unchanged.
 5. Verify that the existing Resend account can send to \`srisaivanicollections@gmail.com\` and that its configured sender is permitted. The code reuses the existing \`onboarding@resend.dev\` sender currently used for OTP; if Resend rejects order mail, use a sender/domain already verified in your account, without changing the OTP sender.
