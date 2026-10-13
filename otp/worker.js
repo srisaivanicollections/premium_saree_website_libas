@@ -163,7 +163,7 @@ async function sendOrderNotification(env, order) {
     order.shipping.pinCode
   ].filter(Boolean).join(", ");
   // Email-only presentation: preserve stored/submitted values and normalize display casing/spacing.
-  const displayAddress = address.replace(/\\s+/g, " ").trim().toUpperCase();
+  const displayAddress = address.replace(/\s+/g, " ").trim().toUpperCase();
   const totalPieces = order.items.reduce((total, item) => total + item.quantity, 0);
   const text = [
     "SRI SAI VANI COLLECTIONS",
