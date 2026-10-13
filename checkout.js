@@ -164,7 +164,7 @@
     pages.forEach((pageItems,pageIndex)=>{
       commands.length=0;
       text(220,795,"SRI SAI VANI",21,"F2","0.12 0.11 0.10",2.2);
-      text(260,779,"COLLECTIONS",7,"F1","0.36 0.34 0.31",1.8);
+      text(270,779,"COLLECTIONS",7,"F1","0.36 0.34 0.31",1.8);
       line(58,758,537,758,"0.84 0.81 0.76",0.8);
       text(centerX("Thank you for your order",17),720,"Thank you for your order",17,"F2");
       text(centerX("Review your order details below.",9),700,"Review your order details below.",9,"F1","0.42 0.40 0.37");
@@ -202,7 +202,7 @@
     const catalogId=addObject("");
     const pagesId=addObject("");
     const regularFont=addObject("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>");
-    const boldFont=addObject("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>");
+    const boldFont=addObject("<< /Type /Font /Subtype /Type1 /BaseFont /Times-Roman /Encoding /WinAnsiEncoding >>");
     const pageIds=[];
     pageStreams.forEach(stream=>{
       const streamId=addObject("<< /Length "+stream.length+" >>\nstream\n"+stream+"\nendstream");
