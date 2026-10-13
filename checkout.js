@@ -9,6 +9,7 @@
   let cart = readCart();
   let toastTimer = 0;
   let submitting = false;
+  let lastSubmittedOrder = null;
   function readCart(){
     try{
       const raw=JSON.parse(localStorage.getItem(CART_KEY)||"[]");
@@ -120,6 +121,24 @@
   }
   function showCheckout(){if(!cart.length)return;const content=$("#ssv-cart-content");if(!content)return;let form=$("#ssv-checkout-form");if(!form){renderCheckoutForm();form=$("#ssv-checkout-form")}form.classList.add("is-visible");const clearButton=$("#ssv-clear-bag");if(clearButton){clearButton.hidden=true;clearButton.disabled=true}renderCheckoutForm();content.scrollTop=0;$("#ssv-full-name")?.focus()}
   function showStatus(message,success=false){const status=$("#ssv-checkout-status");if(!status)return;status.textContent=message;status.classList.toggle("is-success",success)}
+
+  function orderPrintHtml(order){
+    const address=[order.shipping.houseStreet,order.shipping.landmark,order.shipping.city,order.shipping.district,order.shipping.state,order.shipping.pinCode].filter(Boolean).join(", ");
+    const rows=order.items.map((item,index)=>"<tr><td>"+(index+1)+"</td><td>"+esc(item.name)+"</td><td>"+item.quantity+"</td></tr>").join("");
+    return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Order Details - '+esc(order.reference)+'</title><style>'+
+      'body{margin:0;padding:24px;background:#faf7f2;color:#1c1917;font:14px/1.55 Arial,sans-serif}.sheet{max-width:760px;margin:0 auto;padding:32px;background:#fff;border:1px solid #e4d8c5}.brand{text-align:center;font:26px Georgia,serif;letter-spacing:2px;margin:0}.sub{text-align:center;color:#8b6338;font-size:10px;letter-spacing:3px;margin:5px 0 26px}h1{font:30px Georgia,serif;margin:0 0 18px}h2{font:600 12px Arial,sans-serif;letter-spacing:1.2px;text-transform:uppercase;color:#8b6338;margin:24px 0 8px}.panel{padding:13px;background:#faf7f2;border:1px solid #e4d8c5}table{width:100%;border-collapse:collapse;margin-top:8px}th,td{text-align:left;padding:10px;border-bottom:1px solid #e4d8c5}th{background:#f4eee4}td:last-child,th:last-child{text-align:center}.note{font-size:11px;color:#625d55;margin-top:24px}.actions{text-align:center;margin:0 auto 18px}.actions button{padding:11px 18px;background:#1c1917;color:#faf7f2;border:0;font-size:12px;cursor:pointer}@media print{body{padding:0;background:#fff}.sheet{max-width:none;border:0;padding:0}.actions{display:none}h2,tr{break-inside:avoid}}@media(max-width:520px){body{padding:10px}.sheet{padding:18px}}'+
+      '</style></head><body><div class="actions"><button onclick="window.print()">Save as PDF / Print</button><p class="note">In the print dialog, choose “Save as PDF” to download a PDF copy.</p></div><main class="sheet"><p class="brand">SRI SAI VANI</p><p class="sub">COLLECTIONS</p><h1>Order Details</h1><div class="panel"><b>Order reference:</b> '+esc(order.reference)+'<br><b>Order date:</b> '+esc(order.createdAt)+'</div><h2>Customer details</h2><div class="panel"><b>'+esc(order.customer.fullName)+'</b><br>Mobile: '+esc(order.customer.mobile)+'</div><h2>Delivery address</h2><div class="panel">'+esc(address)+'</div><h2>Items ordered</h2><table><thead><tr><th>#</th><th>Product</th><th>Quantity</th></tr></thead><tbody>'+rows+'</tbody></table><p class="note">This is an order summary, not a tax invoice. Availability, delivery, and final amount will be confirmed by the store.</p></main></body></html>';
+  }
+  function downloadOrderDetails(){
+    if(!lastSubmittedOrder)return;
+    const printWindow=window.open("","_blank");
+    if(!printWindow){showToast("Allow pop-ups to open order details");return}
+    printWindow.document.open();
+    printWindow.document.write(orderPrintHtml(lastSubmittedOrder));
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.addEventListener("load",()=>setTimeout(()=>printWindow.print(),150),{once:true});
+  }
   async function submitCheckout(form){
     if(submitting)return;
     if(!cart.length){showStatus("Your cart is empty.");return}
@@ -132,16 +151,24 @@
       const response=await fetch(WORKER_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"submitOrder",items:cart.map(row=>({id:row.id,quantity:row.quantity})),customer,shipping})});
       const data=await response.json().catch(()=>({}));
       if(!response.ok||data.success!==true||data.accepted!==true)throw new Error(data.message||"We could not submit the order. Your cart has been kept.");
+      lastSubmittedOrder={
+        reference:String(data.reference||"Order received"),
+        createdAt:new Date().toLocaleString("en-IN",{dateStyle:"medium",timeStyle:"short"}),
+        customer,
+        shipping,
+        items:cart.map(row=>({name:String(getProduct(row.id)?.name||"Product"),quantity:row.quantity}))
+      };
       try{localStorage.removeItem(CART_KEY)}catch(_){}
       cart=[];updateCount();
       const content=$("#ssv-cart-content"),footer=$("#ssv-cart-footer");if(footer)footer.style.display="none";
-      content.innerHTML='<div class="ssv-order-success"><span class="ssv-success-mark" aria-hidden="true">✓</span><h3>Order received</h3><p>Your order request has been emailed to the store. We will contact you on your mobile number to confirm availability, delivery, and the final amount.</p><div class="ssv-order-ref">'+esc(data.reference||"Order received")+'</div>'+'<button type="button" class="ssv-checkout-submit" data-cart-close>Continue shopping</button></div>';
+      content.innerHTML='<div class="ssv-order-success"><span class="ssv-success-mark" aria-hidden="true">✓</span><h3>Order received</h3><p>Your order request has been emailed to the store. We will contact you on your mobile number to confirm availability, delivery, and the final amount.</p><div class="ssv-order-ref">'+esc(data.reference||"Order received")+'</div><button type="button" class="ssv-checkout-submit ssv-download-order" data-download-order>Download order details (PDF)</button><p class="ssv-order-download-note">Choose “Save as PDF” in the print options.</p><button type="button" class="ssv-order-continue" data-cart-close>Continue shopping</button></div>';
     }catch(error){showStatus(error?.message||"Order submission failed. Your cart has been kept.");}
     finally{submitting=false;if(button&&button.isConnected){button.disabled=false;button.textContent="Submit Order"}}
   }
   document.addEventListener("click",event=>{
     const add=event.target.closest("[data-add-cart]");
     if(add){const id=Number(add.dataset.addCart),p=getProduct(id);if(!p)return;const row=cart.find(x=>x.id===id);if(row){if(row.quantity>=MAX_QUANTITY){showToast("Maximum quantity reached (10)");return}row.quantity++}else cart.push({id,quantity:1});saveCart();updateCount();showToast("Added to cart");if($("#ssv-cart-layer")?.classList.contains("is-open"))renderCart();return}
+    if(event.target.closest("[data-download-order]")){downloadOrderDetails();return}
     if(event.target.closest("#ssv-cart-trigger")){openCart();return}
     if(event.target.closest("[data-clear-cancel]")){closeClearBagDialog();return}
     if(event.target.closest("[data-clear-confirm]")){confirmClearBag();return}
