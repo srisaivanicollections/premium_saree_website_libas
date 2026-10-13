@@ -168,10 +168,19 @@
     };
     const centerX=(value,size)=>Math.max(48,(595-ascii(value).length*size*0.52)/2);
     const wrappedName=value=>{
-      const clean=ascii(value||"Product"),result=[];
-      let rest=clean;
-      while(rest.length>43){let split=rest.lastIndexOf(" ",43);if(split<1)split=43;result.push(rest.slice(0,split));rest=rest.slice(split).trim();}
-      result.push(rest);return result;
+      // Keep names within the fixed row height: at most two lines, with a
+      // visible ellipsis rather than allowing text to collide with the next row.
+      const clean=ascii(value||"Product");
+      if(clean.length<=43)return [clean];
+      let split=clean.lastIndexOf(" ",43);
+      if(split<1)split=43;
+      const first=clean.slice(0,split);
+      const rest=clean.slice(split).trim();
+      if(rest.length<=43)return [first,rest];
+      let second=rest.slice(0,40);
+      const secondSplit=second.lastIndexOf(" ");
+      if(secondSplit>20)second=second.slice(0,secondSplit);
+      return [first,second.replace(/[ .]+$/,"")+"..."];
     };
     const pages=[];
     let index=0;
