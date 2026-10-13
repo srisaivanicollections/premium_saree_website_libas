@@ -43,7 +43,6 @@
     if(!$("#ssv-cart-layer")){
       const layer=document.createElement("div");layer.id="ssv-cart-layer";
       layer.innerHTML='<div id="ssv-cart-backdrop" data-cart-close></div><section id="ssv-cart-drawer" role="dialog" aria-modal="true" aria-labelledby="ssv-cart-title" tabindex="-1"><header class="ssv-cart-head"><h2 id="ssv-cart-title">Your bag</h2><div class="ssv-cart-head-actions"><button type="button" id="ssv-clear-bag" aria-haspopup="dialog" aria-controls="ssv-clear-bag-dialog">Clear bag</button><button type="button" class="ssv-cart-close" aria-label="Close cart" data-cart-close>×</button></div></header><div id="ssv-cart-content"></div><footer class="ssv-cart-footer" id="ssv-cart-footer"><button type="button" id="ssv-proceed-checkout">Proceed to checkout</button><button type="button" class="ssv-continue" data-cart-close>Continue shopping</button></footer></section><div id="ssv-clear-bag-dialog" class="ssv-clear-dialog-layer" hidden><div class="ssv-clear-dialog-backdrop" data-clear-cancel></div><section class="ssv-clear-dialog" role="alertdialog" aria-modal="true" aria-labelledby="ssv-clear-dialog-title" aria-describedby="ssv-clear-dialog-message" tabindex="-1"><h3 id="ssv-clear-dialog-title">Clear your bag?</h3><p id="ssv-clear-dialog-message">This will remove all items from your bag. This action cannot be undone.</p><div class="ssv-clear-dialog-actions"><button type="button" data-clear-cancel>Keep shopping</button><button type="button" class="ssv-clear-confirm" data-clear-confirm>Clear bag</button></div></section></div></div>';
-      layer.insertAdjacentHTML("beforeend", '<div id="ssv-order-close-prompt" class="ssv-order-close-layer" hidden><div class="ssv-order-close-backdrop"></div><section class="ssv-order-close-dialog" role="dialog" aria-modal="true" aria-labelledby="ssv-order-close-title" aria-describedby="ssv-order-close-message" tabindex="-1"><h3 id="ssv-order-close-title">Download order details?</h3><p id="ssv-order-close-message">Download a copy of your order before closing?</p><div class="ssv-order-close-actions"><button type="button" class="ssv-order-close-save" data-order-close-download>Download PDF</button><button type="button" class="ssv-order-close-dismiss" data-order-close-skip>Close</button></div></section></div>');
       document.body.appendChild(layer);
     }
     if(!$("#ssv-cart-toast")){const toast=document.createElement("div");toast.id="ssv-cart-toast";toast.setAttribute("role","status");toast.setAttribute("aria-live","polite");document.body.appendChild(toast)}
@@ -89,12 +88,7 @@
   }
   function showToast(message){const toast=$("#ssv-cart-toast");if(!toast)return;toast.textContent=message;toast.classList.add("is-visible");clearTimeout(toastTimer);toastTimer=setTimeout(()=>toast.classList.remove("is-visible"),1800)}
   function openCart(){const layer=$("#ssv-cart-layer");if(!layer)return;layer.classList.add("is-open");document.body.style.overflow="hidden";renderCart();setTimeout(()=>$("#ssv-cart-drawer")?.focus(),0)}
-  function closeCart(){const layer=$("#ssv-cart-layer");if(!layer)return;closeClearBagDialog(false);closeOrderClosePrompt(false);layer.classList.remove("is-open");document.body.style.overflow="";$("#ssv-cart-trigger")?.focus()}
-  function openOrderClosePrompt(){const prompt=$("#ssv-order-close-prompt"),drawer=$("#ssv-cart-drawer");if(!prompt)return;drawer?.setAttribute("aria-modal","false");prompt.hidden=false;prompt.querySelector("[data-order-close-download]")?.focus()}
-  function closeOrderClosePrompt(restoreFocus=true){const prompt=$("#ssv-order-close-prompt"),drawer=$("#ssv-cart-drawer");if(!prompt)return;prompt.hidden=true;drawer?.setAttribute("aria-modal","true");if(restoreFocus)$("#ssv-cart-drawer")?.focus()}
-  function handleCloseAfterOrder(){if(lastSubmittedOrder){openOrderClosePrompt();return}closeCart()}
-  function closeWithoutOrderDownload(){lastSubmittedOrder=null;closeOrderClosePrompt(false);closeCart()}
-  function downloadAndCloseOrder(){if(!lastSubmittedOrder)return;if(downloadOrderDetails()!==true)return;lastSubmittedOrder=null;closeOrderClosePrompt();}
+  function closeCart(){const layer=$("#ssv-cart-layer");if(!layer)return;closeClearBagDialog(false);layer.classList.remove("is-open");document.body.style.overflow="";$("#ssv-cart-trigger")?.focus()}
   let clearingBag=false;
   function openClearBagDialog(){if(!cart.length||clearingBag)return;const dialog=$("#ssv-clear-bag-dialog");if(!dialog)return;const message=$("#ssv-clear-dialog-message");if(message)message.textContent="This will remove all items from your bag. This action cannot be undone.";dialog.hidden=false;dialog.querySelector("[data-clear-cancel]")?.focus()}
   function closeClearBagDialog(restoreFocus=true){const dialog=$("#ssv-clear-bag-dialog");if(!dialog)return;dialog.hidden=true;if(restoreFocus)$("#ssv-clear-bag")?.focus()}
@@ -249,15 +243,12 @@
   document.addEventListener("click",event=>{
     const add=event.target.closest("[data-add-cart]");
     if(add){const id=Number(add.dataset.addCart),p=getProduct(id);if(!p)return;const row=cart.find(x=>x.id===id);if(row){if(row.quantity>=MAX_QUANTITY){showToast("Maximum quantity reached (10)");return}row.quantity++}else cart.push({id,quantity:1});saveCart();updateCount();showToast("Added to cart");if($("#ssv-cart-layer")?.classList.contains("is-open"))renderCart();return}
-    if(event.target.closest("[data-order-close-download]")){downloadAndCloseOrder();return}
-    if(event.target.closest("[data-order-close-skip]")){closeWithoutOrderDownload();return}
-    
-    if(event.target.closest("[data-download-order]")){downloadOrderDetails();return}
+        if(event.target.closest("[data-download-order]")){downloadOrderDetails();return}
     if(event.target.closest("#ssv-cart-trigger")){openCart();return}
     if(event.target.closest("[data-clear-cancel]")){closeClearBagDialog();return}
     if(event.target.closest("[data-clear-confirm]")){confirmClearBag();return}
     if(event.target.closest("#ssv-clear-bag")){openClearBagDialog();return}
-    if(event.target.closest("[data-cart-close]")){handleCloseAfterOrder();return}
+    if(event.target.closest("[data-cart-close]")){closeCart();return}
     const qty=event.target.closest("[data-qty]");if(qty){const row=cart.find(x=>x.id===Number(qty.dataset.id));if(row){const delta=Number(qty.dataset.qty);if(delta>0&&row.quantity>=MAX_QUANTITY){showToast("Maximum quantity reached (10)");return}row.quantity=Math.max(0,Math.min(MAX_QUANTITY,row.quantity+delta));if(!row.quantity)cart=cart.filter(x=>x!==row);saveCart();renderCart()}return}
     const remove=event.target.closest("[data-remove]");if(remove){cart=cart.filter(x=>x.id!==Number(remove.dataset.remove));saveCart();renderCart();return}
     if(event.target.closest("#ssv-proceed-checkout")){showCheckout();return}
@@ -266,19 +257,6 @@
   document.addEventListener("submit",event=>{if(event.target?.id==="ssv-checkout-form"){event.preventDefault();submitCheckout(event.target)}});
   document.addEventListener("keydown",event=>{
     const layer=$("#ssv-cart-layer");if(!layer?.classList.contains("is-open"))return;
-    const orderPrompt=$("#ssv-order-close-prompt");
-    if(orderPrompt&&!orderPrompt.hidden){
-      if(event.key==="Escape"){event.preventDefault();closeOrderClosePrompt();return}
-      if(event.key==="Tab"){
-        const focusable=Array.from(orderPrompt.querySelectorAll('button:not([disabled]),[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])')).filter(el=>!el.hidden&&el.getAttribute("aria-hidden")!=="true");
-        if(!focusable.length){event.preventDefault();orderPrompt.querySelector(".ssv-order-close-dialog")?.focus();return}
-        const first=focusable[0],last=focusable[focusable.length-1],active=document.activeElement;
-        if(!orderPrompt.contains(active)){event.preventDefault();(event.shiftKey?last:first).focus();return}
-        if(event.shiftKey&&active===first){event.preventDefault();last.focus();return}
-        if(!event.shiftKey&&active===last){event.preventDefault();first.focus();return}
-      }
-      return;
-    }
     const dialog=$("#ssv-clear-bag-dialog");
     if(dialog&&!dialog.hidden){
       if(event.key==="Escape"){event.preventDefault();closeClearBagDialog();return}
