@@ -138,17 +138,18 @@ function orderEscapeHtml(value) {
 }
 function orderImageUrl(value) {
   const image = String(value || "").trim();
-  if (/^assets\\/products\\/[a-zA-Z0-9_.% -]+$/.test(image)) {
-    const encodedPath = image.split("/").map(part => {
-      try {
-        return encodeURIComponent(decodeURIComponent(part));
-      } catch {
-        return encodeURIComponent(part);
-      }
-    }).join("/");
-    return "https://srisaivanicollections.github.io/" + encodedPath;
+  if (image.startsWith("assets/products/")) {
+    const parts = image.split("/");
+    if (parts.length >= 3 && parts[0] === "assets" && parts[1] === "products" &&
+        parts.every(part => part && part !== "." && part !== ".." && /^[a-zA-Z0-9_. -]+$/.test(part))) {
+      return "https://srisaivanicollections.github.io/" + parts.map(encodeURIComponent).join("/");
+    }
+    return "";
   }
-  if (/^https:\\/\\/[a-zA-Z0-9.-]+(?::[0-9]+)?(?:\\/[^\\s"'<>]*)?$/.test(image)) return image;
+  try {
+    const parsed = new URL(image);
+    if (parsed.protocol === "https:" && parsed.hostname && !parsed.username && !parsed.password) return parsed.href;
+  } catch {}
   return "";
 }
 async function sendOrderNotification(env, order) {
