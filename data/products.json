@@ -1,5 +1,18 @@
 [
   {
+    "id": 1791912684577,
+    "name": "Boarder less saree",
+    "category": "Sarees",
+    "color": "Pink",
+    "price": 2000,
+    "originalPrice": 2200,
+    "image": "assets/products/1791912682188-614f0db1e8dc-WhatsApp-Image-2026-10-13-at-10.57.14-PM.jpeg",
+    "dateAdded": "2026-10-13T17:31:24.577Z",
+    "newArrival": true,
+    "bestSeller": true,
+    "availability": true
+  },
+  {
     "id": 1791811630242,
     "name": "Antique necklace",
     "category": "Jewelry",
