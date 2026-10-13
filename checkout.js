@@ -3,7 +3,6 @@
   "use strict";
   const WORKER_URL = "https://ssv-admin-otp.vinith-paithari.workers.dev";
   const CART_KEY = "ssv_guest_cart_v1";
-  const PENDING_KEY = "ssv_guest_order_idempotency_v1";
   const $ = (selector, root=document) => root.querySelector(selector);
   const esc = value => String(value ?? "").replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
   let cart = readCart();
@@ -88,17 +87,15 @@
     const customer={fullName:String(fd.get("fullName")||"").trim(),mobile:String(fd.get("mobile")||"").trim()};
     const shipping={houseStreet:String(fd.get("houseStreet")||"").trim(),landmark:String(fd.get("landmark")||"").trim(),city:String(fd.get("city")||"").trim(),district:String(fd.get("district")||"").trim(),state:String(fd.get("state")||"").trim(),pinCode:String(fd.get("pinCode")||"").trim()};
     if(!form.reportValidity())return;
-    let key="";
-    try{key=sessionStorage.getItem(PENDING_KEY)||"";if(!/^[0-9a-f-]{36}$/i.test(key)){key=crypto.randomUUID();sessionStorage.setItem(PENDING_KEY,key)}}catch(_){key=crypto.randomUUID()}
     const button=$(".ssv-checkout-submit",form);submitting=true;if(button){button.disabled=true;button.textContent="SUBMITTING…"}showStatus("Submitting your order securely…");
     try{
-      const response=await fetch(WORKER_URL,{method:"POST",headers:{"Content-Type":"application/json","Idempotency-Key":key},body:JSON.stringify({action:"submitOrder",idempotencyKey:key,items:cart.map(row=>({id:row.id,quantity:row.quantity})),customer,shipping})});
+      const response=await fetch(WORKER_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"submitOrder",items:cart.map(row=>({id:row.id,quantity:row.quantity})),customer,shipping})});
       const data=await response.json().catch(()=>({}));
       if(!response.ok||data.success!==true||data.accepted!==true)throw new Error(data.message||"We could not submit the order. Your cart has been kept.");
-      try{localStorage.removeItem(CART_KEY);sessionStorage.removeItem(PENDING_KEY)}catch(_){}
+      try{localStorage.removeItem(CART_KEY)}catch(_){}
       cart=[];updateCount();
       const content=$("#ssv-cart-content"),footer=$("#ssv-cart-footer");if(footer)footer.style.display="none";
-      content.innerHTML='<div class="ssv-order-success"><span class="ssv-success-mark" aria-hidden="true">✓</span><h3>Order received</h3><p>Your order has been recorded. We will contact you on your mobile number to confirm availability, delivery, and the final amount.</p><div class="ssv-order-ref">'+esc(data.reference||"Order received")+'</div>'+(data.notificationPending?'<p>Order saved. The store notification is still being processed.</p>':"")+'<button type="button" class="ssv-checkout-submit" data-cart-close>Continue shopping</button></div>';
+      content.innerHTML='<div class="ssv-order-success"><span class="ssv-success-mark" aria-hidden="true">✓</span><h3>Order received</h3><p>Your order request has been emailed to the store. We will contact you on your mobile number to confirm availability, delivery, and the final amount.</p><div class="ssv-order-ref">'+esc(data.reference||"Order received")+'</div>'+'<button type="button" class="ssv-checkout-submit" data-cart-close>Continue shopping</button></div>';
     }catch(error){showStatus(error?.message||"Order submission failed. Your cart has been kept.");}
     finally{submitting=false;if(button&&button.isConnected){button.disabled=false;button.textContent="Submit Order"}}
   }
