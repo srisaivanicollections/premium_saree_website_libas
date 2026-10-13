@@ -168,10 +168,19 @@
     };
     const centerX=(value,size)=>Math.max(48,(595-ascii(value).length*size*0.52)/2);
     const wrappedName=value=>{
-      const clean=ascii(value||"Product"),result=[];
-      let rest=clean;
-      while(rest.length>43){let split=rest.lastIndexOf(" ",43);if(split<1)split=43;result.push(rest.slice(0,split));rest=rest.slice(split).trim();}
-      result.push(rest);return result;
+      // Keep names within the fixed row height: at most two lines, with a
+      // visible ellipsis rather than allowing text to collide with the next row.
+      const clean=ascii(value||"Product");
+      if(clean.length<=43)return [clean];
+      let split=clean.lastIndexOf(" ",43);
+      if(split<1)split=43;
+      const first=clean.slice(0,split);
+      const rest=clean.slice(split).trim();
+      if(rest.length<=43)return [first,rest];
+      let second=rest.slice(0,40);
+      const secondSplit=second.lastIndexOf(" ");
+      if(secondSplit>20)second=second.slice(0,secondSplit);
+      return [first,second.replace(/[ .]+$/,"")+"..."];
     };
     const pages=[];
     let index=0;
@@ -188,44 +197,52 @@
     const pageIds=[];
     pages.forEach((pageItems,pageIndex)=>{
       commands.length=0;
-      text(220,795,"SRI SAI VANI",21,"F2","0.12 0.11 0.10",2.2);
-      text(270,779,"COLLECTIONS",7,"F1","0.36 0.34 0.31",1.8);
+      // Brand lockup follows the supplied left-aligned shop logo reference.
+      text(72,795,"SRI SAI VANI",21,"F2","0.12 0.11 0.10",2.2);
+      text(72,779,"COLLECTIONS",7,"F1","0.36 0.34 0.31",1.8);
       line(58,758,537,758,"0.84 0.81 0.76",0.8);
       text(centerX("Thank you for your order",17),720,"Thank you for your order",17,"F2");
       text(centerX("Review your order details below.",9),700,"Review your order details below.",9,"F1","0.42 0.40 0.37");
-      rect(58,650,479,30,"0.97 0.96 0.94");
-      text(72,662,"ORDER DATE",7,"F2","0.40 0.38 0.35");
-      text(72,646,ascii(order.createdAt||""),9);
-      text(370,662,"ORDER REFERENCE",7,"F2","0.40 0.38 0.35");
-      text(370,646,ascii(order.reference||"Order received"),9);
+      // Keep both labels and values inside the order metadata panel.
+      rect(58,642,479,44,"0.97 0.96 0.94");
+      text(72,670,"ORDER DATE",7,"F2","0.40 0.38 0.35");
+      text(72,654,ascii(order.createdAt||""),9);
+      text(370,670,"ORDER REFERENCE",7,"F2","0.40 0.38 0.35");
+      text(370,654,ascii(order.reference||"Order received"),9);
       line(58,626,537,626,"0.86 0.83 0.78",0.7);
       text(72,605,"ITEMS",8,"F2","0.40 0.38 0.35");
       text(478,605,"QTY",8,"F2","0.40 0.38 0.35");
       line(58,591,537,591,"0.86 0.83 0.78",0.7);
-      let y=569;
+      // Each row owns a 62pt slot. The image, name, quantity and separator
+      // are placed within that slot so separators never cross thumbnails.
+      const rowTop=580;
+      const rowStep=62;
       const imageRefs=[];
       pageItems.forEach((item,itemIndex)=>{
+        const top=rowTop-(itemIndex*rowStep);
         const imageName="Im"+(itemIndex+1);
         if(item.preparedImage){
-          commands.push("q 42 0 0 42 72 "+(y-13)+" cm /"+imageName+" Do Q");
+          commands.push("q 42 0 0 42 72 "+(top-48)+" cm /"+imageName+" Do Q");
           imageRefs.push({name:imageName,image:item.preparedImage});
         }else{
-          rect(72,y-13,42,42,"0.97 0.96 0.94");
-          commands.push("0.86 0.83 0.78 RG 0.5 w 72 "+(y-13)+" 42 42 re S");
+          rect(72,top-48,42,42,"0.97 0.96 0.94");
+          commands.push("0.86 0.83 0.78 RG 0.5 w 72 "+(top-48)+" 42 42 re S");
         }
         const names=wrappedName(item.name);
-        names.forEach((name,n)=>text(128,y+12-(n*13),name,10,"F1"));
-        text(478,y+1,String(item.quantity??1),10,"F1");
-        y-=62;
-        line(58,y+10,537,y+10,"0.91 0.89 0.86",0.55);
+        names.forEach((name,n)=>text(128,top-24-(n*13),name,10,"F1"));
+        text(478,top-29,String(item.quantity??1),10,"F1");
+        line(58,top-54,537,top-54,"0.91 0.89 0.86",0.55);
       });
+      const lastRowBottom=rowTop-((pageItems.length-1)*rowStep)-54;
       if(pageIndex===pages.length-1){
-        const noteY=Math.max(110,y-4);
+        const noteY=Math.max(105,lastRowBottom-24);
         text(58,noteY,"This is an order summary, not a tax invoice.",8,"F1","0.35 0.33 0.30");
         text(58,noteY-15,"The store will confirm availability, delivery, and the final amount.",8,"F1","0.35 0.33 0.30");
       }else text(58,90,"Continued on next page",8,"F1","0.42 0.40 0.37");
       line(58,58,537,58,"0.84 0.81 0.76",0.7);
-      text(58,40,"SRI SAI VANI COLLECTIONS",7,"F2","0.42 0.40 0.37");
+      // Footer repeats the same two-line brand lockup as the header.
+      text(58,41,"SRI SAI VANI",7,"F2","0.42 0.40 0.37",0.6);
+      text(58,30,"COLLECTIONS",5,"F1","0.42 0.40 0.37",1.1);
       text(470,40,"PAGE "+(pageIndex+1)+" OF "+pages.length,7,"F1","0.42 0.40 0.37");
       const stream=commands.join("\n");
       const streamId=addObject("<< /Length "+stream.length+" >>\nstream\n"+stream+"\nendstream");
