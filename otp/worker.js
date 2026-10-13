@@ -197,24 +197,24 @@ async function sendOrderNotification(env, order) {
       '<strong style="font-family:Georgia,Times New Roman,serif;font-size:15px;font-weight:400">' + orderEscapeHtml(item.name) + '</strong><br>' +
       '<span style="color:#625d55">Quantity: ' + item.quantity + '</span></td></tr>';
   }).join("");
-  const html = '<!doctype html><html lang="en"><body style="margin:0;padding:24px 20px;background:#faf7f2;color:#1c1917;font-family:Arial,Helvetica,sans-serif">' +
-    '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;max-width:640px;margin:0 auto;background:#ffffff;border:1px solid #e4d8c5;border-radius:12px;border-collapse:separate">' +
+  const html = '<!doctype html><html lang="en"><head><meta name="viewport" content="width=device-width, initial-scale=1.0"><style>@media only screen and (max-width:480px){.order-email-body{padding:8px 4px!important}.order-email-card{width:100%!important}.order-meta-cell{display:block!important;width:auto!important;border-right:0!important;border-bottom:1px solid #e4d8c5!important;padding:10px 12px!important}.order-meta-cell:last-child{border-bottom:0!important}.customer-panel-cell{display:block!important;width:auto!important;border-right:0!important;border-bottom:1px solid #e4d8c5!important;padding:12px!important}.customer-panel-cell:last-child{border-bottom:0!important}.order-section{padding:14px 12px!important}.order-meta-value{font-size:14px!important;overflow-wrap:anywhere!important;word-break:normal!important}.shipping-address-text{overflow-wrap:break-word!important;word-break:normal!important}}</style></head><body class="order-email-body" style="margin:0;padding:24px 20px;background:#faf7f2;color:#1c1917;font-family:Arial,Helvetica,sans-serif">' +
+    '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" class="order-email-card" style="width:100%;max-width:640px;margin:0 auto;background:#ffffff;border:1px solid #e4d8c5;border-radius:12px;border-collapse:separate">' +
     '<tr><td align="center" style="padding:22px 24px 16px;border-bottom:1px solid #e4d8c5">' +
     '<p style="margin:0;color:#1c1917;font-family:Cormorant Garamond,Georgia,serif;font-size:21px;line-height:.85;font-weight:500;letter-spacing:.12em">SRI SAI VANI</p>' +
     '<p style="margin:5px 0 0;color:#1c1917;font-family:Inter,Arial,sans-serif;font-size:7px;line-height:1;letter-spacing:.31em;color:#78716c">COLLECTIONS</p>' +
     '</td></tr>' +
     '<tr><td style="padding:12px 24px 8px"><table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#faf7f2;border:1px solid #eee6dc;border-radius:8px"><tr>' +
-    '<td width="50%" valign="middle" style="padding:14px 16px;font-size:13px;line-height:1.5;border-right:1px solid #e4d8c5"><span style="color:#625d55">Order Date</span><br><strong style="font-size:16px;font-weight:500;color:#1c1917">' + orderEscapeHtml(order.createdAt) + '</strong></td>' +
-    '<td width="50%" valign="middle" style="padding:14px 16px;font-size:13px;line-height:1.5"><span style="color:#625d55">Order ID</span><br><strong style="font-size:16px;font-weight:600;color:#1c1917">' + orderEscapeHtml(order.reference) + '</strong></td>' +
+    '<td class="order-meta-cell" width="50%" valign="middle" style="padding:14px 16px;font-size:13px;line-height:1.5;border-right:1px solid #e4d8c5"><span style="color:#625d55">Order Date</span><br><strong class="order-meta-value" style="font-size:16px;font-weight:500;color:#1c1917">' + orderEscapeHtml(order.createdAt) + '</strong></td>' +
+    '<td class="order-meta-cell" width="50%" valign="middle" style="padding:14px 16px;font-size:13px;line-height:1.5"><span style="color:#625d55">Order ID</span><br><strong class="order-meta-value" style="font-size:16px;font-weight:600;color:#1c1917">' + orderEscapeHtml(order.reference) + '</strong></td>' +
     '</tr></table></td></tr>' +
     '<tr><td style="padding:18px 24px 8px"><table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#faf7f2;border:1px solid #eee6dc;border-radius:8px"><tr>' +
-    '<td width="48%" valign="top" style="padding:16px 18px;border-right:1px solid #e4d8c5">' +
+    '<td class="customer-panel-cell" width="48%" valign="top" style="padding:16px 18px;border-right:1px solid #e4d8c5">' +
     '<p style="margin:0 0 4px;color:#8b6338;font-size:11px;letter-spacing:1.2px;text-transform:uppercase">Customer</p>' +
     '<p style="margin:0 0 5px;font-size:16px;line-height:1.45;font-weight:600;color:#1c1917">' + orderEscapeHtml(order.customer.fullName.toUpperCase()) + '</p>' +
     '<p style="margin:0;font-size:14px;line-height:1.6"><a href="tel:+91' + orderEscapeHtml(String(order.customer.mobile).replace(/\D/g, "").replace(/^91(?=\d{10}$)/, "")) + '" style="color:#8b6338;text-decoration:underline">' + orderEscapeHtml(displayMobile) + '</a></p></td>' +
-    '<td width="52%" valign="top" style="padding:16px 18px">' +
+    '<td class="customer-panel-cell" width="52%" valign="top" style="padding:16px 18px">' +
     '<p style="margin:0 0 4px;color:#8b6338;font-size:10px;letter-spacing:1px;text-transform:uppercase">Shipping Address</p>' +
-    '<p style="margin:0;font-size:14px;line-height:1.65;color:#1c1917;word-break:break-word">' + orderEscapeHtml(displayAddress) + '</p></td>' +
+    '<p class="shipping-address-text" style="margin:0;font-size:14px;line-height:1.65;color:#1c1917;overflow-wrap:break-word;word-break:normal">' + orderEscapeHtml(displayAddress) + '</p></td>' +
     '</tr></table></td></tr>' +
     '<tr><td style="padding:22px 24px 20px"><table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%"><tr>' +
     '<td><h2 style="font-family:Georgia,Times New Roman,serif;font-size:22px;font-weight:400;margin:0 0 10px">Items Ordered</h2></td>' +
