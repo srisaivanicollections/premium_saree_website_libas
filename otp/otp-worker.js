@@ -210,7 +210,7 @@ async function submitOrder(request, env, origin, payload) {
   const items = [];
   for (const row of ids) {
     const product = productsById.get(row.id);
-    if (!product || product.availability === false) return jsonResponse({ success: false, message: "A selected item is no longer available. Please refresh your cart." }, 409, origin);
+    if (!product || product.availability === false || product.inStock === false || product.outOfStock === true) return jsonResponse({ success: false, message: "A selected item is no longer available. Please refresh your cart." }, 409, origin);
     items.push({ id: row.id, name: cleanOrderText(product.name, 120), quantity: row.quantity });
   }
   const existing = await env.ORDERS_DB.prepare("SELECT order_ref, payload_json, notification_status FROM orders WHERE idempotency_key = ?").bind(idempotencyKey).first();
