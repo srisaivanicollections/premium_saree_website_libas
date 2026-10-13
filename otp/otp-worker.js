@@ -169,32 +169,8 @@ async function sendOrderNotification(env, order) {
     throw new Error("Order notification could not be sent.");
   }
 }
-// Sequential retries are deduplicated with a small KV marker only. Cloudflare KV
-// is not transactional, so concurrent duplicate requests or an ambiguous Resend
-// timeout can still produce duplicate owner emails. No customer details are stored in KV.
-const ORDER_SENT_KEY_PREFIX = "order-sent:";
-const ORDER_SENT_TTL_SECONDS = 30 * 24 * 60 * 60;
-
 async function submitOrder(request, env, origin, payload) {
-  if (!env.OTP_STORE) return jsonResponse({ success: false, message: "Order rate limiting is not configured yet." }, 503, origin);
   if (!env.RESEND_API_KEY_SRISAI) return jsonResponse({ success: false, message: "Order notification email is not configured." }, 503, origin);
-
-  const idempotencyKey = String(request.headers.get("Idempotency-Key") || payload?.idempotencyKey || "");
-  if (!/^[0-9a-f-]{36}$/i.test(idempotencyKey)) return jsonResponse({ success: false, message: "Refresh checkout and try again." }, 400, origin);
-
-  const sentKey = ORDER_SENT_KEY_PREFIX + idempotencyKey;
-  // Return the prior reference for ordinary sequential retries without storing
-  // the customer's name, phone number, address, or order payload in KV.
-  try {
-    const sentRaw = await env.OTP_STORE.get(sentKey);
-    if (sentRaw) {
-      const sent = JSON.parse(sentRaw);
-      if (sent?.reference) return jsonResponse({ success: true, accepted: true, reference: sent.reference, message: "Your order has been received." }, 200, origin);
-    }
-  } catch (error) {
-    console.error("Could not check order retry marker:", error instanceof Error ? error.message : "Unknown error");
-    return jsonResponse({ success: false, message: "We could not verify this order attempt. Please retry." }, 503, origin);
-  }
 
   const customer = payload?.customer || {};
   const shipping = payload?.shipping || {};
@@ -241,16 +217,6 @@ async function submitOrder(request, env, origin, payload) {
     items.push({ id: row.id, name: cleanOrderText(product.name, 120), quantity: row.quantity });
   }
 
-  // Basic per-IP throttling uses a dedicated prefix in the existing OTP KV.
-  // It does not change or overwrite OTP keys.
-  const clientIp = request.headers.get("CF-Connecting-IP") || "unknown";
-  const ipDigest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(clientIp));
-  const ipHash = Array.from(new Uint8Array(ipDigest)).map(byte => byte.toString(16).padStart(2, "0")).join("").slice(0, 32);
-  const rateKey = "order-rate:" + ipHash;
-  const rateCount = Number(await env.OTP_STORE.get(rateKey) || "0");
-  if (rateCount >= 5) return jsonResponse({ success: false, message: "Too many order attempts. Please wait before trying again." }, 429, origin);
-  await env.OTP_STORE.put(rateKey, String(rateCount + 1), { expirationTtl: 3600 });
-
   const order = {
     reference: "SSV-" + new Date().toISOString().slice(0,10).replace(/-/g,"") + "-" + crypto.randomUUID().slice(0,8).toUpperCase(),
     createdAt: new Date().toISOString(),
@@ -265,16 +231,9 @@ async function submitOrder(request, env, origin, payload) {
     return jsonResponse({ success: false, message: "We could not send your order to the store. Your cart has been kept; please retry." }, 502, origin);
   }
 
-  // Store only a reference marker, not personal/order data. If this KV write
-  // fails after Resend accepted the email, still acknowledge the sent order.
-  try {
-    await env.OTP_STORE.put(sentKey, JSON.stringify({ reference: order.reference }), { expirationTtl: ORDER_SENT_TTL_SECONDS });
-  } catch (error) {
-    console.error("Order email was sent but retry marker could not be saved:", error instanceof Error ? error.message : "Unknown error");
-  }
-
   return jsonResponse({ success: true, accepted: true, reference: order.reference, message: "Your order has been sent to the store." }, 201, origin);
 }
+
 
 export default {
   async fetch(request, env) {
@@ -290,7 +249,7 @@ export default {
         headers: {
           "Access-Control-Allow-Origin": origin,
           "Access-Control-Allow-Methods": "POST, OPTIONS",
-          "Access-Control-Allow-Headers": "Content-Type, Idempotency-Key",
+          "Access-Control-Allow-Headers": "Content-Type",
           "Access-Control-Max-Age": "86400",
           "Vary": "Origin",
         },
