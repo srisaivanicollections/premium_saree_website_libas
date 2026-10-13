@@ -122,81 +122,138 @@
   function showCheckout(){if(!cart.length)return;const content=$("#ssv-cart-content");if(!content)return;let form=$("#ssv-checkout-form");if(!form){renderCheckoutForm();form=$("#ssv-checkout-form")}form.classList.add("is-visible");const clearButton=$("#ssv-clear-bag");if(clearButton){clearButton.hidden=true;clearButton.disabled=true}renderCheckoutForm();content.scrollTop=0;$("#ssv-full-name")?.focus()}
   function showStatus(message,success=false){const status=$("#ssv-checkout-status");if(!status)return;status.textContent=message;status.classList.toggle("is-success",success)}
 
-  function buildOrderPdf(order){
-    const lines=[
-      "SRI SAI VANI",
-      "COLLECTIONS",
-      "",
-      "Thank you for your order",
-      "",
-      "Order date: "+order.createdAt,
-      "Order reference: "+order.reference,
-      "",
-      "ITEMS"
-    ];
-    order.items.forEach(item=>{
-      lines.push(String(item.name||"Product"));
-      lines.push("Quantity: "+String(item.quantity));
-      lines.push("");
-    });
-    lines.push("This is an order summary, not a tax invoice.");
-    lines.push("The store will confirm availability, delivery, and the final amount.");
-
-    const ascii=value=>String(value).normalize("NFKD")
+  async function buildOrderPdf(order){
+    const ascii=value=>String(value??"").normalize("NFKD")
       .replace(/[\u0300-\u036f]/g,"")
       .replace(/[^\x20-\x7E]/g,"?");
     const escapePdf=value=>ascii(value).replace(/\\/g,"\\\\").replace(/\(/g,"\\(").replace(/\)/g,"\\)");
-    const wrapped=[];
-    lines.forEach(line=>{
-      const clean=ascii(line);
-      if(!clean){wrapped.push("");return}
-      let remaining=clean;
-      while(remaining.length>76){
-        let split=remaining.lastIndexOf(" ",76);
-        if(split<1)split=76;
-        wrapped.push(remaining.slice(0,split));
-        remaining=remaining.slice(split).trim();
-      }
-      wrapped.push(remaining);
-    });
-    const pageLines=[];
-    for(let i=0;i<wrapped.length;i+=48)pageLines.push(wrapped.slice(i,i+48));
-    if(!pageLines.length)pageLines.push([]);
+    const loadProductImage=async url=>{
+      if(!url)return null;
+      try{
+        const img=new Image();
+        img.crossOrigin="anonymous";
+        img.decoding="async";
+        await new Promise((resolve,reject)=>{
+          img.onload=resolve;
+          img.onerror=reject;
+          img.src=url;
+        });
+        if(!img.naturalWidth||!img.naturalHeight)return null;
+        const canvas=document.createElement("canvas");
+        const max=180,scale=Math.min(1,max/Math.max(img.naturalWidth,img.naturalHeight));
+        canvas.width=Math.max(1,Math.round(img.naturalWidth*scale));
+        canvas.height=Math.max(1,Math.round(img.naturalHeight*scale));
+        const ctx=canvas.getContext("2d");
+        if(!ctx)return null;
+        ctx.fillStyle="#FAF7F2";ctx.fillRect(0,0,canvas.width,canvas.height);
+        ctx.drawImage(img,0,0,canvas.width,canvas.height);
+        const base64=canvas.toDataURL("image/jpeg",0.72).split(",")[1];
+        const binary=atob(base64);
+        let hex="";
+        for(let i=0;i<binary.length;i++)hex+=binary.charCodeAt(i).toString(16).padStart(2,"0");
+        return {hex,width:canvas.width,height:canvas.height};
+      }catch(_){return null}
+    };
+    const items=Array.isArray(order.items)?order.items:[];
+    const prepared=await Promise.all(items.map(async item=>({...item,preparedImage:await loadProductImage(item.image)})));
+    const commands=[];
+    const text=(x,y,value,size=10,font="F1",color="0.12 0.11 0.10",charSpace=0)=>{
+      commands.push("BT /"+font+" "+size+" Tf "+charSpace+" Tc "+color+" rg 1 0 0 1 "+x+" "+y+" Tm ("+escapePdf(value)+") Tj ET");
+    };
+    const line=(x1,y1,x2,y2,color="0.86 0.83 0.78",width=0.7)=>{
+      commands.push(color+" RG "+width+" w "+x1+" "+y1+" m "+x2+" "+y2+" l S");
+    };
+    const rect=(x,y,w,h,fill="0.98 0.97 0.95")=>{
+      commands.push(fill+" rg "+x+" "+y+" "+w+" "+h+" re f");
+    };
+    const centerX=(value,size)=>Math.max(48,(595-ascii(value).length*size*0.52)/2);
+    const wrappedName=value=>{
+      const clean=ascii(value||"Product"),result=[];
+      let rest=clean;
+      while(rest.length>43){let split=rest.lastIndexOf(" ",43);if(split<1)split=43;result.push(rest.slice(0,split));rest=rest.slice(split).trim();}
+      result.push(rest);return result;
+    };
+    const pages=[];
+    let index=0;
+    while(index<prepared.length||(!prepared.length&&!pages.length)){
+      const pageItems=prepared.slice(index,index+7);
+      pages.push(pageItems);index+=pageItems.length;if(!prepared.length)break;
+    }
     const objects=[];
-    const addObject=value=>{objects.push(value);return objects.length};
+    const addObject=value=>{objects.push(value);return objects.length;};
     const catalogId=addObject("");
     const pagesId=addObject("");
-    const fontId=addObject("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>");
+    const regularFont=addObject("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>");
+    const boldFont=addObject("<< /Type /Font /Subtype /Type1 /BaseFont /Times-Roman /Encoding /WinAnsiEncoding >>");
     const pageIds=[];
-    pageLines.forEach(page=>{
-      let stream="BT\n/F1 10 Tf\n50 790 Td\n14 TL\n";
-      page.forEach((line,index)=>{
-        if(index===0&&pageLines.indexOf(page)===0)stream+="/F1 16 Tf\n("+escapePdf(line)+") Tj\n/F1 10 Tf\n0 -24 Td\n";
-        else stream+="("+escapePdf(line)+") Tj\nT*\n";
+    pages.forEach((pageItems,pageIndex)=>{
+      commands.length=0;
+      text(220,795,"SRI SAI VANI",21,"F2","0.12 0.11 0.10",2.2);
+      text(270,779,"COLLECTIONS",7,"F1","0.36 0.34 0.31",1.8);
+      line(58,758,537,758,"0.84 0.81 0.76",0.8);
+      text(centerX("Thank you for your order",17),720,"Thank you for your order",17,"F2");
+      text(centerX("Review your order details below.",9),700,"Review your order details below.",9,"F1","0.42 0.40 0.37");
+      rect(58,650,479,30,"0.97 0.96 0.94");
+      text(72,662,"ORDER DATE",7,"F2","0.40 0.38 0.35");
+      text(72,646,ascii(order.createdAt||""),9);
+      text(370,662,"ORDER REFERENCE",7,"F2","0.40 0.38 0.35");
+      text(370,646,ascii(order.reference||"Order received"),9);
+      line(58,626,537,626,"0.86 0.83 0.78",0.7);
+      text(72,605,"ITEMS",8,"F2","0.40 0.38 0.35");
+      text(478,605,"QTY",8,"F2","0.40 0.38 0.35");
+      line(58,591,537,591,"0.86 0.83 0.78",0.7);
+      let y=569;
+      const imageRefs=[];
+      pageItems.forEach((item,itemIndex)=>{
+        const imageName="Im"+(itemIndex+1);
+        if(item.preparedImage){
+          commands.push("q 42 0 0 42 72 "+(y-13)+" cm /"+imageName+" Do Q");
+          imageRefs.push({name:imageName,image:item.preparedImage});
+        }else{
+          rect(72,y-13,42,42,"0.97 0.96 0.94");
+          commands.push("0.86 0.83 0.78 RG 0.5 w 72 "+(y-13)+" 42 42 re S");
+        }
+        const names=wrappedName(item.name);
+        names.forEach((name,n)=>text(128,y+12-(n*13),name,10,"F1"));
+        text(478,y+1,String(item.quantity??1),10,"F1");
+        y-=62;
+        line(58,y+10,537,y+10,"0.91 0.89 0.86",0.55);
       });
-      stream+="ET";
+      if(pageIndex===pages.length-1){
+        const noteY=Math.max(110,y-4);
+        text(58,noteY,"This is an order summary, not a tax invoice.",8,"F1","0.35 0.33 0.30");
+        text(58,noteY-15,"The store will confirm availability, delivery, and the final amount.",8,"F1","0.35 0.33 0.30");
+      }else text(58,90,"Continued on next page",8,"F1","0.42 0.40 0.37");
+      line(58,58,537,58,"0.84 0.81 0.76",0.7);
+      text(58,40,"SRI SAI VANI COLLECTIONS",7,"F2","0.42 0.40 0.37");
+      text(470,40,"PAGE "+(pageIndex+1)+" OF "+pages.length,7,"F1","0.42 0.40 0.37");
+      const stream=commands.join("\n");
       const streamId=addObject("<< /Length "+stream.length+" >>\nstream\n"+stream+"\nendstream");
-      const pageId=addObject("<< /Type /Page /Parent "+pagesId+" 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 "+fontId+" 0 R >> >> /Contents "+streamId+" 0 R >>");
+      const xobjects=[];
+      imageRefs.forEach(ref=>{
+        const image=ref.image;
+        const imageId=addObject("<< /Type /XObject /Subtype /Image /Width "+image.width+" /Height "+image.height+" /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter [/ASCIIHexDecode /DCTDecode] /Length "+image.hex.length+" >>\nstream\n"+image.hex+">\nendstream");
+        xobjects.push("/"+ref.name+" "+imageId+" 0 R");
+      });
+      const xObjectResource=xobjects.length?" /XObject << "+xobjects.join(" ")+" >>":"";
+      const pageId=addObject("<< /Type /Page /Parent "+pagesId+" 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 "+regularFont+" 0 R /F2 "+boldFont+" 0 R >>"+xObjectResource+" >> /Contents "+streamId+" 0 R >>");
       pageIds.push(pageId);
     });
     objects[catalogId-1]="<< /Type /Catalog /Pages "+pagesId+" 0 R >>";
     objects[pagesId-1]="<< /Type /Pages /Kids ["+pageIds.map(id=>id+" 0 R").join(" ")+"] /Count "+pageIds.length+" >>";
     let pdf="%PDF-1.4\n%----\n";
     const offsets=[0];
-    objects.forEach((obj,index)=>{
-      offsets.push(pdf.length);
-      pdf+=(index+1)+" 0 obj\n"+obj+"\nendobj\n";
-    });
+    objects.forEach((obj,i)=>{offsets.push(pdf.length);pdf+=(i+1)+" 0 obj\n"+obj+"\nendobj\n";});
     const xrefOffset=pdf.length;
     pdf+="xref\n0 "+(objects.length+1)+"\n0000000000 65535 f \n";
-    offsets.slice(1).forEach(offset=>{pdf+=String(offset).padStart(10,"0")+" 00000 n \n"});
+    offsets.slice(1).forEach(offset=>{pdf+=String(offset).padStart(10,"0")+" 00000 n \n";});
     pdf+="trailer\n<< /Size "+(objects.length+1)+" /Root "+catalogId+" 0 R >>\nstartxref\n"+xrefOffset+"\n%%EOF";
     return new Blob([pdf],{type:"application/pdf"});
   }
-  function downloadOrderDetails(){
+  async function downloadOrderDetails(){
     if(!lastSubmittedOrder)return false;
     try{
-      const blob=buildOrderPdf(lastSubmittedOrder);
+      const blob=await buildOrderPdf(lastSubmittedOrder);
       const url=URL.createObjectURL(blob);
       const anchor=document.createElement("a");
       const safeReference=String(lastSubmittedOrder.reference||"order")
@@ -231,7 +288,7 @@
         createdAt:new Date().toLocaleString("en-IN",{dateStyle:"medium",timeStyle:"short"}),
         customer,
         shipping,
-        items:cart.map(row=>({name:String(getProduct(row.id)?.name||"Product"),quantity:row.quantity}))
+        items:cart.map(row=>({name:String(getProduct(row.id)?.name||"Product"),quantity:row.quantity,image:productImage(getProduct(row.id))}))
       };
       try{localStorage.removeItem(CART_KEY)}catch(_){}
       cart=[];updateCount();
@@ -243,7 +300,7 @@
   document.addEventListener("click",event=>{
     const add=event.target.closest("[data-add-cart]");
     if(add){const id=Number(add.dataset.addCart),p=getProduct(id);if(!p)return;const row=cart.find(x=>x.id===id);if(row){if(row.quantity>=MAX_QUANTITY){showToast("Maximum quantity reached (10)");return}row.quantity++}else cart.push({id,quantity:1});saveCart();updateCount();showToast("Added to cart");if($("#ssv-cart-layer")?.classList.contains("is-open"))renderCart();return}
-        if(event.target.closest("[data-download-order]")){downloadOrderDetails();return}
+        if(event.target.closest("[data-download-order]")){const button=event.target.closest("[data-download-order]");button.disabled=true;button.textContent="Preparing PDF…";downloadOrderDetails().finally(()=>{if(button.isConnected){button.disabled=false;button.textContent="Download order details"}});return}
     if(event.target.closest("#ssv-cart-trigger")){openCart();return}
     if(event.target.closest("[data-clear-cancel]")){closeClearBagDialog();return}
     if(event.target.closest("[data-clear-confirm]")){confirmClearBag();return}
