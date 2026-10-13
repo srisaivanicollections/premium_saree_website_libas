@@ -24,7 +24,7 @@
       return normalized;
     }catch(_){return [];}
   }
-  function saveCart(){try{localStorage.setItem(CART_KEY,JSON.stringify(cart.map(row=>({id:row.id,quantity:row.quantity}))))}catch(_){}}
+  function saveCart(nextCart=cart){try{localStorage.setItem(CART_KEY,JSON.stringify(nextCart.map(row=>({id:row.id,quantity:row.quantity}))));return true}catch(_){return false}}
   function currentProducts(){try{return Array.isArray(products)?products:[]}catch(_){return []}}
   function getProduct(id){return currentProducts().find(p=>Number(p.id)===Number(id))}
   function productImage(p){if(!p)return "";const src=String(p.image||"");return /^(https?:|data:|blob:)/i.test(src)?src:"https://raw.githubusercontent.com/srisaivanicollections/srisaivanicollections.github.io/main/"+src.replace(/^\.\//,"")}
@@ -89,9 +89,9 @@
   function openCart(){const layer=$("#ssv-cart-layer");if(!layer)return;layer.classList.add("is-open");document.body.style.overflow="hidden";renderCart();setTimeout(()=>$("#ssv-cart-drawer")?.focus(),0)}
   function closeCart(){const layer=$("#ssv-cart-layer");if(!layer)return;closeClearBagDialog(false);layer.classList.remove("is-open");document.body.style.overflow="";$("#ssv-cart-trigger")?.focus()}
   let clearingBag=false;
-  function openClearBagDialog(){if(!cart.length||clearingBag)return;const dialog=$("#ssv-clear-bag-dialog");if(!dialog)return;dialog.hidden=false;dialog.querySelector("[data-clear-cancel]")?.focus()}
+  function openClearBagDialog(){if(!cart.length||clearingBag)return;const dialog=$("#ssv-clear-bag-dialog");if(!dialog)return;const message=$("#ssv-clear-dialog-message");if(message)message.textContent="This will remove all items from your bag. This action cannot be undone.";dialog.hidden=false;dialog.querySelector("[data-clear-cancel]")?.focus()}
   function closeClearBagDialog(restoreFocus=true){const dialog=$("#ssv-clear-bag-dialog");if(!dialog)return;dialog.hidden=true;if(restoreFocus)$("#ssv-clear-bag")?.focus()}
-  function confirmClearBag(){if(clearingBag||!cart.length)return;clearingBag=true;try{cart=[];saveCart();updateCount();renderCart();closeClearBagDialog(false)}finally{clearingBag=false}}
+  function confirmClearBag(){if(clearingBag||!cart.length)return;clearingBag=true;try{if(!saveCart([])){const message=$("#ssv-clear-dialog-message");if(message)message.textContent="Your bag could not be cleared because the change could not be saved. Please try again.";return}cart=[];updateCount();renderCart();closeClearBagDialog(false);$("#ssv-cart-drawer")?.focus()}finally{clearingBag=false}}
   function renderCart(){
     const content=$("#ssv-cart-content"),footer=$("#ssv-cart-footer"),layer=$("#ssv-cart-layer");if(!content||!footer)return;
     cart=cart.filter(row=>getProduct(row.id));
@@ -153,7 +153,24 @@
     if(event.target.closest("#ssv-back-to-cart")){const form=$("#ssv-checkout-form");form?.classList.remove("is-visible");renderCart();return}
   });
   document.addEventListener("submit",event=>{if(event.target?.id==="ssv-checkout-form"){event.preventDefault();submitCheckout(event.target)}});
-  document.addEventListener("keydown",event=>{if(event.key!=="Escape"||!$("#ssv-cart-layer")?.classList.contains("is-open"))return;const dialog=$("#ssv-clear-bag-dialog");if(dialog&&!dialog.hidden){closeClearBagDialog();return}closeCart()});
+  document.addEventListener("keydown",event=>{
+    const layer=$("#ssv-cart-layer");if(!layer?.classList.contains("is-open"))return;
+    const dialog=$("#ssv-clear-bag-dialog");
+    if(dialog&&!dialog.hidden){
+      if(event.key==="Escape"){event.preventDefault();closeClearBagDialog();return}
+      if(event.key==="Tab"){
+        const panel=$(".ssv-clear-dialog",dialog);
+        const focusable=Array.from(panel.querySelectorAll('button:not([disabled]),[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])')).filter(el=>!el.hidden&&el.getAttribute("aria-hidden")!=="true");
+        if(!focusable.length){event.preventDefault();panel.focus();return}
+        const first=focusable[0],last=focusable[focusable.length-1];
+        if(!panel.contains(document.activeElement)){event.preventDefault();(event.shiftKey?last:first).focus();return}
+        if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus();return}
+        if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();return}
+      }
+      return;
+    }
+    if(event.key==="Escape")closeCart();
+  });
   // Observe catalogue rendering only to discover newly-created product cards.
   // updateCount() changes button contents, so it must not run on every DOM mutation.
   const observer=new MutationObserver(()=>{
