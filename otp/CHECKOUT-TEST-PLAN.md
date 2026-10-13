@@ -27,6 +27,8 @@ Run this checklist on a preview build and test Worker before enabling checkout f
 - [ ] A retry may send a duplicate email because no server-side order/idempotency storage exists.
 
 ## Worker and email
+
+Test the combined Cloudflare Worker at `otp/worker.js` (Admin OTP + order email).
 - [ ] Checkout requires only `RESEND_API_KEY_SRISAI`; it does not require OTP_STORE, D1, SQL, or Cron.
 - [ ] Existing OTP send and verify routes pass regression tests with unchanged KV keys, TTL, cooldown, and attempt limits.
 - [ ] Order request rejects invalid IDs, quantities, unavailable products, malformed addresses, unknown origins, and missing email configuration.
