@@ -165,6 +165,11 @@ async function sendOrderNotification(env, order) {
   // Email-only presentation: preserve stored/submitted values and normalize display casing/spacing.
   const displayAddress = address.replace(/\s+/g, " ").trim().toUpperCase();
   const totalPieces = order.items.reduce((total, item) => total + item.quantity, 0);
+  const displayMobile = (() => {
+    const digits = String(order.customer.mobile || "").replace(/\D/g, "");
+    const national = digits.startsWith("91") && digits.length === 12 ? digits.slice(2) : digits;
+    return national.length === 10 ? "+91 " + national.slice(0, 5) + " " + national.slice(5) : String(order.customer.mobile || "");
+  })();
   const text = [
     "SRI SAI VANI COLLECTIONS",
     "Order Details",
@@ -178,7 +183,7 @@ async function sendOrderNotification(env, order) {
     "",
     "CUSTOMER DETAILS",
     order.customer.fullName,
-    "Mobile: " + order.customer.mobile,
+    "Mobile: " + displayMobile,
     "",
     "SHIPPING ADDRESS",
     displayAddress
@@ -186,36 +191,36 @@ async function sendOrderNotification(env, order) {
   const itemRows = order.items.map(item => {
     const imageUrl = orderImageUrl(item.image);
     const imageCell = imageUrl
-      ? '<td width="78" valign="middle" style="padding:6px 10px 6px 0;width:78px"><img src="' + orderEscapeHtml(imageUrl) + '" width="68" height="76" alt="' + orderEscapeHtml(item.name) + '" style="display:block;width:68px;height:76px;object-fit:cover;border:1px solid #e4d8c5;border-radius:8px"></td>'
-      : '<td width="78" valign="middle" style="padding:6px 10px 6px 0;width:78px"><div style="width:68px;height:76px;background:#f4f0e9;border:1px solid #e4d8c5;border-radius:8px"></div></td>';
-    return '<tr>' + imageCell + '<td valign="top" style="padding:6px 0;border-bottom:1px solid #e4d8c5;font-size:13px;line-height:1.25;color:#1c1917">' +
-      '<strong style="font-family:Georgia,Times New Roman,serif;font-size:15px;font-weight:400">' + orderEscapeHtml(item.name) + '</strong><br>' +
-      '<span style="color:#625d55">Quantity: ' + item.quantity + '</span></td></tr>';
+      ? '<td width="88" valign="middle" style="padding:18px 14px 18px 0;width:88px"><img src="' + orderEscapeHtml(imageUrl) + '" width="76" height="84" alt="' + orderEscapeHtml(item.name) + '" style="display:block;width:76px;height:84px;object-fit:cover;border:1px solid #e4d8c5;border-radius:8px"></td>'
+      : '<td width="88" valign="middle" style="padding:18px 14px 18px 0;width:88px"><div style="width:76px;height:84px;background:#f4f0e9;border:1px solid #e4d8c5;border-radius:8px"></div></td>';
+    return '<tr>' + imageCell + '<td valign="top" style="padding:18px 0;border-bottom:1px solid #e4d8c5;font-size:14px;line-height:1.6;color:#1c1917">' +
+      '<strong style="font-family:Georgia,Times New Roman,serif;font-size:16px;font-weight:400">' + orderEscapeHtml(item.name) + '</strong><br>' +
+      '<span style="display:inline-block;padding-top:7px;color:#625d55">Quantity: ' + item.quantity + '</span></td></tr>';
   }).join("");
-  const html = '<!doctype html><html lang="en"><body style="margin:0;padding:6px 6px;background:#faf7f2;color:#1c1917;font-family:Arial,Helvetica,sans-serif">' +
-    '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width:720px;margin:0 auto;background:#ffffff;border:1px solid #e4d8c5;border-radius:12px;border-collapse:separate">' +
-    '<tr><td align="center" style="padding:12px 12px 10px;border-bottom:1px solid #e4d8c5">' +
-    '<p style="margin:0;color:#1c1917;font-family:Georgia,Times New Roman,serif;font-size:21px;line-height:.95;font-weight:500;letter-spacing:3px">SRI SAI VANI</p>' +
-    '<p style="margin:5px 0 0;color:#1c1917;font-family:Arial,Helvetica,sans-serif;font-size:9px;line-height:1;letter-spacing:2px">COLLECTIONS</p>' +
-    '' +
-    '<h1 style="font-family:Georgia,Times New Roman,serif;font-size:24px;line-height:1.2;font-weight:400;margin:12px 0 4px">Order Details</h1>' +
-    '<p style="margin:0;color:#625d55;font-size:12px;line-height:1.4">Please find the order information below.</p></td></tr>' +
-    '<tr><td style="padding:8px 12px 2px"><table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#faf7f2;border:1px solid #eee6dc;border-radius:8px"><tr>' +
-    '<td width="50%" valign="middle" style="padding:8px;font-size:12px;line-height:1.3;border-right:1px solid #e4d8c5"><span style="color:#625d55">Order Date</span><br><strong style="font-size:16px;font-weight:500;color:#1c1917">' + orderEscapeHtml(order.createdAt) + '</strong></td>' +
-    '<td width="50%" valign="middle" style="padding:8px;font-size:12px;line-height:1.3"><span style="color:#625d55">Order ID</span><br><strong style="font-size:16px;font-weight:600;color:#1c1917">' + orderEscapeHtml(order.reference) + '</strong></td>' +
+  const html = '<!doctype html><html lang="en"><body style="margin:0;padding:20px 16px;background:#faf7f2;color:#1c1917;font-family:Arial,Helvetica,sans-serif">' +
+    '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;max-width:640px;margin:0 auto;background:#ffffff;border:1px solid #e4d8c5;border-radius:12px;border-collapse:separate">' +
+    '<tr><td align="center" style="padding:26px 24px 22px;border-bottom:1px solid #e4d8c5">' +
+    '<p style="margin:0;color:#1c1917;font-family:Cormorant Garamond,Georgia,serif;font-size:21px;line-height:.85;font-weight:500;letter-spacing:.12em">SRI SAI VANI</p>' +
+    '<p style="margin:5px 0 0;color:#1c1917;font-family:Inter,Arial,sans-serif;font-size:7px;line-height:1;letter-spacing:.31em;color:#78716c">COLLECTIONS</p>' +
+    '</td></tr>' +
+    '<tr><td align="center" style="padding:22px 24px 20px;border-bottom:1px solid #e4d8c5">' +
+    '<h1 style="font-family:Georgia,Times New Roman,serif;font-size:24px;line-height:1.2;font-weight:400;margin:0">Order Details</h1></td></tr>' +
+    '<tr><td style="padding:18px 24px 6px"><table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#faf7f2;border:1px solid #eee6dc;border-radius:8px"><tr>' +
+    '<td width="50%" valign="middle" style="padding:14px 16px;font-size:13px;line-height:1.5;border-right:1px solid #e4d8c5"><span style="color:#625d55">Order Date</span><br><strong style="font-size:16px;font-weight:500;color:#1c1917">' + orderEscapeHtml(order.createdAt) + '</strong></td>' +
+    '<td width="50%" valign="middle" style="padding:14px 16px;font-size:13px;line-height:1.5"><span style="color:#625d55">Order ID</span><br><strong style="font-size:16px;font-weight:600;color:#1c1917">' + orderEscapeHtml(order.reference) + '</strong></td>' +
     '</tr></table></td></tr>' +
-    '<tr><td style="padding:8px 12px 4px"><table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#faf7f2;border:1px solid #eee6dc;border-radius:8px"><tr>' +
-    '<td width="48%" valign="top" style="padding:10px 12px;border-right:1px solid #e4d8c5">' +
-    '<p style="margin:0 0 4px;color:#8b6338;font-size:10px;letter-spacing:1px;text-transform:uppercase">Customer</p>' +
-    '<p style="margin:0 0 5px;font-size:14px;line-height:1.3;font-weight:600;color:#1c1917">' + orderEscapeHtml(order.customer.fullName) + '</p>' +
-    '<p style="margin:0;font-size:12px;line-height:1.4"><a href="tel:' + orderEscapeHtml(order.customer.mobile) + '" style="color:#8b6338;text-decoration:underline">' + orderEscapeHtml(order.customer.mobile) + '</a></p></td>' +
-    '<td width="52%" valign="top" style="padding:10px 12px">' +
+    '<tr><td style="padding:18px 24px 8px"><table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#faf7f2;border:1px solid #eee6dc;border-radius:8px"><tr>' +
+    '<td width="48%" valign="top" style="padding:16px 18px;border-right:1px solid #e4d8c5">' +
+    '<p style="margin:0 0 4px;color:#8b6338;font-size:11px;letter-spacing:1.2px;text-transform:uppercase">Customer</p>' +
+    '<p style="margin:0 0 5px;font-size:16px;line-height:1.45;font-weight:600;color:#1c1917">' + orderEscapeHtml(order.customer.fullName.toUpperCase()) + '</p>' +
+    '<p style="margin:0;font-size:14px;line-height:1.6"><a href="tel:+91' + orderEscapeHtml(String(order.customer.mobile).replace(/\D/g, "").replace(/^91(?=\d{10}$)/, "")) + '" style="color:#8b6338;text-decoration:underline">' + orderEscapeHtml(displayMobile) + '</a></p></td>' +
+    '<td width="52%" valign="top" style="padding:16px 18px">' +
     '<p style="margin:0 0 4px;color:#8b6338;font-size:10px;letter-spacing:1px;text-transform:uppercase">Shipping Address</p>' +
-    '<p style="margin:0;font-size:12px;line-height:1.45;color:#1c1917;word-break:break-word">' + orderEscapeHtml(displayAddress) + '</p></td>' +
+    '<p style="margin:0;font-size:14px;line-height:1.65;color:#1c1917;word-break:break-word">' + orderEscapeHtml(displayAddress) + '</p></td>' +
     '</tr></table></td></tr>' +
-    '<tr><td style="padding:8px 12px 0"><table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%"><tr>' +
-    '<td><h2 style="font-family:Georgia,Times New Roman,serif;font-size:18px;font-weight:400;margin:0 0 6px">Items Ordered</h2></td>' +
-    '<td align="right" valign="middle" style="font-size:13px;color:#625d55;padding-bottom:5px">Unique items: ' + order.items.length + '<br>Total pieces: ' + totalPieces + '</td>' +
+    '<tr><td style="padding:22px 24px 20px"><table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%"><tr>' +
+    '<td><h2 style="font-family:Georgia,Times New Roman,serif;font-size:22px;font-weight:400;margin:0 0 10px">Items Ordered</h2></td>' +
+    '<td align="right" valign="middle" style="font-size:14px;line-height:1.7;color:#625d55;padding-bottom:8px">Unique items: ' + order.items.length + '<br>Total pieces: ' + totalPieces + '</td>' +
     '</tr></table><table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-top:1px solid #e4d8c5">' + itemRows + '</table></td></tr>' +
     '</table></td></tr></table></body></html>';
   const response = await fetch("https://api.resend.com/emails", {
