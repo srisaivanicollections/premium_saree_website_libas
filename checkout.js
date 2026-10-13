@@ -9,6 +9,7 @@
   let cart = readCart();
   let toastTimer = 0;
   let submitting = false;
+  let lastSubmittedOrder = null;
   function readCart(){
     try{
       const raw=JSON.parse(localStorage.getItem(CART_KEY)||"[]");
@@ -120,6 +121,99 @@
   }
   function showCheckout(){if(!cart.length)return;const content=$("#ssv-cart-content");if(!content)return;let form=$("#ssv-checkout-form");if(!form){renderCheckoutForm();form=$("#ssv-checkout-form")}form.classList.add("is-visible");const clearButton=$("#ssv-clear-bag");if(clearButton){clearButton.hidden=true;clearButton.disabled=true}renderCheckoutForm();content.scrollTop=0;$("#ssv-full-name")?.focus()}
   function showStatus(message,success=false){const status=$("#ssv-checkout-status");if(!status)return;status.textContent=message;status.classList.toggle("is-success",success)}
+
+  function buildOrderPdf(order){
+    const lines=[
+      "SRI SAI VANI",
+      "COLLECTIONS",
+      "",
+      "Thank you for your order",
+      "",
+      "Order date: "+order.createdAt,
+      "Order reference: "+order.reference,
+      "",
+      "ITEMS"
+    ];
+    order.items.forEach(item=>{
+      lines.push(String(item.name||"Product"));
+      lines.push("Quantity: "+String(item.quantity));
+      lines.push("");
+    });
+    lines.push("This is an order summary, not a tax invoice.");
+    lines.push("The store will confirm availability, delivery, and the final amount.");
+
+    const ascii=value=>String(value).normalize("NFKD")
+      .replace(/[\u0300-\u036f]/g,"")
+      .replace(/[^\x20-\x7E]/g,"?");
+    const escapePdf=value=>ascii(value).replace(/\\/g,"\\\\").replace(/\(/g,"\\(").replace(/\)/g,"\\)");
+    const wrapped=[];
+    lines.forEach(line=>{
+      const clean=ascii(line);
+      if(!clean){wrapped.push("");return}
+      let remaining=clean;
+      while(remaining.length>76){
+        let split=remaining.lastIndexOf(" ",76);
+        if(split<1)split=76;
+        wrapped.push(remaining.slice(0,split));
+        remaining=remaining.slice(split).trim();
+      }
+      wrapped.push(remaining);
+    });
+    const pageLines=[];
+    for(let i=0;i<wrapped.length;i+=48)pageLines.push(wrapped.slice(i,i+48));
+    if(!pageLines.length)pageLines.push([]);
+    const objects=[];
+    const addObject=value=>{objects.push(value);return objects.length};
+    const catalogId=addObject("");
+    const pagesId=addObject("");
+    const fontId=addObject("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>");
+    const pageIds=[];
+    pageLines.forEach(page=>{
+      let stream="BT\n/F1 10 Tf\n50 790 Td\n14 TL\n";
+      page.forEach((line,index)=>{
+        if(index===0&&pageLines.indexOf(page)===0)stream+="/F1 16 Tf\n("+escapePdf(line)+") Tj\n/F1 10 Tf\n0 -24 Td\n";
+        else stream+="("+escapePdf(line)+") Tj\nT*\n";
+      });
+      stream+="ET";
+      const streamId=addObject("<< /Length "+stream.length+" >>\nstream\n"+stream+"\nendstream");
+      const pageId=addObject("<< /Type /Page /Parent "+pagesId+" 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 "+fontId+" 0 R >> >> /Contents "+streamId+" 0 R >>");
+      pageIds.push(pageId);
+    });
+    objects[catalogId-1]="<< /Type /Catalog /Pages "+pagesId+" 0 R >>";
+    objects[pagesId-1]="<< /Type /Pages /Kids ["+pageIds.map(id=>id+" 0 R").join(" ")+"] /Count "+pageIds.length+" >>";
+    let pdf="%PDF-1.4\n%----\n";
+    const offsets=[0];
+    objects.forEach((obj,index)=>{
+      offsets.push(pdf.length);
+      pdf+=(index+1)+" 0 obj\n"+obj+"\nendobj\n";
+    });
+    const xrefOffset=pdf.length;
+    pdf+="xref\n0 "+(objects.length+1)+"\n0000000000 65535 f \n";
+    offsets.slice(1).forEach(offset=>{pdf+=String(offset).padStart(10,"0")+" 00000 n \n"});
+    pdf+="trailer\n<< /Size "+(objects.length+1)+" /Root "+catalogId+" 0 R >>\nstartxref\n"+xrefOffset+"\n%%EOF";
+    return new Blob([pdf],{type:"application/pdf"});
+  }
+  function downloadOrderDetails(){
+    if(!lastSubmittedOrder)return false;
+    try{
+      const blob=buildOrderPdf(lastSubmittedOrder);
+      const url=URL.createObjectURL(blob);
+      const anchor=document.createElement("a");
+      const safeReference=String(lastSubmittedOrder.reference||"order")
+        .replace(/[^a-z0-9_-]+/gi,"-").replace(/^-+|-+$/g,"").slice(0,60)||"order";
+      anchor.href=url;
+      anchor.download="sri-sai-vani-order-"+safeReference+".pdf";
+      anchor.style.display="none";
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      setTimeout(()=>URL.revokeObjectURL(url),10000);
+      return true;
+    }catch(error){
+      showToast("Could not download order details. Please try again.");
+      return false;
+    }
+  }
   async function submitCheckout(form){
     if(submitting)return;
     if(!cart.length){showStatus("Your cart is empty.");return}
@@ -132,16 +226,24 @@
       const response=await fetch(WORKER_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"submitOrder",items:cart.map(row=>({id:row.id,quantity:row.quantity})),customer,shipping})});
       const data=await response.json().catch(()=>({}));
       if(!response.ok||data.success!==true||data.accepted!==true)throw new Error(data.message||"We could not submit the order. Your cart has been kept.");
+      lastSubmittedOrder={
+        reference:String(data.reference||"Order received"),
+        createdAt:new Date().toLocaleString("en-IN",{dateStyle:"medium",timeStyle:"short"}),
+        customer,
+        shipping,
+        items:cart.map(row=>({name:String(getProduct(row.id)?.name||"Product"),quantity:row.quantity}))
+      };
       try{localStorage.removeItem(CART_KEY)}catch(_){}
       cart=[];updateCount();
       const content=$("#ssv-cart-content"),footer=$("#ssv-cart-footer");if(footer)footer.style.display="none";
-      content.innerHTML='<div class="ssv-order-success"><span class="ssv-success-mark" aria-hidden="true">✓</span><h3>Order received</h3><p>Your order request has been emailed to the store. We will contact you on your mobile number to confirm availability, delivery, and the final amount.</p><div class="ssv-order-ref">'+esc(data.reference||"Order received")+'</div>'+'<button type="button" class="ssv-checkout-submit" data-cart-close>Continue shopping</button></div>';
+      content.innerHTML='<div class="ssv-order-success"><span class="ssv-success-mark" aria-hidden="true">✓</span><h3>Order received</h3><p>Your order request has been emailed to the store. We will contact you on your mobile number to confirm availability, delivery, and the final amount.</p><div class="ssv-order-ref">'+esc(data.reference||"Order received")+'</div><button type="button" class="ssv-checkout-submit ssv-download-order" data-download-order>Download order details</button><p class="ssv-order-download-note">Downloads a PDF copy of your order.</p><button type="button" class="ssv-order-continue" data-cart-close>Continue shopping</button></div>';
     }catch(error){showStatus(error?.message||"Order submission failed. Your cart has been kept.");}
     finally{submitting=false;if(button&&button.isConnected){button.disabled=false;button.textContent="Submit Order"}}
   }
   document.addEventListener("click",event=>{
     const add=event.target.closest("[data-add-cart]");
     if(add){const id=Number(add.dataset.addCart),p=getProduct(id);if(!p)return;const row=cart.find(x=>x.id===id);if(row){if(row.quantity>=MAX_QUANTITY){showToast("Maximum quantity reached (10)");return}row.quantity++}else cart.push({id,quantity:1});saveCart();updateCount();showToast("Added to cart");if($("#ssv-cart-layer")?.classList.contains("is-open"))renderCart();return}
+        if(event.target.closest("[data-download-order]")){downloadOrderDetails();return}
     if(event.target.closest("#ssv-cart-trigger")){openCart();return}
     if(event.target.closest("[data-clear-cancel]")){closeClearBagDialog();return}
     if(event.target.closest("[data-clear-confirm]")){confirmClearBag();return}

@@ -95,3 +95,13 @@
 .ssv-clear-dialog-actions .ssv-clear-confirm{border-color:#6B2925;background:#6B2925;color:#FAF7F2}
 .ssv-clear-dialog-actions .ssv-clear-confirm:hover{border-color:#55201D;background:#55201D}
 @media(max-width:380px){.ssv-cart-head{gap:8px}.ssv-cart-head h2{font-size:26px}.ssv-cart-head-actions{gap:8px}#ssv-clear-bag{font-size:10px}.ssv-cart-close{flex:0 0 38px}.ssv-clear-dialog{padding:23px 17px 17px}.ssv-clear-dialog-actions{gap:7px}.ssv-clear-dialog-actions button{padding:0 9px}}
+
+
+/* Order-received download action. Scoped to the guest checkout confirmation only. */
+.ssv-order-success .ssv-download-order{margin:0 auto 10px;max-width:340px}
+.ssv-order-download-note{margin:0 0 18px!important;font-size:11px!important;color:#78716C!important}
+.ssv-order-success .ssv-order-continue{display:block;width:100%;max-width:340px;min-height:46px;margin:0 auto;border:1px solid #E4D8C5;background:transparent;color:#1C1917;font:600 11px/1.2 Inter,Arial,sans-serif;letter-spacing:.08em;text-transform:uppercase;cursor:pointer}
+.ssv-order-success .ssv-order-continue:hover{border-color:#C8B28A;background:#F4EFEA}
+@media(max-width:600px){.ssv-order-success{padding:28px 4px}.ssv-order-success .ssv-download-order,.ssv-order-success .ssv-order-continue{max-width:none}}
+
+
