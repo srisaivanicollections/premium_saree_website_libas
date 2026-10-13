@@ -14408,4 +14408,23 @@ if ("serviceWorker" in navigator) {
 </style>
 <script src="./checkout.js?v=guest-cart-1" defer></script>
 </body>
+
+<style id="sv-review-mobile-full-card-fix-20261013">
+/* Mobile review carousel: show one full card at a time.
+   Scoped to customer reviews; desktop/wide-screen presentation stays unchanged. */
+@media (max-width: 760px) {
+  #reviews.sv-reviews .sv-reviews__track {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+  #reviews.sv-reviews .sv-reviews__track .sv-review-card {
+    flex: 0 0 100% !important;
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+}
+</style>
+
 </html>
