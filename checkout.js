@@ -45,7 +45,8 @@
     if(!$("#ssv-cart-toast")){const toast=document.createElement("div");toast.id="ssv-cart-toast";toast.setAttribute("role","status");toast.setAttribute("aria-live","polite");document.body.appendChild(toast)}
   }
   function attachCardButtons(){
-    const grid=$("#products");if(!grid)return;
+    const grid=$("#products");if(!grid)return false;
+    let added=false;
     grid.querySelectorAll(".lux-item-media").forEach(media=>{
       if(media.querySelector(".ssv-add-cart"))return;
       const img=$("img",media);if(!img)return;
@@ -54,7 +55,9 @@
       const button=document.createElement("button");button.type="button";button.className="ssv-add-cart";button.dataset.addCart=String(product.id);button.setAttribute("aria-label","Add "+product.name+" to cart");button.title="Add to cart";
       button.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>';
       media.appendChild(button);
+      added=true;
     });
+    return added;
   }
   function updateCount(){
     const badge=$("#ssv-cart-count");
@@ -141,7 +144,11 @@
   });
   document.addEventListener("submit",event=>{if(event.target?.id==="ssv-checkout-form"){event.preventDefault();submitCheckout(event.target)}});
   document.addEventListener("keydown",event=>{if(event.key==="Escape"&&$("#ssv-cart-layer")?.classList.contains("is-open"))closeCart()});
-  const observer=new MutationObserver(()=>{attachCardButtons();updateCount()});
+  // Observe catalogue rendering only to discover newly-created product cards.
+  // updateCount() changes button contents, so it must not run on every DOM mutation.
+  const observer=new MutationObserver(()=>{
+    if(attachCardButtons())updateCount();
+  });
   function init(){injectStylesAndShell();attachCardButtons();updateCount();observer.observe($("#products")||document.body,{childList:true,subtree:true});}
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init,{once:true});else init();
 })();
