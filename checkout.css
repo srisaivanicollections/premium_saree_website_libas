@@ -1,6 +1,6 @@
 
 /* Guest cart and checkout. Scoped to the new SSV checkout surface. */
-#ssv-cart-trigger{position:relative;display:inline-flex;align-items:center;justify-content:center;flex:0 0 42px;width:42px;height:42px;border:1px solid var(--line,#E7E0D8);background:transparent;color:var(--ink,#1C1917);cursor:pointer}
+#ssv-cart-trigger{position:relative;display:inline-flex;align-items:center;justify-content:center;flex:0 0 42px;width:42px;height:42px;border:0;background:transparent;color:var(--ink,#1C1917);cursor:pointer}
 #ssv-cart-trigger svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
 #ssv-cart-count{position:absolute;top:-5px;right:-5px;display:grid;place-items:center;min-width:18px;height:18px;padding:0 4px;border-radius:99px;background:var(--accent,#6E2735);color:#fff;font:600 10px/1 Inter,Arial,sans-serif}
 #shop .lux-item-media{position:relative}
