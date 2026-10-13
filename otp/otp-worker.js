@@ -413,4 +413,17 @@ export default {
 
     return jsonResponse({ success: false, message: "Unsupported action." }, 400, origin);
   },
+  async scheduled(controller, env, ctx) {
+    if (!env.ORDERS_DB || !env.RESEND_API_KEY_SRISAI) return;
+    const pending = await env.ORDERS_DB.prepare("SELECT order_ref, payload_json FROM orders WHERE notification_status = 'pending' ORDER BY created_at ASC LIMIT 20").all();
+    for (const row of (pending.results || [])) {
+      try {
+        const order = JSON.parse(row.payload_json);
+        await sendOrderNotification(env, order);
+        await env.ORDERS_DB.prepare("UPDATE orders SET notification_status = 'sent' WHERE order_ref = ? AND notification_status = 'pending'").bind(row.order_ref).run();
+      } catch (error) {
+        console.error("Scheduled order notification retry failed for", row.order_ref, error instanceof Error ? error.message : "Unknown error");
+      }
+    }
+  },
 };
