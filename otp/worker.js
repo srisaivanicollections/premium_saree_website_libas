@@ -166,7 +166,7 @@ async function sendOrderNotification(env, order) {
   const displayAddress = address.replace(/\s+/g, " ").trim().toUpperCase();
   const totalPieces = order.items.reduce((total, item) => total + item.quantity, 0);
   const displayMobile = (() => {
-    const digits = String(order.customer.mobile || "").replace(/\\D/g, "");
+    const digits = String(order.customer.mobile || "").replace(/\D/g, "");
     const national = digits.startsWith("91") && digits.length === 12 ? digits.slice(2) : digits;
     return national.length === 10 ? "+91 " + national.slice(0, 5) + " " + national.slice(5) : String(order.customer.mobile || "");
   })();
@@ -192,7 +192,7 @@ async function sendOrderNotification(env, order) {
     const imageUrl = orderImageUrl(item.image);
     const imageCell = imageUrl
       ? '<td width="88" valign="middle" style="padding:12px 14px 12px 0;width:88px"><img src="' + orderEscapeHtml(imageUrl) + '" width="76" height="84" alt="' + orderEscapeHtml(item.name) + '" style="display:block;width:76px;height:84px;object-fit:cover;border:1px solid #e4d8c5;border-radius:8px"></td>'
-      : '<td width="78" valign="middle" style="padding:6px 10px 6px 0;width:78px"><div style="width:76px;height:84px;background:#f4f0e9;border:1px solid #e4d8c5;border-radius:8px"></div></td>';
+      : '<td width="88" valign="middle" style="padding:12px 14px 12px 0;width:88px"><div style="width:76px;height:84px;background:#f4f0e9;border:1px solid #e4d8c5;border-radius:8px"></div></td>';
     return '<tr>' + imageCell + '<td valign="top" style="padding:12px 0;border-bottom:1px solid #e4d8c5;font-size:14px;line-height:1.5;color:#1c1917">' +
       '<strong style="font-family:Georgia,Times New Roman,serif;font-size:16px;font-weight:400">' + orderEscapeHtml(item.name) + '</strong><br>' +
       '<span style="display:inline-block;padding-top:4px;color:#625d55">Quantity: ' + item.quantity + '</span></td></tr>';
@@ -213,7 +213,7 @@ async function sendOrderNotification(env, order) {
     '<td width="48%" valign="top" style="padding:10px 12px;border-right:1px solid #e4d8c5">' +
     '<p style="margin:0 0 4px;color:#8b6338;font-size:10px;letter-spacing:1px;text-transform:uppercase">Customer</p>' +
     '<p style="margin:0 0 5px;font-size:14px;line-height:1.3;font-weight:600;color:#1c1917">' + orderEscapeHtml(order.customer.fullName.toUpperCase()) + '</p>' +
-    '<p style="margin:0;font-size:12px;line-height:1.4"><a href="tel:+91' + orderEscapeHtml(String(order.customer.mobile).replace(/\\D/g, "").replace(/^91(?=\\d{10}$)/, "")) + '" style="color:#8b6338;text-decoration:underline">' + orderEscapeHtml(displayMobile) + '</a></p></td>' +
+    '<p style="margin:0;font-size:12px;line-height:1.4"><a href="tel:+91' + orderEscapeHtml(String(order.customer.mobile).replace(/\D/g, "").replace(/^91(?=\d{10}$)/, "")) + '" style="color:#8b6338;text-decoration:underline">' + orderEscapeHtml(displayMobile) + '</a></p></td>' +
     '<td width="52%" valign="top" style="padding:10px 12px">' +
     '<p style="margin:0 0 4px;color:#8b6338;font-size:10px;letter-spacing:1px;text-transform:uppercase">Shipping Address</p>' +
     '<p style="margin:0;font-size:12px;line-height:1.45;color:#1c1917;word-break:break-word">' + orderEscapeHtml(displayAddress) + '</p></td>' +
