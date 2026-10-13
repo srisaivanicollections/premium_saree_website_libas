@@ -162,6 +162,8 @@ async function sendOrderNotification(env, order) {
     order.shipping.state,
     order.shipping.pinCode
   ].filter(Boolean).join(", ");
+  // Email-only presentation: preserve stored/submitted values and normalize display casing/spacing.
+  const displayAddress = address.replace(/\\s+/g, " ").trim().toUpperCase();
   const totalPieces = order.items.reduce((total, item) => total + item.quantity, 0);
   const text = [
     "SRI SAI VANI COLLECTIONS",
@@ -179,7 +181,7 @@ async function sendOrderNotification(env, order) {
     "Mobile: " + order.customer.mobile,
     "",
     "SHIPPING ADDRESS",
-    address
+    displayAddress
   ].join("\n");
   const itemRows = order.items.map(item => {
     const imageUrl = orderImageUrl(item.image);
@@ -211,7 +213,7 @@ async function sendOrderNotification(env, order) {
     '<p style="font-size:14px;line-height:1.8;margin:0">' + orderEscapeHtml(order.customer.fullName) + '<br><a href="tel:' + orderEscapeHtml(order.customer.mobile) + '" style="color:#8b6338;text-decoration:underline">' + orderEscapeHtml(order.customer.mobile) + '</a></p>' +
     '<div style="border-top:1px solid #e4d8c5;margin:16px 0"></div>' +
     '<h2 style="font-family:Georgia,Times New Roman,serif;font-size:22px;font-weight:400;margin:0 0 10px">Shipping Address</h2>' +
-    '<p style="font-size:14px;line-height:1.8;margin:0;color:#1c1917">' + orderEscapeHtml(address) + '</p>' +
+    '<p style="font-size:14px;line-height:1.8;margin:0;color:#1c1917">' + orderEscapeHtml(displayAddress) + '</p>' +
     '</td></tr></table></td></tr></table></body></html>';
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
