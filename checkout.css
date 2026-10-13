@@ -1,0 +1,67 @@
+
+/* Guest cart and checkout. Scoped to the new SSV checkout surface. */
+#ssv-cart-trigger{position:relative;display:inline-flex;align-items:center;justify-content:center;flex:0 0 42px;width:42px;height:42px;border:1px solid var(--line,#E7E0D8);background:transparent;color:var(--ink,#1C1917);cursor:pointer}
+#ssv-cart-trigger svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+#ssv-cart-count{position:absolute;top:-5px;right:-5px;display:grid;place-items:center;min-width:18px;height:18px;padding:0 4px;border-radius:99px;background:var(--accent,#6E2735);color:#fff;font:600 10px/1 Inter,Arial,sans-serif}
+#shop .lux-item-media{position:relative}
+#shop .ssv-add-cart{position:absolute;right:10px;bottom:10px;z-index:4;display:grid;place-items:center;width:42px;height:42px;border:1px solid rgba(255,255,255,.85);border-radius:50%;background:rgba(250,247,242,.96);color:#1C1917;box-shadow:0 3px 12px rgba(0,0,0,.12);cursor:pointer;transition:background .18s ease,color .18s ease,transform .18s ease}
+#shop .ssv-add-cart:hover{background:#1C1917;color:#FAF7F2;transform:translateY(-1px)}
+#shop .ssv-add-cart svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+#ssv-cart-toast{position:fixed;z-index:20000;left:50%;bottom:24px;transform:translate(-50%,12px);opacity:0;pointer-events:none;padding:12px 18px;background:#1C1917;color:#FAF7F2;font:500 13px/1.4 Inter,Arial,sans-serif;box-shadow:0 8px 30px #0002;transition:opacity .18s ease,transform .18s ease}
+#ssv-cart-toast.is-visible{opacity:1;transform:translate(-50%,0)}
+#ssv-cart-layer{position:fixed;inset:0;z-index:30000;display:none}
+#ssv-cart-layer.is-open{display:block}
+#ssv-cart-backdrop{position:absolute;inset:0;background:rgba(24,18,16,.48)}
+#ssv-cart-drawer{position:absolute;top:0;right:0;bottom:0;display:flex;flex-direction:column;width:min(480px,100%);background:#FAF7F2;color:#1C1917;box-shadow:-18px 0 60px #0002;transform:translateX(102%);transition:transform .24s ease}
+#ssv-cart-layer.is-open #ssv-cart-drawer{transform:translateX(0)}
+#ssv-cart-drawer *{box-sizing:border-box}
+.ssv-cart-head{display:flex;align-items:center;justify-content:space-between;padding:22px 22px 18px;border-bottom:1px solid #E7E0D8}
+.ssv-cart-head h2{margin:0;font:500 31px/1.1 "Cormorant Garamond",Georgia,serif}
+.ssv-cart-close{width:38px;height:38px;border:1px solid #E7E0D8;background:transparent;color:#1C1917;font-size:24px;cursor:pointer}
+#ssv-cart-content{flex:1;overflow:auto;padding:18px 22px}
+.ssv-cart-empty{text-align:center;padding:56px 12px;color:#78716C}
+.ssv-cart-empty strong{display:block;margin-bottom:8px;color:#1C1917;font:500 26px "Cormorant Garamond",Georgia,serif}
+.ssv-cart-item{display:grid;grid-template-columns:76px minmax(0,1fr) auto;gap:13px;padding:14px 0;border-bottom:1px solid #E7E0D8}
+.ssv-cart-item img{width:76px;height:96px;object-fit:cover;background:#F4EFEA}
+.ssv-cart-item h3{margin:2px 0 9px;font:500 18px/1.2 "Cormorant Garamond",Georgia,serif}
+.ssv-cart-item-actions{display:flex;align-items:center;gap:8px}
+.ssv-qty-btn{width:29px;height:29px;border:1px solid #D9D0C5;background:transparent;color:#1C1917;font-size:17px;cursor:pointer}
+.ssv-qty-value{min-width:18px;text-align:center;font-size:13px}
+.ssv-remove{align-self:start;border:0;background:transparent;color:#786B61;text-decoration:underline;text-underline-offset:3px;font-size:11px;cursor:pointer}
+.ssv-cart-footer{padding:16px 22px 22px;border-top:1px solid #E7E0D8;background:#FAF7F2}
+.ssv-cart-footer button,.ssv-checkout-submit{width:100%;min-height:48px;border:1px solid #1C1917;background:#1C1917;color:#FAF7F2;font:600 11px/1.2 Inter,Arial,sans-serif;letter-spacing:.12em;text-transform:uppercase;cursor:pointer}
+.ssv-cart-footer button:disabled,.ssv-checkout-submit:disabled{opacity:.5;cursor:not-allowed}
+.ssv-continue{display:block;margin:13px auto 0;border:0;background:transparent;color:#6E2735;text-decoration:underline;text-underline-offset:3px;font-size:12px;cursor:pointer}
+#ssv-checkout-form{display:none}
+#ssv-checkout-form.is-visible{display:block}
+.ssv-checkout-back{margin:0 0 12px;padding:0;border:0;background:transparent;color:#6E2735;text-decoration:underline;text-underline-offset:3px;font-size:12px;cursor:pointer}
+.ssv-checkout-intro{margin:0 0 16px;color:#78716C;font-size:12px;line-height:1.6}
+.ssv-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.ssv-field{display:flex;flex-direction:column;gap:6px;min-width:0}
+.ssv-field.ssv-wide{grid-column:1/-1}
+.ssv-field label{font-size:11px;font-weight:600;color:#51483F}
+.ssv-field input{width:100%;height:43px;padding:0 11px;border:1px solid #D9D0C5;border-radius:0;background:#fff;color:#1C1917;font:13px Inter,Arial,sans-serif}
+.ssv-field input:focus{outline:2px solid #B38E5D;outline-offset:1px}
+#ssv-checkout-status{margin:12px 0 0;font-size:12px;line-height:1.5;color:#8A4338}
+#ssv-checkout-status.is-success{color:#45613D}
+.ssv-order-success{padding:38px 8px;text-align:center}
+.ssv-order-success .ssv-success-mark{display:grid;place-items:center;width:52px;height:52px;margin:0 auto 16px;border:1px solid #8C9A7C;border-radius:50%;color:#45613D;font-size:25px}
+.ssv-order-success h3{margin:0 0 10px;font:500 30px/1.1 "Cormorant Garamond",Georgia,serif}
+.ssv-order-success p{color:#625D55;font-size:13px;line-height:1.6}
+.ssv-order-ref{display:inline-block;margin:7px 0 18px;padding:9px 12px;border:1px solid #E4D8C5;font-weight:600;letter-spacing:.06em}
+@media(max-width:600px){
+ #ssv-cart-trigger{width:34px;height:34px;flex-basis:34px}
+ #ssv-cart-trigger svg{width:18px;height:18px}
+ #shop .ssv-add-cart{right:7px;bottom:7px;width:36px;height:36px}
+ #shop .ssv-add-cart svg{width:18px;height:18px}
+ #ssv-cart-drawer{width:100%}
+ .ssv-cart-head{padding:17px 16px 14px}
+ .ssv-cart-head h2{font-size:28px}
+ #ssv-cart-content{padding:12px 16px}
+ .ssv-cart-footer{padding:14px 16px 18px}
+ .ssv-form-grid{grid-template-columns:1fr}
+ .ssv-field.ssv-wide{grid-column:auto}
+ .ssv-cart-item{grid-template-columns:68px minmax(0,1fr) auto;gap:10px}
+ .ssv-cart-item img{width:68px;height:88px}
+}
+@media(prefers-reduced-motion:reduce){#ssv-cart-drawer,#ssv-cart-toast,#shop .ssv-add-cart{transition:none}}
