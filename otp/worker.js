@@ -152,28 +152,7 @@ function orderImageUrl(value) {
   } catch {}
   return "";
 }
-async function createOrderPdfLink(env, request, order) {
-  if (!env.OTP_STORE) throw new Error("Order download storage is not configured.");
-  const token = crypto.randomUUID().replace(/-/g, "") + crypto.randomUUID().replace(/-/g, "");
-  await env.OTP_STORE.put("order-pdf:" + token, JSON.stringify(order), { expirationTtl: 86400 });
-  return new URL("/order-pdf/" + token, request.url).href;
-}
-function orderPdfHtml(order) {
-  const address = [order.shipping.houseStreet, order.shipping.landmark, order.shipping.city, order.shipping.district, order.shipping.state, order.shipping.pinCode].filter(Boolean).join(", ");
-  const rows = order.items.map((item, i) => "<tr><td>" + (i + 1) + "</td><td>" + orderEscapeHtml(item.name) + "</td><td>" + item.quantity + "</td></tr>").join("");
-  return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Order Details</title><style>' +
-    'body{margin:0;padding:24px;background:#faf7f2;color:#1c1917;font:15px/1.55 Arial,sans-serif}.sheet{max-width:760px;margin:auto;background:white;padding:30px;border:1px solid #e4d8c5;border-radius:12px}.brand{text-align:center;font:26px Georgia,serif;letter-spacing:2px}.sub{text-align:center;color:#8b6338;letter-spacing:3px;font-size:11px}h1{font:28px Georgia,serif}h2{font-size:13px;color:#8b6338;letter-spacing:1px;text-transform:uppercase;margin:22px 0 8px}.panel{padding:14px;background:#faf7f2;border:1px solid #e4d8c5;border-radius:8px}table{width:100%;border-collapse:collapse;margin-top:8px}th,td{text-align:left;padding:10px;border-bottom:1px solid #e4d8c5}th{background:#f4eee4}.actions{text-align:center;margin:0 auto 18px}.actions button{background:#6c4b27;color:white;border:0;border-radius:7px;padding:12px 20px;font-size:14px}.note{font-size:12px;color:#625d55}@media print{body{padding:0;background:white}.sheet{border:0;padding:0}.actions{display:none}}@media(max-width:520px){body{padding:10px}.sheet{padding:18px}}' +
-    '</style></head><body><div class="actions"><button onclick="window.print()">Download / Save as PDF</button><p class="note">Choose “Save as PDF” in your print options.</p></div><main class="sheet"><p class="brand">SRI SAI VANI</p><p class="sub">COLLECTIONS</p><h1>Order Details</h1><div class="panel"><b>Order ID:</b> ' + orderEscapeHtml(order.reference) + '<br><b>Order Date:</b> ' + orderEscapeHtml(order.createdAt) + '</div><h2>Customer Details</h2><div class="panel"><b>' + orderEscapeHtml(order.customer.fullName) + '</b><br>Mobile: ' + orderEscapeHtml(order.customer.mobile) + '</div><h2>Delivery Address</h2><div class="panel">' + orderEscapeHtml(address) + '</div><h2>Items Ordered</h2><table><thead><tr><th>#</th><th>Product</th><th>Qty</th></tr></thead><tbody>' + rows + '</tbody></table><h2>Thank you for shopping with Sri Sai Vani Collections!</h2><p class="note">Order summary only. This is not a GST tax invoice.</p></main></body></html>';
-}
-async function serveOrderPdf(env, token) {
-  if (!/^[a-f0-9]{64}$/i.test(token) || !env.OTP_STORE) return new Response("This download link is invalid or expired.", {status:404,headers:{"Cache-Control":"no-store"}});
-  const raw = await env.OTP_STORE.get("order-pdf:" + token);
-  if (!raw) return new Response("This order download link has expired.", {status:404,headers:{"Cache-Control":"no-store"}});
-  let order;
-  try { order = JSON.parse(raw); } catch { return new Response("Order details are unavailable.", {status:500,headers:{"Cache-Control":"no-store"}}); }
-  return new Response(orderPdfHtml(order), {headers:{"Content-Type":"text/html; charset=utf-8","Cache-Control":"no-store, private","X-Content-Type-Options":"nosniff","Content-Security-Policy":"default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; base-uri 'none'; frame-ancestors 'none'","Referrer-Policy":"no-referrer"}});
-}
-async function sendOrderNotification(env, order, downloadUrl) {
+async function sendOrderNotification(env, order) {
   if (!env.RESEND_API_KEY_SRISAI) throw new Error("Order notification email is not configured.");
   const address = [
     order.shipping.houseStreet,
@@ -240,8 +219,7 @@ async function sendOrderNotification(env, order, downloadUrl) {
     '<td class="items-heading-cell" valign="middle"><h2 style="font-family:Georgia,Times New Roman,serif;font-size:22px;line-height:1.25;font-weight:400;margin:0">Items Ordered</h2></td>' +
     '<td class="items-total-cell" align="right" valign="middle" style="font-size:14px;line-height:1.5;color:#625d55;padding:0 0 2px 12px;white-space:nowrap">Total quantity: ' + totalPieces + '</td>' +
     '</tr></table><table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-top:1px solid #e4d8c5">' + itemRows + '</table></td></tr>' +
-    '</table></td></tr>' +
-    '<tr><td align="center" style="padding:8px 24px 24px"><a href="' + orderEscapeHtml(downloadUrl) + '" style="display:inline-block;background:#6c4b27;color:#fff;text-decoration:none;padding:12px 20px;border-radius:7px;font-size:14px;font-weight:600">Download Order Details (PDF)</a><p style="font-size:11px;color:#625d55">Link expires in 24 hours. Save the print-friendly page as PDF.</p></td></tr></table></body></html>';
+    '</table></td></tr></table></body></html>';
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: { "Authorization": "Bearer " + env.RESEND_API_KEY_SRISAI, "Content-Type": "application/json" },
@@ -314,12 +292,9 @@ async function submitOrder(request, env, origin, payload) {
     items
   };
 
-  let downloadUrl = "";
   try {
-    downloadUrl = await createOrderPdfLink(env, request, order);
-    await sendOrderNotification(env, order, downloadUrl);
+    await sendOrderNotification(env, order);
   } catch {
-    if (downloadUrl && env.OTP_STORE) { try { await env.OTP_STORE.delete("order-pdf:" + downloadUrl.split("/").pop()); } catch {} }
     return jsonResponse({ success: false, message: "We could not send your order to the store. Your cart has been kept; please retry." }, 502, origin);
   }
 
@@ -330,9 +305,6 @@ async function submitOrder(request, env, origin, payload) {
 export default {
   async fetch(request, env) {
     const origin = request.headers.get("Origin") || "";
-    const url = new URL(request.url);
-    const pdfMatch = url.pathname.match(/^\/order-pdf\/([a-f0-9]{64})$/i);
-    if (request.method === "GET" && pdfMatch) return serveOrderPdf(env, pdfMatch[1]);
 
     if (request.method === "OPTIONS") {
       if (!ALLOWED_ORIGINS.has(origin)) {
