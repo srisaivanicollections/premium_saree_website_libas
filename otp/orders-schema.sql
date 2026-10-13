@@ -1,4 +1,4 @@
--- Apply once to the Cloudflare D1 database bound to the Worker as ORDERS_DB.
+-- Apply to the Cloudflare D1 database bound to the Worker as ORDERS_DB. Safe to re-run.
 -- Order records are private server-side data. Do not expose a public list/read endpoint.
 CREATE TABLE IF NOT EXISTS orders (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
