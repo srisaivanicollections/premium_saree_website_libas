@@ -91,10 +91,10 @@
   function openCart(){const layer=$("#ssv-cart-layer");if(!layer)return;layer.classList.add("is-open");document.body.style.overflow="hidden";renderCart();setTimeout(()=>$("#ssv-cart-drawer")?.focus(),0)}
   function closeCart(){const layer=$("#ssv-cart-layer");if(!layer)return;closeClearBagDialog(false);closeOrderClosePrompt(false);layer.classList.remove("is-open");document.body.style.overflow="";$("#ssv-cart-trigger")?.focus()}
   function openOrderClosePrompt(){const prompt=$("#ssv-order-close-prompt");if(!prompt)return;prompt.hidden=false;prompt.querySelector(".ssv-order-close-dialog")?.focus()}
-  function closeOrderClosePrompt(restoreFocus=true){const prompt=$("#ssv-order-close-prompt");if(!prompt)return;prompt.hidden=true;if(restoreFocus)$("#ssv-order-close-dialog")?.focus()}
+  function closeOrderClosePrompt(restoreFocus=true){const prompt=$("#ssv-order-close-prompt");if(!prompt)return;prompt.hidden=true;if(restoreFocus)$("#ssv-cart-drawer")?.focus()}
   function handleCloseAfterOrder(){if(lastSubmittedOrder){openOrderClosePrompt();return}closeCart()}
   function closeWithoutOrderDownload(){lastSubmittedOrder=null;closeOrderClosePrompt(false);closeCart()}
-  function downloadAndCloseOrder(){if(!lastSubmittedOrder)return;downloadOrderDetails();lastSubmittedOrder=null;closeOrderClosePrompt(false);closeCart()}
+  function downloadAndCloseOrder(){if(!lastSubmittedOrder)return;if(downloadOrderDetails()!==true)return;lastSubmittedOrder=null;closeOrderClosePrompt(false);closeCart()}
   let clearingBag=false;
   function openClearBagDialog(){if(!cart.length||clearingBag)return;const dialog=$("#ssv-clear-bag-dialog");if(!dialog)return;const message=$("#ssv-clear-dialog-message");if(message)message.textContent="This will remove all items from your bag. This action cannot be undone.";dialog.hidden=false;dialog.querySelector("[data-clear-cancel]")?.focus()}
   function closeClearBagDialog(restoreFocus=true){const dialog=$("#ssv-clear-bag-dialog");if(!dialog)return;dialog.hidden=true;if(restoreFocus)$("#ssv-clear-bag")?.focus()}
@@ -136,14 +136,15 @@
       '</style></head><body><div class="actions"><button onclick="window.print()">Save as PDF / Print</button><p class="note">In the print dialog, choose “Save as PDF” to download a PDF copy.</p></div><main class="sheet"><p class="brand">SRI SAI VANI</p><p class="sub">COLLECTIONS</p><h1>Order Details</h1><div class="panel"><b>Order reference:</b> '+esc(order.reference)+'<br><b>Order date:</b> '+esc(order.createdAt)+'</div><h2>Customer details</h2><div class="panel"><b>'+esc(order.customer.fullName)+'</b><br>Mobile: '+esc(order.customer.mobile)+'</div><h2>Delivery address</h2><div class="panel">'+esc(address)+'</div><h2>Items ordered</h2><table><thead><tr><th>#</th><th>Product</th><th>Quantity</th></tr></thead><tbody>'+rows+'</tbody></table><p class="note">This is an order summary, not a tax invoice. Availability, delivery, and final amount will be confirmed by the store.</p></main></body></html>';
   }
   function downloadOrderDetails(){
-    if(!lastSubmittedOrder)return;
+    if(!lastSubmittedOrder)return false;
     const printWindow=window.open("","_blank");
-    if(!printWindow){showToast("Allow pop-ups to open order details");return}
+    if(!printWindow){showToast("Allow pop-ups to open order details");return false}
     printWindow.document.open();
     printWindow.document.write(orderPrintHtml(lastSubmittedOrder));
     printWindow.document.close();
     printWindow.focus();
     setTimeout(()=>printWindow.print(),250);
+    return true;
   }
   async function submitCheckout(form){
     if(submitting)return;
