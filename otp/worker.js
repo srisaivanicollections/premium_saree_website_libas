@@ -154,18 +154,27 @@ function orderImageUrl(value) {
 }
 async function sendOrderNotification(env, order) {
   if (!env.RESEND_API_KEY_SRISAI) throw new Error("Order notification email is not configured.");
-  const itemLines = order.items.map(item => "• " + item.name + " × " + item.quantity).join("\n");
-  const address = [order.shipping.houseStreet, order.shipping.landmark, order.shipping.city, order.shipping.district, order.shipping.state, order.shipping.pinCode].filter(Boolean).join(", ");
+  const address = [
+    order.shipping.houseStreet,
+    order.shipping.landmark,
+    order.shipping.city,
+    order.shipping.district,
+    order.shipping.state,
+    order.shipping.pinCode
+  ].filter(Boolean).join(", ");
+  const totalPieces = order.items.reduce((total, item) => total + item.quantity, 0);
   const text = [
     "SRI SAI VANI COLLECTIONS",
-    "New Store Order",
-    "INTERNAL ORDER REFERENCE: " + order.reference,
-    "Submitted: " + order.createdAt,
+    "Order Details",
+    "Order Date: " + order.createdAt,
+    "Order ID: " + order.reference,
+    "Unique items: " + order.items.length,
+    "Total pieces: " + totalPieces,
     "",
-    "ITEMS",
-    itemLines,
+    "ITEMS ORDERED",
+    ...order.items.map(item => item.name + " | Quantity: " + item.quantity),
     "",
-    "CUSTOMER",
+    "CUSTOMER DETAILS",
     order.customer.fullName,
     "Mobile: " + order.customer.mobile,
     "",
@@ -175,35 +184,41 @@ async function sendOrderNotification(env, order) {
   const itemRows = order.items.map(item => {
     const imageUrl = orderImageUrl(item.image);
     const imageCell = imageUrl
-      ? '<td width="64" valign="middle" style="padding:10px 12px 10px 0;width:64px"><img src="' + orderEscapeHtml(imageUrl) + '" width="56" height="70" alt="' + orderEscapeHtml(item.name) + '" style="display:block;width:56px;height:70px;object-fit:cover;border:1px solid #e4d8c5;border-radius:4px"></td>'
-      : '<td width="64" valign="middle" style="padding:10px 12px 10px 0;width:64px"><div style="width:56px;height:70px;background:#f4f0e9;border:1px solid #e4d8c5;border-radius:4px"></div></td>';
-    return '<tr>' + imageCell + '<td valign="middle" style="padding:10px 0;border-bottom:1px solid #e4d8c5;font-size:14px;line-height:1.5;color:#1c1917">' +
-      '<strong style="font-weight:600">' + orderEscapeHtml(item.name) + '</strong><br><span style="color:#625d55">Quantity: ' + item.quantity + '</span></td></tr>';
+      ? '<td width="164" valign="middle" style="padding:12px 14px 12px 0;width:164px"><img src="' + orderEscapeHtml(imageUrl) + '" width="148" height="164" alt="' + orderEscapeHtml(item.name) + '" style="display:block;width:148px;height:164px;object-fit:cover;border:1px solid #e4d8c5;border-radius:8px"></td>'
+      : '<td width="164" valign="middle" style="padding:12px 14px 12px 0;width:164px"><div style="width:148px;height:164px;background:#f4f0e9;border:1px solid #e4d8c5;border-radius:8px"></div></td>';
+    return '<tr>' + imageCell + '<td valign="top" style="padding:18px 0;border-bottom:1px solid #e4d8c5;font-size:15px;line-height:1.6;color:#1c1917">' +
+      '<strong style="font-family:Georgia,Times New Roman,serif;font-size:19px;font-weight:400">' + orderEscapeHtml(item.name) + '</strong><br>' +
+      '<span style="color:#625d55">Quantity: ' + item.quantity + '</span></td></tr>';
   }).join("");
-  const html = '<!doctype html><html lang="en"><body style="margin:0;padding:20px;background:#faf7f2;color:#1c1917;font-family:Arial,Helvetica,sans-serif">' +
-    '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width:560px;margin:0 auto;background:#ffffff;border:1px solid #e4d8c5;border-collapse:separate">' +
-    '<tr><td style="padding:24px 24px 20px;border-bottom:1px solid #e4d8c5">' +
-    '<p style="margin:0 0 4px;color:#7b6848;font-size:11px;letter-spacing:2px;font-weight:700">SRI SAI VANI</p>' +
-    '<p style="margin:0;color:#625d55;font-size:10px;letter-spacing:2.5px">COLLECTIONS</p>' +
-    '<h1 style="font-size:22px;line-height:1.3;font-weight:600;margin:22px 0 14px">New Store Order</h1>' +
-    '<p style="margin:0 0 5px;color:#7b6848;font-size:10px;letter-spacing:1.2px">INTERNAL ORDER REFERENCE</p>' +
-    '<p style="margin:0;font-size:17px;font-weight:700;letter-spacing:.5px">' + orderEscapeHtml(order.reference) + '</p>' +
-    '<p style="margin:10px 0 0;color:#625d55;font-size:12px">Submitted ' + orderEscapeHtml(order.createdAt) + '</p></td></tr>' +
-    '<tr><td style="padding:20px 24px 8px"><h2 style="font-size:14px;letter-spacing:.7px;margin:0 0 8px">ITEMS</h2>' +
-    '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">' + itemRows + '</table></td></tr>' +
-    '<tr><td style="padding:18px 24px 8px"><h2 style="font-size:14px;letter-spacing:.7px;margin:0 0 10px">CUSTOMER</h2>' +
-    '<p style="font-size:14px;line-height:1.6;margin:0 0 4px">' + orderEscapeHtml(order.customer.fullName) + '</p>' +
-    '<p style="font-size:14px;line-height:1.6;margin:0"><a href="tel:' + orderEscapeHtml(order.customer.mobile) + '" style="color:#1c1917;text-decoration:underline">' + orderEscapeHtml(order.customer.mobile) + '</a></p></td></tr>' +
-    '<tr><td style="padding:14px 24px 24px"><h2 style="font-size:14px;letter-spacing:.7px;margin:0 0 10px">SHIPPING ADDRESS</h2>' +
-    '<p style="font-size:14px;line-height:1.7;margin:0;color:#1c1917">' + orderEscapeHtml(address) + '</p></td></tr>' +
-    '</table></body></html>';
+  const html = '<!doctype html><html lang="en"><body style="margin:0;padding:20px 12px;background:#faf7f2;color:#1c1917;font-family:Arial,Helvetica,sans-serif">' +
+    '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width:720px;margin:0 auto;background:#ffffff;border:1px solid #e4d8c5;border-radius:12px;border-collapse:separate">' +
+    '<tr><td align="center" style="padding:26px 24px 22px;border-bottom:1px solid #e4d8c5">' +
+    '<p style="margin:0;color:#8b6338;font-family:Georgia,Times New Roman,serif;font-size:25px;letter-spacing:3px">SRI SAI VANI COLLECTIONS</p>' +
+    '<p style="margin:8px 0 0;color:#8b6338;font-size:11px;letter-spacing:4px">P R E M I U M&nbsp; S A R E E S</p>' +
+    '<h1 style="font-family:Georgia,Times New Roman,serif;font-size:34px;line-height:1.2;font-weight:400;margin:28px 0 8px">Order Details</h1>' +
+    '<p style="margin:0;color:#625d55;font-size:15px;line-height:1.6">Please find the order information below.</p></td></tr>' +
+    '<tr><td style="padding:20px 24px 8px"><table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#faf7f2;border:1px solid #eee6dc;border-radius:8px"><tr>' +
+    '<td width="50%" valign="middle" style="padding:16px;font-size:14px;line-height:1.5;border-right:1px solid #e4d8c5"><span style="color:#625d55">Order Date</span><br><strong style="font-size:16px;font-weight:500;color:#1c1917">' + orderEscapeHtml(order.createdAt) + '</strong></td>' +
+    '<td width="50%" valign="middle" style="padding:16px;font-size:14px;line-height:1.5"><span style="color:#625d55">Order ID</span><br><strong style="font-size:16px;font-weight:600;color:#1c1917">' + orderEscapeHtml(order.reference) + '</strong></td>' +
+    '</tr></table></td></tr>' +
+    '<tr><td style="padding:18px 24px 0"><table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%"><tr>' +
+    '<td><h2 style="font-family:Georgia,Times New Roman,serif;font-size:23px;font-weight:400;margin:0 0 12px">Items Ordered</h2></td>' +
+    '<td align="right" valign="middle" style="font-size:13px;color:#625d55;padding-bottom:12px">Unique items: ' + order.items.length + '<br>Total pieces: ' + totalPieces + '</td>' +
+    '</tr></table><table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-top:1px solid #e4d8c5">' + itemRows + '</table></td></tr>' +
+    '<tr><td style="padding:18px 24px 24px"><table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#faf7f2;border:1px solid #eee6dc;border-radius:8px"><tr><td style="padding:18px 20px 16px">' +
+    '<h2 style="font-family:Georgia,Times New Roman,serif;font-size:22px;font-weight:400;margin:0 0 12px">Customer Details</h2>' +
+    '<p style="font-size:14px;line-height:1.8;margin:0">' + orderEscapeHtml(order.customer.fullName) + '<br><a href="tel:' + orderEscapeHtml(order.customer.mobile) + '" style="color:#8b6338;text-decoration:underline">' + orderEscapeHtml(order.customer.mobile) + '</a></p>' +
+    '<div style="border-top:1px solid #e4d8c5;margin:16px 0"></div>' +
+    '<h2 style="font-family:Georgia,Times New Roman,serif;font-size:22px;font-weight:400;margin:0 0 10px">Shipping Address</h2>' +
+    '<p style="font-size:14px;line-height:1.8;margin:0;color:#1c1917">' + orderEscapeHtml(address) + '</p>' +
+    '</td></tr></table></td></tr></table></body></html>';
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: { "Authorization": "Bearer " + env.RESEND_API_KEY_SRISAI, "Content-Type": "application/json" },
     body: JSON.stringify({
       from: "Sri Sai Vani Orders <onboarding@resend.dev>",
       to: [ORDER_NOTIFICATION_TO],
-      subject: "New Store Order | " + order.reference,
+      subject: "Order Details | " + order.reference,
       text,
       html
     })
