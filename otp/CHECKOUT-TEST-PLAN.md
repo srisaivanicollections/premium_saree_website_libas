@@ -28,6 +28,8 @@ Run this checklist on a preview build and a non-production D1 database before me
 - [ ] Existing OTP send and verify routes pass regression tests with unchanged TTL, cooldown, and attempt limits.
 - [ ] Order request rejects invalid IDs, quantities, unavailable products, malformed addresses, unknown origins, and missing D1 binding.
 - [ ] Same idempotency key returns the same reference and does not create a second order.
+- [ ] Concurrent retries for one pending order acquire only one notification lease and send at most one owner email.
+- [ ] Failed email delivery releases its lease for immediate retry; a crashed sender lease becomes eligible for retry after five minutes.
 - [ ] D1 contains the order before the customer sees accepted success.
 - [ ] Resend delivers an owner notification to srisaivanicollections@gmail.com; email has names/quantities/contact/address/reference/time and no prices.
 - [ ] Temporarily force Resend failure; order remains saved as pending and the scheduled retry sends it after service recovers.
