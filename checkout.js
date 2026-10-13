@@ -137,7 +137,7 @@
     printWindow.document.write(orderPrintHtml(lastSubmittedOrder));
     printWindow.document.close();
     printWindow.focus();
-    printWindow.addEventListener("load",()=>setTimeout(()=>printWindow.print(),150),{once:true});
+    setTimeout(()=>printWindow.print(),250);
   }
   async function submitCheckout(form){
     if(submitting)return;
