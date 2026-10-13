@@ -1,6 +1,6 @@
 # Guest checkout verification checklist
 
-Run this checklist on a preview build and a non-production D1 database before merging or deploying.
+Run this checklist on a preview build and test Worker before enabling checkout for customers. No D1 database is used.
 
 ## Storefront regression
 - [ ] Catalogue still loads the full current product list, including Jewelry.
@@ -21,23 +21,22 @@ Run this checklist on a preview build and a non-production D1 database before me
 - [ ] House/street, city, district, state, and six-digit PIN are required; landmark is optional.
 - [ ] No customer email field, customer email notification, prices, or totals appear in cart/checkout.
 - [ ] Submit Order is disabled during submission and shows safe errors.
-- [ ] Successful order shows a reference and clears the cart only after the server confirms it was saved.
-- [ ] Simulate a network failure after submit, retry with the same idempotency key, and confirm only one order is stored.
+- [ ] A successful Resend request returns a reference and clears the cart.
+- [ ] Force Resend failure; checkout shows an error and keeps the cart.
+- [ ] A sequential retry after a successful request returns the same reference during the 30-day KV marker TTL.
+- [ ] Simulate simultaneous duplicate requests and an ambiguous provider timeout; note that KV cannot guarantee atomic deduplication, so duplicate owner emails remain possible in these edge cases.
 
-## Worker and storage
+## Worker and email
+- [ ] Worker requires the existing OTP_STORE KV binding and RESEND_API_KEY_SRISAI secret for checkout; no D1 binding or schema is needed.
 - [ ] Existing OTP send and verify routes pass regression tests with unchanged TTL, cooldown, and attempt limits.
-- [ ] Order request rejects invalid IDs, quantities, unavailable products, malformed addresses, unknown origins, and missing D1 binding.
-- [ ] Same idempotency key returns the same reference and does not create a second order.
-- [ ] Concurrent retries for one pending order acquire only one notification lease and send at most one owner email.
-- [ ] Failed email delivery releases its lease for immediate retry; a crashed sender lease becomes eligible for retry after five minutes.
-- [ ] D1 contains the order before the customer sees accepted success.
-- [ ] Resend delivers an owner notification to srisaivanicollections@gmail.com; email has names/quantities/contact/address/reference/time and no prices.
-- [ ] Temporarily force Resend failure; order remains saved as pending and the scheduled retry sends it after service recovers.
-- [ ] Rate limiting applies to new order submissions without interfering with OTP KV keys.
-- [ ] Confirm no endpoint exposes order records publicly.
+- [ ] Order request rejects invalid IDs, quantities, unavailable products, malformed addresses, unknown origins, and missing required configuration.
+- [ ] Order rate limiting uses a separate KV prefix and does not interfere with OTP keys.
+- [ ] Resend sends owner notification to srisaivanicollections@gmail.com with product names/quantities, customer name/mobile, address, reference, and time, without prices.
+- [ ] Confirm KV stores only an idempotency reference marker and rate-limit counters, not customer address or order payload.
+- [ ] No public endpoint exposes prior orders.
 
 ## Device checks
-- [ ] Mobile viewport around 360px: image cart button, drawer, quantity controls, and checkout form fit without horizontal scrolling.
+- [ ] Mobile viewport around 360px: cart button, drawer, quantity controls, and checkout form fit without horizontal scrolling.
 - [ ] Desktop viewport: cart control aligns in header and drawer stays within viewport.
 - [ ] Keyboard: cart opens/closes, Escape closes it, form labels are accessible, focus indicators are visible.
-- [ ] Check current Firefox and Android Chrome after Cloudflare and D1 setup.
+- [ ] Check current Firefox and Android Chrome after the Worker is manually deployed to a test environment.
