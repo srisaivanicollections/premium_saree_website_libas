@@ -191,14 +191,14 @@ async function sendOrderNotification(env, order) {
   const itemRows = order.items.map(item => {
     const imageUrl = orderImageUrl(item.image);
     const imageCell = imageUrl
-      ? '<td width="88" valign="middle" style="padding:12px 14px 12px 0;width:88px"><img src="' + orderEscapeHtml(imageUrl) + '" width="76" height="84" alt="' + orderEscapeHtml(item.name) + '" style="display:block;width:76px;height:84px;object-fit:cover;border:1px solid #e4d8c5;border-radius:8px"></td>'
-      : '<td width="88" valign="middle" style="padding:12px 14px 12px 0;width:88px"><div style="width:76px;height:84px;background:#f4f0e9;border:1px solid #e4d8c5;border-radius:8px"></div></td>';
-    return '<tr>' + imageCell + '<td valign="top" style="padding:12px 0;border-bottom:1px solid #e4d8c5;font-size:14px;line-height:1.5;color:#1c1917">' +
+      ? '<td width="88" valign="middle" style="padding:18px 14px 18px 0;width:88px"><img src="' + orderEscapeHtml(imageUrl) + '" width="76" height="84" alt="' + orderEscapeHtml(item.name) + '" style="display:block;width:76px;height:84px;object-fit:cover;border:1px solid #e4d8c5;border-radius:8px"></td>'
+      : '<td width="88" valign="middle" style="padding:18px 14px 18px 0;width:88px"><div style="width:76px;height:84px;background:#f4f0e9;border:1px solid #e4d8c5;border-radius:8px"></div></td>';
+    return '<tr>' + imageCell + '<td valign="top" style="padding:18px 0;border-bottom:1px solid #e4d8c5;font-size:14px;line-height:1.6;color:#1c1917">' +
       '<strong style="font-family:Georgia,Times New Roman,serif;font-size:16px;font-weight:400">' + orderEscapeHtml(item.name) + '</strong><br>' +
-      '<span style="display:inline-block;padding-top:4px;color:#625d55">Quantity: ' + item.quantity + '</span></td></tr>';
+      '<span style="display:inline-block;padding-top:7px;color:#625d55">Quantity: ' + item.quantity + '</span></td></tr>';
   }).join("");
   const html = '<!doctype html><html lang="en"><body style="margin:0;padding:20px 16px;background:#faf7f2;color:#1c1917;font-family:Arial,Helvetica,sans-serif">' +
-    '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;max-width:900px;margin:0 auto;background:#ffffff;border:1px solid #e4d8c5;border-radius:12px;border-collapse:separate">' +
+    '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;max-width:640px;margin:0 auto;background:#ffffff;border:1px solid #e4d8c5;border-radius:12px;border-collapse:separate">' +
     '<tr><td align="center" style="padding:26px 24px 22px;border-bottom:1px solid #e4d8c5">' +
     '<p style="margin:0;color:#1c1917;font-family:Georgia,Times New Roman,serif;font-size:21px;line-height:.95;font-weight:500;letter-spacing:3px">SRI SAI VANI</p>' +
     '<p style="margin:5px 0 0;color:#1c1917;font-family:Arial,Helvetica,sans-serif;font-size:9px;line-height:1;letter-spacing:2px">COLLECTIONS</p>' +
