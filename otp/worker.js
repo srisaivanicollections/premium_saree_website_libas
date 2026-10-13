@@ -138,10 +138,17 @@ function orderEscapeHtml(value) {
 }
 function orderImageUrl(value) {
   const image = String(value || "").trim();
-  if (/^assets\/products\/[a-zA-Z0-9_./%-]+$/.test(image)) {
-    return "https://srisaivanicollections.github.io/" + image.split("/").map((part, index) => index === 0 ? part : encodeURIComponent(decodeURIComponent(part))).join("/");
+  if (/^assets\\/products\\/[a-zA-Z0-9_.% -]+$/.test(image)) {
+    const encodedPath = image.split("/").map(part => {
+      try {
+        return encodeURIComponent(decodeURIComponent(part));
+      } catch {
+        return encodeURIComponent(part);
+      }
+    }).join("/");
+    return "https://srisaivanicollections.github.io/" + encodedPath;
   }
-  if (/^https:\/\/[a-zA-Z0-9.-]+(?::[0-9]+)?(?:\/[^\s"'<>]*)?$/.test(image)) return image;
+  if (/^https:\\/\\/[a-zA-Z0-9.-]+(?::[0-9]+)?(?:\\/[^\\s"'<>]*)?$/.test(image)) return image;
   return "";
 }
 async function sendOrderNotification(env, order) {
