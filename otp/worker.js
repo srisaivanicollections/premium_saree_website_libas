@@ -204,17 +204,20 @@ async function sendOrderNotification(env, order) {
     '<td width="50%" valign="middle" style="padding:8px;font-size:12px;line-height:1.3;border-right:1px solid #e4d8c5"><span style="color:#625d55">Order Date</span><br><strong style="font-size:16px;font-weight:500;color:#1c1917">' + orderEscapeHtml(order.createdAt) + '</strong></td>' +
     '<td width="50%" valign="middle" style="padding:8px;font-size:12px;line-height:1.3"><span style="color:#625d55">Order ID</span><br><strong style="font-size:16px;font-weight:600;color:#1c1917">' + orderEscapeHtml(order.reference) + '</strong></td>' +
     '</tr></table></td></tr>' +
+    '<tr><td style="padding:8px 12px 4px"><table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#faf7f2;border:1px solid #eee6dc;border-radius:8px"><tr>' +
+    '<td width="48%" valign="top" style="padding:10px 12px;border-right:1px solid #e4d8c5">' +
+    '<p style="margin:0 0 4px;color:#8b6338;font-size:10px;letter-spacing:1px;text-transform:uppercase">Customer</p>' +
+    '<p style="margin:0 0 5px;font-size:14px;line-height:1.3;font-weight:600;color:#1c1917">' + orderEscapeHtml(order.customer.fullName) + '</p>' +
+    '<p style="margin:0;font-size:12px;line-height:1.4"><a href="tel:' + orderEscapeHtml(order.customer.mobile) + '" style="color:#8b6338;text-decoration:underline">' + orderEscapeHtml(order.customer.mobile) + '</a></p></td>' +
+    '<td width="52%" valign="top" style="padding:10px 12px">' +
+    '<p style="margin:0 0 4px;color:#8b6338;font-size:10px;letter-spacing:1px;text-transform:uppercase">Shipping Address</p>' +
+    '<p style="margin:0;font-size:12px;line-height:1.45;color:#1c1917;word-break:break-word">' + orderEscapeHtml(displayAddress) + '</p></td>' +
+    '</tr></table></td></tr>' +
     '<tr><td style="padding:8px 12px 0"><table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%"><tr>' +
     '<td><h2 style="font-family:Georgia,Times New Roman,serif;font-size:18px;font-weight:400;margin:0 0 6px">Items Ordered</h2></td>' +
     '<td align="right" valign="middle" style="font-size:13px;color:#625d55;padding-bottom:5px">Unique items: ' + order.items.length + '<br>Total pieces: ' + totalPieces + '</td>' +
     '</tr></table><table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-top:1px solid #e4d8c5">' + itemRows + '</table></td></tr>' +
-    '<tr><td style="padding:8px 12px 10px"><table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#faf7f2;border:1px solid #eee6dc;border-radius:8px"><tr><td style="padding:10px 12px 8px">' +
-    '<h2 style="font-family:Georgia,Times New Roman,serif;font-size:18px;font-weight:400;margin:0 0 6px">Customer Details</h2>' +
-    '<p style="font-size:12px;line-height:1.4;margin:0">' + orderEscapeHtml(order.customer.fullName) + '<br><a href="tel:' + orderEscapeHtml(order.customer.mobile) + '" style="color:#8b6338;text-decoration:underline">' + orderEscapeHtml(order.customer.mobile) + '</a></p>' +
-    '<div style="border-top:1px solid #e4d8c5;margin:8px 0"></div>' +
-    '<h2 style="font-family:Georgia,Times New Roman,serif;font-size:18px;font-weight:400;margin:0 0 5px">Shipping Address</h2>' +
-    '<p style="font-size:12px;line-height:1.4;margin:0;color:#1c1917">' + orderEscapeHtml(displayAddress) + '</p>' +
-    '</td></tr></table></td></tr></table></body></html>';
+    '</table></td></tr></table></body></html>';
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: { "Authorization": "Bearer " + env.RESEND_API_KEY_SRISAI, "Content-Type": "application/json" },
