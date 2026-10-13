@@ -169,6 +169,48 @@ async function sendOrderNotification(env, order) {
     throw new Error("Order notification could not be sent.");
   }
 }
+const ORDER_NOTIFICATION_LEASE_MS = 5 * 60 * 1000;
+
+// D1 atomically grants one sender a short lease for each order. A failed send
+// releases the lease; a crashed sender becomes retryable after the lease expires.
+async function deliverOrderNotification(env, order) {
+  const claimToken = crypto.randomUUID();
+  const now = Date.now();
+  const claim = await env.ORDERS_DB.prepare(`
+    INSERT INTO order_notification_claims (order_ref, claim_token, claimed_at)
+    VALUES (?, ?, ?)
+    ON CONFLICT(order_ref) DO UPDATE SET
+      claim_token = excluded.claim_token,
+      claimed_at = excluded.claimed_at
+    WHERE order_notification_claims.claimed_at <= ?
+    RETURNING claim_token
+  `).bind(order.reference, claimToken, now, now - ORDER_NOTIFICATION_LEASE_MS).first();
+
+  if (claim?.claim_token !== claimToken) return { sent: false, busy: true };
+
+  try {
+    await sendOrderNotification(env, order);
+  } catch (error) {
+    // Release only our own claim so an immediate retry or cron run can recover.
+    try {
+      await env.ORDERS_DB.prepare(
+        "DELETE FROM order_notification_claims WHERE order_ref = ? AND claim_token = ?"
+      ).bind(order.reference, claimToken).run();
+    } catch (_) {}
+    throw error;
+  }
+
+  // If this update fails after the email provider accepted the message, keep
+  // the lease until expiry to avoid an immediate duplicate notification.
+  await env.ORDERS_DB.prepare(
+    "UPDATE orders SET notification_status = 'sent' WHERE order_ref = ?"
+  ).bind(order.reference).run();
+  await env.ORDERS_DB.prepare(
+    "DELETE FROM order_notification_claims WHERE order_ref = ? AND claim_token = ?"
+  ).bind(order.reference, claimToken).run();
+  return { sent: true, busy: false };
+}
+
 async function submitOrder(request, env, origin, payload) {
   if (!env.ORDERS_DB) return jsonResponse({ success: false, message: "Order storage is not configured yet." }, 503, origin);
   const idempotencyKey = String(request.headers.get("Idempotency-Key") || payload?.idempotencyKey || "");
@@ -183,8 +225,10 @@ async function submitOrder(request, env, origin, payload) {
     const order = JSON.parse(existing.payload_json);
     if (existing.notification_status !== "sent") {
       try {
-        await sendOrderNotification(env, order);
-        await env.ORDERS_DB.prepare("UPDATE orders SET notification_status = 'sent' WHERE idempotency_key = ?").bind(idempotencyKey).run();
+        const delivery = await deliverOrderNotification(env, order);
+        if (!delivery.sent) {
+          return jsonResponse({ success: true, accepted: true, reference: existing.order_ref, notificationPending: true, message: "Your order is saved. Store notification is pending." }, 202, origin);
+        }
       } catch {
         return jsonResponse({ success: true, accepted: true, reference: existing.order_ref, notificationPending: true, message: "Your order is saved. Store notification is pending." }, 202, origin);
       }
@@ -267,8 +311,10 @@ async function submitOrder(request, env, origin, payload) {
     return jsonResponse({ success: true, accepted: true, reference: duplicate.order_ref, notificationPending: true, message: "Your order is saved. Store notification is pending." }, 202, origin);
   }
   try {
-    await sendOrderNotification(env, order);
-    await env.ORDERS_DB.prepare("UPDATE orders SET notification_status = 'sent' WHERE order_ref = ?").bind(order.reference).run();
+    const delivery = await deliverOrderNotification(env, order);
+    if (!delivery.sent) {
+      return jsonResponse({ success: true, accepted: true, reference: order.reference, notificationPending: true, message: "Your order is saved. Store notification is pending." }, 202, origin);
+    }
   } catch {
     return jsonResponse({ success: true, accepted: true, reference: order.reference, notificationPending: true, message: "Your order is saved. Store notification is pending." }, 202, origin);
   }
@@ -445,8 +491,7 @@ export default {
     for (const row of (pending.results || [])) {
       try {
         const order = JSON.parse(row.payload_json);
-        await sendOrderNotification(env, order);
-        await env.ORDERS_DB.prepare("UPDATE orders SET notification_status = 'sent' WHERE order_ref = ? AND notification_status = 'pending'").bind(row.order_ref).run();
+        await deliverOrderNotification(env, order);
       } catch (error) {
         console.error("Scheduled order notification retry failed for", row.order_ref, error instanceof Error ? error.message : "Unknown error");
       }
