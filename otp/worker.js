@@ -175,8 +175,7 @@ async function sendOrderNotification(env, order) {
     "Order Details",
     "Order Date: " + order.createdAt,
     "Order ID: " + order.reference,
-    "Unique items: " + order.items.length,
-    "Total pieces: " + totalPieces,
+    "Total quantity: " + totalPieces,
     "",
     "ITEMS ORDERED",
     ...order.items.map(item => item.name + " | Quantity: " + item.quantity),
@@ -218,7 +217,7 @@ async function sendOrderNotification(env, order) {
     '</tr></table></td></tr>' +
     '<tr><td style="padding:22px 24px 20px"><table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%"><tr>' +
     '<td><h2 style="font-family:Georgia,Times New Roman,serif;font-size:22px;font-weight:400;margin:0 0 10px">Items Ordered</h2></td>' +
-    '<td align="right" valign="middle" style="font-size:14px;line-height:1.7;color:#625d55;padding-bottom:8px">Unique items: ' + order.items.length + '<br>Total pieces: ' + totalPieces + '</td>' +
+    '<td align="right" valign="middle" style="font-size:14px;line-height:1.5;color:#625d55;padding-bottom:8px">Total quantity: ' + totalPieces + '</td>' +
     '</tr></table><table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-top:1px solid #e4d8c5">' + itemRows + '</table></td></tr>' +
     '</table></td></tr></table></body></html>';
   const response = await fetch("https://api.resend.com/emails", {
