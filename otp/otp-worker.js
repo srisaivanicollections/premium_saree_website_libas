@@ -227,6 +227,16 @@ async function submitOrder(request, env, origin, payload) {
     }
     return jsonResponse({ success: true, accepted: true, reference: existing.order_ref, message: "Your order has been received." }, 200, origin);
   }
+  // Basic per-IP throttling for new guest orders. Uses a dedicated KV prefix,
+  // so it cannot collide with OTP, cooldown, or verification-attempt records.
+  const clientIp = request.headers.get("CF-Connecting-IP") || "unknown";
+  const ipDigest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(clientIp));
+  const ipHash = Array.from(new Uint8Array(ipDigest)).map(byte => byte.toString(16).padStart(2, "0")).join("").slice(0, 32);
+  const rateKey = "order-rate:" + ipHash;
+  const rateCount = Number(await env.OTP_STORE.get(rateKey) || "0");
+  if (rateCount >= 5) return jsonResponse({ success: false, message: "Too many order attempts. Please wait before trying again." }, 429, origin);
+  await env.OTP_STORE.put(rateKey, String(rateCount + 1), { expirationTtl: 3600 });
+
   const reference = "SSV-" + new Date().toISOString().slice(0,10).replace(/-/g,"") + "-" + crypto.randomUUID().slice(0,8).toUpperCase();
   order = {
     reference,
