@@ -128,22 +128,97 @@
   function showCheckout(){if(!cart.length)return;const content=$("#ssv-cart-content");if(!content)return;let form=$("#ssv-checkout-form");if(!form){renderCheckoutForm();form=$("#ssv-checkout-form")}form.classList.add("is-visible");const clearButton=$("#ssv-clear-bag");if(clearButton){clearButton.hidden=true;clearButton.disabled=true}renderCheckoutForm();content.scrollTop=0;$("#ssv-full-name")?.focus()}
   function showStatus(message,success=false){const status=$("#ssv-checkout-status");if(!status)return;status.textContent=message;status.classList.toggle("is-success",success)}
 
-  function orderPrintHtml(order){
-    const rows=order.items.map(item=>'<tr><td class="item-name">'+esc(item.name)+'</td><td class="item-qty">Qty: '+item.quantity+'</td></tr>').join("");
-    return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Order Summary - '+esc(order.reference)+'</title><style>'+
-      '*{box-sizing:border-box}body{margin:0;padding:28px 16px;background:#f2f2f2;color:#333;font:12px/1.5 Arial,Helvetica,sans-serif}.sheet{width:100%;max-width:560px;min-height:600px;margin:0 auto;padding:34px 38px;background:#fff}.brand{display:flex;justify-content:center;align-items:center;text-align:center;color:#1C1917;text-decoration:none;margin:0;padding:0 0 20px;border-bottom:1px solid #E7E0D8}.brand b{display:block;font-family:"Cormorant Garamond",Georgia,serif;font-size:21px;line-height:.85;letter-spacing:.12em;font-weight:500}.brand small{display:block;margin-top:7px;font-family:Inter,Arial,sans-serif;font-size:7px;line-height:1;letter-spacing:.31em;color:#78716C}.thank-you{text-align:center;font:22px Georgia,serif;margin:18px 0 8px;color:#333}.intro{text-align:center;font-size:11px;color:#888;margin:0 0 22px}.order-meta{display:flex;justify-content:space-between;gap:14px;padding:12px 10px;border:1px solid #eee;color:#777;font-size:10px}.order-meta div:last-child{text-align:right}.items-head{display:flex;justify-content:space-between;padding:12px 10px;border:1px solid #eee;border-top:0;color:#777;font-size:10px}.items{padding:0 10px;border:1px solid #eee;border-top:0}.items table{width:100%;border-collapse:collapse}.items td{padding:13px 0;border-bottom:1px solid #eee;vertical-align:top}.items tr:last-child td{border-bottom:0}.item-name{font-size:11px;color:#444}.item-qty{text-align:right;white-space:nowrap;font-size:10px;color:#777;width:76px}.note{font-size:10px;color:#888;line-height:1.5;margin:18px 0 0}.actions{text-align:center;margin:0 auto 16px}.actions button{padding:10px 16px;background:#333;color:#fff;border:0;font-size:12px;cursor:pointer}@media print{body{padding:0;background:#fff}.sheet{max-width:none;min-height:0;padding:28px 30px}.actions{display:none}.order-meta,.items-head,.items tr{break-inside:avoid}}@media(max-width:420px){body{padding:8px}.sheet{padding:24px 18px}}'+
-      '</style></head><body><div class="actions"><button onclick="window.print()">Save as PDF / Print</button><p class="note">Choose “Save as PDF” in the print dialog to save a copy.</p></div><main class="sheet"><a class="brand" href="#" aria-label="Sri Sai Vani Collections"><span><b>SRI SAI VANI</b><small>COLLECTIONS</small></span></a><h1 class="thank-you">Thank you for your order</h1><p class="intro">Review your order information below.</p><div class="order-meta"><div>'+esc(order.createdAt)+'</div><div>Order: '+esc(order.reference)+'</div></div><div class="items-head"><span>Items</span><span>Qty</span></div><div class="items"><table><tbody>'+rows+'</tbody></table></div><p class="note">This is an order summary, not a tax invoice. The store will confirm availability, delivery, and the final amount.</p></main></body></html>';
+  function buildOrderPdf(order){
+    const lines=[
+      "SRI SAI VANI",
+      "COLLECTIONS",
+      "",
+      "Thank you for your order",
+      "",
+      "Order date: "+order.createdAt,
+      "Order reference: "+order.reference,
+      "",
+      "ITEMS"
+    ];
+    order.items.forEach(item=>{
+      lines.push(String(item.name||"Product"));
+      lines.push("Quantity: "+String(item.quantity));
+      lines.push("");
+    });
+    lines.push("This is an order summary, not a tax invoice.");
+    lines.push("The store will confirm availability, delivery, and the final amount.");
+
+    const ascii=value=>String(value).normalize("NFKD")
+      .replace(/[\u0300-\u036f]/g,"")
+      .replace(/[^\x20-\x7E]/g,"?");
+    const escapePdf=value=>ascii(value).replace(/\\/g,"\\\\").replace(/\(/g,"\\(").replace(/\)/g,"\\)");
+    const wrapped=[];
+    lines.forEach(line=>{
+      const clean=ascii(line);
+      if(!clean){wrapped.push("");return}
+      let remaining=clean;
+      while(remaining.length>76){
+        let split=remaining.lastIndexOf(" ",76);
+        if(split<1)split=76;
+        wrapped.push(remaining.slice(0,split));
+        remaining=remaining.slice(split).trim();
+      }
+      wrapped.push(remaining);
+    });
+    const pageLines=[];
+    for(let i=0;i<wrapped.length;i+=48)pageLines.push(wrapped.slice(i,i+48));
+    if(!pageLines.length)pageLines.push([]);
+    const objects=[];
+    const addObject=value=>{objects.push(value);return objects.length};
+    const catalogId=addObject("");
+    const pagesId=addObject("");
+    const fontId=addObject("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>");
+    const pageIds=[];
+    pageLines.forEach(page=>{
+      let stream="BT\n/F1 10 Tf\n50 790 Td\n14 TL\n";
+      page.forEach((line,index)=>{
+        if(index===0&&pageLines.indexOf(page)===0)stream+="/F1 16 Tf\n("+escapePdf(line)+") Tj\n/F1 10 Tf\n0 -24 Td\n";
+        else stream+="("+escapePdf(line)+") Tj\nT*\n";
+      });
+      stream+="ET";
+      const streamId=addObject("<< /Length "+stream.length+" >>\nstream\n"+stream+"\nendstream");
+      const pageId=addObject("<< /Type /Page /Parent "+pagesId+" 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 "+fontId+" 0 R >> >> /Contents "+streamId+" 0 R >>");
+      pageIds.push(pageId);
+    });
+    objects[catalogId-1]="<< /Type /Catalog /Pages "+pagesId+" 0 R >>";
+    objects[pagesId-1]="<< /Type /Pages /Kids ["+pageIds.map(id=>id+" 0 R").join(" ")+"] /Count "+pageIds.length+" >>";
+    let pdf="%PDF-1.4\n%\xE2\xE3\xCF\xD3\n";
+    const offsets=[0];
+    objects.forEach((obj,index)=>{
+      offsets.push(pdf.length);
+      pdf+=(index+1)+" 0 obj\n"+obj+"\nendobj\n";
+    });
+    const xrefOffset=pdf.length;
+    pdf+="xref\n0 "+(objects.length+1)+"\n0000000000 65535 f \n";
+    offsets.slice(1).forEach(offset=>{pdf+=String(offset).padStart(10,"0")+" 00000 n \n"});
+    pdf+="trailer\n<< /Size "+(objects.length+1)+" /Root "+catalogId+" 0 R >>\nstartxref\n"+xrefOffset+"\n%%EOF";
+    return new Blob([pdf],{type:"application/pdf"});
   }
   function downloadOrderDetails(){
     if(!lastSubmittedOrder)return false;
-    const printWindow=window.open("","_blank");
-    if(!printWindow){showToast("Allow pop-ups to open order details");return false}
-    printWindow.document.open();
-    printWindow.document.write(orderPrintHtml(lastSubmittedOrder));
-    printWindow.document.close();
-    printWindow.focus();
-    setTimeout(()=>printWindow.print(),250);
-    return true;
+    try{
+      const blob=buildOrderPdf(lastSubmittedOrder);
+      const url=URL.createObjectURL(blob);
+      const anchor=document.createElement("a");
+      const safeReference=String(lastSubmittedOrder.reference||"order")
+        .replace(/[^a-z0-9_-]+/gi,"-").replace(/^-+|-+$/g,"").slice(0,60)||"order";
+      anchor.href=url;
+      anchor.download="sri-sai-vani-order-"+safeReference+".pdf";
+      anchor.style.display="none";
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      setTimeout(()=>URL.revokeObjectURL(url),10000);
+      return true;
+    }catch(error){
+      showToast("Could not download order details. Please try again.");
+      return false;
+    }
   }
   async function submitCheckout(form){
     if(submitting)return;
