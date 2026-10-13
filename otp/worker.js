@@ -197,9 +197,9 @@ async function sendOrderNotification(env, order) {
     '<tr><td align="center" style="padding:12px 12px 10px;border-bottom:1px solid #e4d8c5">' +
     '<p style="margin:0;color:#1c1917;font-family:Georgia,Times New Roman,serif;font-size:21px;line-height:.95;font-weight:500;letter-spacing:3px">SRI SAI VANI</p>' +
     '<p style="margin:5px 0 0;color:#1c1917;font-family:Arial,Helvetica,sans-serif;font-size:9px;line-height:1;letter-spacing:2px">COLLECTIONS</p>' +
-    '' +
-    '<h1 style="font-family:Georgia,Times New Roman,serif;font-size:24px;line-height:1.2;font-weight:400;margin:12px 0 4px">Order Details</h1>' +
-    '<p style="margin:0;color:#625d55;font-size:12px;line-height:1.4">Please find the order information below.</p></td></tr>' +
+    '</td></tr>' +
+    '<tr><td align="center" style="padding:12px 12px 10px;border-bottom:1px solid #e4d8c5">' +
+    '<h1 style="font-family:Georgia,Times New Roman,serif;font-size:24px;line-height:1.2;font-weight:400;margin:0">Order Details</h1></td></tr>' +
     '<tr><td style="padding:8px 12px 2px"><table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#faf7f2;border:1px solid #eee6dc;border-radius:8px"><tr>' +
     '<td width="50%" valign="middle" style="padding:8px;font-size:12px;line-height:1.3;border-right:1px solid #e4d8c5"><span style="color:#625d55">Order Date</span><br><strong style="font-size:16px;font-weight:500;color:#1c1917">' + orderEscapeHtml(order.createdAt) + '</strong></td>' +
     '<td width="50%" valign="middle" style="padding:8px;font-size:12px;line-height:1.3"><span style="color:#625d55">Order ID</span><br><strong style="font-size:16px;font-weight:600;color:#1c1917">' + orderEscapeHtml(order.reference) + '</strong></td>' +
