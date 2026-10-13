@@ -41,7 +41,7 @@
     }
     if(!$("#ssv-cart-layer")){
       const layer=document.createElement("div");layer.id="ssv-cart-layer";
-      layer.innerHTML='<div id="ssv-cart-backdrop" data-cart-close></div><section id="ssv-cart-drawer" role="dialog" aria-modal="true" aria-labelledby="ssv-cart-title" tabindex="-1"><header class="ssv-cart-head"><h2 id="ssv-cart-title">Your bag</h2><button type="button" class="ssv-cart-close" aria-label="Close cart" data-cart-close>×</button></header><div id="ssv-cart-content"></div><footer class="ssv-cart-footer" id="ssv-cart-footer"><button type="button" id="ssv-proceed-checkout">Proceed to checkout</button><button type="button" class="ssv-continue" data-cart-close>Continue shopping</button></footer></section></div>';
+      layer.innerHTML='<div id="ssv-cart-backdrop" data-cart-close></div><section id="ssv-cart-drawer" role="dialog" aria-modal="true" aria-labelledby="ssv-cart-title" tabindex="-1"><header class="ssv-cart-head"><h2 id="ssv-cart-title">Your bag</h2><div class="ssv-cart-head-actions"><button type="button" id="ssv-clear-bag" aria-haspopup="dialog" aria-controls="ssv-clear-bag-dialog">Clear bag</button><button type="button" class="ssv-cart-close" aria-label="Close cart" data-cart-close>×</button></div></header><div id="ssv-cart-content"></div><footer class="ssv-cart-footer" id="ssv-cart-footer"><button type="button" id="ssv-proceed-checkout">Proceed to checkout</button><button type="button" class="ssv-continue" data-cart-close>Continue shopping</button></footer></section><div id="ssv-clear-bag-dialog" class="ssv-clear-dialog-layer" hidden><div class="ssv-clear-dialog-backdrop" data-clear-cancel></div><section class="ssv-clear-dialog" role="alertdialog" aria-modal="true" aria-labelledby="ssv-clear-dialog-title" aria-describedby="ssv-clear-dialog-message" tabindex="-1"><h3 id="ssv-clear-dialog-title">Clear your bag?</h3><p id="ssv-clear-dialog-message">This will remove all items from your bag. This action cannot be undone.</p><div class="ssv-clear-dialog-actions"><button type="button" data-clear-cancel>Keep shopping</button><button type="button" class="ssv-clear-confirm" data-clear-confirm>Clear bag</button></div></section></div></div>';
       document.body.appendChild(layer);
     }
     if(!$("#ssv-cart-toast")){const toast=document.createElement("div");toast.id="ssv-cart-toast";toast.setAttribute("role","status");toast.setAttribute("aria-live","polite");document.body.appendChild(toast)}
@@ -87,12 +87,17 @@
   }
   function showToast(message){const toast=$("#ssv-cart-toast");if(!toast)return;toast.textContent=message;toast.classList.add("is-visible");clearTimeout(toastTimer);toastTimer=setTimeout(()=>toast.classList.remove("is-visible"),1800)}
   function openCart(){const layer=$("#ssv-cart-layer");if(!layer)return;layer.classList.add("is-open");document.body.style.overflow="hidden";renderCart();setTimeout(()=>$("#ssv-cart-drawer")?.focus(),0)}
-  function closeCart(){const layer=$("#ssv-cart-layer");if(!layer)return;layer.classList.remove("is-open");document.body.style.overflow="";$("#ssv-cart-trigger")?.focus()}
+  function closeCart(){const layer=$("#ssv-cart-layer");if(!layer)return;closeClearBagDialog(false);layer.classList.remove("is-open");document.body.style.overflow="";$("#ssv-cart-trigger")?.focus()}
+  let clearingBag=false;
+  function openClearBagDialog(){if(!cart.length||clearingBag)return;const dialog=$("#ssv-clear-bag-dialog");if(!dialog)return;dialog.hidden=false;dialog.querySelector("[data-clear-cancel]")?.focus()}
+  function closeClearBagDialog(restoreFocus=true){const dialog=$("#ssv-clear-bag-dialog");if(!dialog)return;dialog.hidden=true;if(restoreFocus)$("#ssv-clear-bag")?.focus()}
+  function confirmClearBag(){if(clearingBag||!cart.length)return;clearingBag=true;try{cart=[];saveCart();updateCount();renderCart();closeClearBagDialog(false)}finally{clearingBag=false}}
   function renderCart(){
     const content=$("#ssv-cart-content"),footer=$("#ssv-cart-footer"),layer=$("#ssv-cart-layer");if(!content||!footer)return;
     cart=cart.filter(row=>getProduct(row.id));
     saveCart();updateCount();
     const items=cart.map(row=>({row,p:getProduct(row.id)})).filter(x=>x.p);
+    const clearButton=$("#ssv-clear-bag");if(clearButton){clearButton.hidden=items.length===0;clearButton.disabled=items.length===0}
     const form=$("#ssv-checkout-form");
     if(form&&form.classList.contains("is-visible")){renderCheckoutForm();return}
     if(!items.length){
@@ -113,7 +118,7 @@
     }
     form.classList.add("is-visible");form.hidden=false;
   }
-  function showCheckout(){if(!cart.length)return;const content=$("#ssv-cart-content");if(!content)return;let form=$("#ssv-checkout-form");if(!form){renderCheckoutForm();form=$("#ssv-checkout-form")}form.classList.add("is-visible");renderCheckoutForm();content.scrollTop=0;$("#ssv-full-name")?.focus()}
+  function showCheckout(){if(!cart.length)return;const content=$("#ssv-cart-content");if(!content)return;let form=$("#ssv-checkout-form");if(!form){renderCheckoutForm();form=$("#ssv-checkout-form")}form.classList.add("is-visible");const clearButton=$("#ssv-clear-bag");if(clearButton){clearButton.hidden=true;clearButton.disabled=true}renderCheckoutForm();content.scrollTop=0;$("#ssv-full-name")?.focus()}
   function showStatus(message,success=false){const status=$("#ssv-checkout-status");if(!status)return;status.textContent=message;status.classList.toggle("is-success",success)}
   async function submitCheckout(form){
     if(submitting)return;
@@ -138,6 +143,9 @@
     const add=event.target.closest("[data-add-cart]");
     if(add){const id=Number(add.dataset.addCart),p=getProduct(id);if(!p)return;const row=cart.find(x=>x.id===id);if(row){if(row.quantity>=MAX_QUANTITY){showToast("Maximum quantity reached (10)");return}row.quantity++}else cart.push({id,quantity:1});saveCart();updateCount();showToast("Added to cart");if($("#ssv-cart-layer")?.classList.contains("is-open"))renderCart();return}
     if(event.target.closest("#ssv-cart-trigger")){openCart();return}
+    if(event.target.closest("[data-clear-cancel]")){closeClearBagDialog();return}
+    if(event.target.closest("[data-clear-confirm]")){confirmClearBag();return}
+    if(event.target.closest("#ssv-clear-bag")){openClearBagDialog();return}
     if(event.target.closest("[data-cart-close]")){closeCart();return}
     const qty=event.target.closest("[data-qty]");if(qty){const row=cart.find(x=>x.id===Number(qty.dataset.id));if(row){const delta=Number(qty.dataset.qty);if(delta>0&&row.quantity>=MAX_QUANTITY){showToast("Maximum quantity reached (10)");return}row.quantity=Math.max(0,Math.min(MAX_QUANTITY,row.quantity+delta));if(!row.quantity)cart=cart.filter(x=>x!==row);saveCart();renderCart()}return}
     const remove=event.target.closest("[data-remove]");if(remove){cart=cart.filter(x=>x.id!==Number(remove.dataset.remove));saveCart();renderCart();return}
@@ -145,7 +153,7 @@
     if(event.target.closest("#ssv-back-to-cart")){const form=$("#ssv-checkout-form");form?.classList.remove("is-visible");renderCart();return}
   });
   document.addEventListener("submit",event=>{if(event.target?.id==="ssv-checkout-form"){event.preventDefault();submitCheckout(event.target)}});
-  document.addEventListener("keydown",event=>{if(event.key==="Escape"&&$("#ssv-cart-layer")?.classList.contains("is-open"))closeCart()});
+  document.addEventListener("keydown",event=>{if(event.key!=="Escape"||!$("#ssv-cart-layer")?.classList.contains("is-open"))return;const dialog=$("#ssv-clear-bag-dialog");if(dialog&&!dialog.hidden){closeClearBagDialog();return}closeCart()});
   // Observe catalogue rendering only to discover newly-created product cards.
   // updateCount() changes button contents, so it must not run on every DOM mutation.
   const observer=new MutationObserver(()=>{
