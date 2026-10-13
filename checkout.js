@@ -3,6 +3,7 @@
   "use strict";
   const WORKER_URL = "https://ssv-admin-otp.vinith-paithari.workers.dev";
   const CART_KEY = "ssv_guest_cart_v1";
+  const MAX_QUANTITY = 10;
   const $ = (selector, root=document) => root.querySelector(selector);
   const esc = value => String(value ?? "").replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
   let cart = readCart();
@@ -12,7 +13,7 @@
     try{
       const raw=JSON.parse(localStorage.getItem(CART_KEY)||"[]");
       if(!Array.isArray(raw))return [];
-      return raw.filter(row=>Number.isSafeInteger(Number(row.id))&&Number(row.id)>0&&Number.isInteger(Number(row.quantity))&&Number(row.quantity)>0&&Number(row.quantity)<=20).map(row=>({id:Number(row.id),quantity:Number(row.quantity)}));
+      return raw.filter(row=>Number.isSafeInteger(Number(row.id))&&Number(row.id)>0&&Number.isInteger(Number(row.quantity))&&Number(row.quantity)>0&&Number(row.quantity)<=20).map(row=>({id:Number(row.id),quantity:Math.min(MAX_QUANTITY,Number(row.quantity))}));
     }catch(_){return [];}
   }
   function saveCart(){try{localStorage.setItem(CART_KEY,JSON.stringify(cart.map(row=>({id:row.id,quantity:row.quantity}))))}catch(_){}}
@@ -61,13 +62,15 @@
       const row=cart.find(item=>item.id===id);
       const product=getProduct(id);
       const inCart=Boolean(row);
-      button.innerHTML=inCart
+      button.innerHTML=(inCart
         ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.2 4.2L19 7"></path></svg>'
-        : '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>';
+        : '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>')+(inCart
+          ? '<span aria-hidden="true" style="position:absolute;top:-3px;right:-3px;display:grid;place-items:center;min-width:16px;height:16px;padding:0 3px;box-sizing:border-box;border-radius:99px;background:#6E2735;color:#fff;font:600 10px/1 Inter,Arial,sans-serif;box-shadow:0 0 0 1px #FAF7F2">' + row.quantity + '</span>'
+          : "");
       button.setAttribute("aria-label",inCart
-        ? "In cart: "+(product?.name||"product")+". Add another"
+        ? "In cart: "+(product?.name||"product")+", quantity "+row.quantity+". Add one more"
         : "Add "+(product?.name||"product")+" to cart");
-      button.title=inCart?"In cart · click to add another":"Add to cart";
+      button.title=inCart?"In cart · quantity "+row.quantity+" · click to add another":"Add to cart";
       button.classList.toggle("is-in-cart",inCart);
     });
   }
@@ -122,10 +125,10 @@
   }
   document.addEventListener("click",event=>{
     const add=event.target.closest("[data-add-cart]");
-    if(add){const id=Number(add.dataset.addCart),p=getProduct(id);if(!p)return;const row=cart.find(x=>x.id===id);if(row){if(row.quantity>=20){showToast("Maximum quantity reached");return}row.quantity++}else cart.push({id,quantity:1});saveCart();updateCount();showToast("Added to cart");if($("#ssv-cart-layer")?.classList.contains("is-open"))renderCart();return}
+    if(add){const id=Number(add.dataset.addCart),p=getProduct(id);if(!p)return;const row=cart.find(x=>x.id===id);if(row){if(row.quantity>=MAX_QUANTITY){showToast("Maximum quantity reached (10)");return}row.quantity++}else cart.push({id,quantity:1});saveCart();updateCount();showToast("Added to cart");if($("#ssv-cart-layer")?.classList.contains("is-open"))renderCart();return}
     if(event.target.closest("#ssv-cart-trigger")){openCart();return}
     if(event.target.closest("[data-cart-close]")){closeCart();return}
-    const qty=event.target.closest("[data-qty]");if(qty){const row=cart.find(x=>x.id===Number(qty.dataset.id));if(row){row.quantity=Math.max(0,Math.min(20,row.quantity+Number(qty.dataset.qty)));if(!row.quantity)cart=cart.filter(x=>x!==row);saveCart();renderCart()}return}
+    const qty=event.target.closest("[data-qty]");if(qty){const row=cart.find(x=>x.id===Number(qty.dataset.id));if(row){const delta=Number(qty.dataset.qty);if(delta>0&&row.quantity>=MAX_QUANTITY){showToast("Maximum quantity reached (10)");return}row.quantity=Math.max(0,Math.min(MAX_QUANTITY,row.quantity+delta));if(!row.quantity)cart=cart.filter(x=>x!==row);saveCart();renderCart()}return}
     const remove=event.target.closest("[data-remove]");if(remove){cart=cart.filter(x=>x.id!==Number(remove.dataset.remove));saveCart();renderCart();return}
     if(event.target.closest("#ssv-proceed-checkout")){showCheckout();return}
     if(event.target.closest("#ssv-back-to-cart")){const form=$("#ssv-checkout-form");form?.classList.remove("is-visible");renderCart();return}
