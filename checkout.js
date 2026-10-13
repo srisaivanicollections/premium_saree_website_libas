@@ -128,8 +128,8 @@
       .replace(/[^\x20-\x7E]/g,"?");
     const escapePdf=value=>ascii(value).replace(/\\/g,"\\\\").replace(/\(/g,"\\(").replace(/\)/g,"\\)");
     const commands=[];
-    const text=(x,y,value,size=10,font="F1",color="0.12 0.11 0.10")=>{
-      commands.push("BT /"+font+" "+size+" Tf "+color+" rg 1 0 0 1 "+x+" "+y+" Tm ("+escapePdf(value)+") Tj ET");
+    const text=(x,y,value,size=10,font="F1",color="0.12 0.11 0.10",charSpace=0)=>{
+      commands.push("BT /"+font+" "+size+" Tf "+charSpace+" Tc "+color+" rg 1 0 0 1 "+x+" "+y+" Tm ("+escapePdf(value)+") Tj ET");
     };
     const line=(x1,y1,x2,y2,color="0.86 0.83 0.78",width=0.7)=>{
       commands.push(color+" RG "+width+" w "+x1+" "+y1+" m "+x2+" "+y2+" l S");
@@ -163,8 +163,8 @@
     const pageStreams=[];
     pages.forEach((pageItems,pageIndex)=>{
       commands.length=0;
-      text(centerX("SRI SAI VANI",12),795,"SRI SAI VANI",12,"F2","0.12 0.11 0.10");
-      text(centerX("COLLECTIONS",8),779,"C O L L E C T I O N S",8,"F1","0.36 0.34 0.31");
+      text(220,795,"SRI SAI VANI",21,"F2","0.12 0.11 0.10",2.2);
+      text(260,779,"COLLECTIONS",7,"F1","0.36 0.34 0.31",1.8);
       line(58,758,537,758,"0.84 0.81 0.76",0.8);
       text(centerX("Thank you for your order",17),720,"Thank you for your order",17,"F2");
       text(centerX("Review your order details below.",9),700,"Review your order details below.",9,"F1","0.42 0.40 0.37");
