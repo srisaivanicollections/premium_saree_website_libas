@@ -187,7 +187,7 @@
     });
     objects[catalogId-1]="<< /Type /Catalog /Pages "+pagesId+" 0 R >>";
     objects[pagesId-1]="<< /Type /Pages /Kids ["+pageIds.map(id=>id+" 0 R").join(" ")+"] /Count "+pageIds.length+" >>";
-    let pdf="%PDF-1.4\n%\xE2\xE3\xCF\xD3\n";
+    let pdf="%PDF-1.4\n%----\n";
     const offsets=[0];
     objects.forEach((obj,index)=>{
       offsets.push(pdf.length);
