@@ -78,15 +78,29 @@ test("Admin enrichment verifies persisted metadata before counting a product upd
   assert.match(adminSource, /isGithubShaConflict\(e\)/);
 });
 
-test("Enrich Finder button resets after the catalogue view is rerendered", () => {
-  assert.match(adminSource, /const currentButton=\$\("#adminEnrichFinder"\)/);
-  assert.match(adminSource, /currentButton\.disabled=false;currentButton\.textContent="ANALYSE MISSING METADATA"/);
+test("Enrich Finder is a Products-page text link that opens a closable popup, not a separate tab", () => {
+  assert.match(adminSource, /id="adminEnrichFinderLink" class="admin-enrich-finder-link"/);
+  assert.match(adminSource, /function ssvOpenEnrichFinderPopup\(\)/);
+  assert.match(adminSource, /id="adminEnrichFinderPopup"/);
+  assert.match(adminSource, /id="adminEnrichFinderClose" aria-label="Close Enrich Finder"/);
+  assert.doesNotMatch(adminSource, /data-view="enrich">ENRICH FINDER/);
+  assert.match(adminSource, /event\.key==="Escape"&&!popup\.hidden/);
 });
 
-test("Enrich Finder has its own Admin tab and status area, separate from Product Catalogue", () => {
-  assert.match(adminSource, /data-view="enrich">ENRICH FINDER/);
-  assert.match(adminSource, /id="adminEnrichFinderStatus"/);
-  assert.doesNotMatch(adminSource, /admin-products-heading-actions[^<]*<button[^>]*id="adminEnrichFinder"/);
+test("closing and reopening the enrichment popup does not cancel or duplicate a running save", () => {
+  assert.match(adminSource, /if\(button\.disabled\|\|ssvFinderEnrichmentPromise\)return/);
+  assert.match(adminSource, /if\(ssvFinderEnrichmentPromise&&button\)\{button\.disabled=true/);
+  assert.match(adminSource, /const close=\(\)=>\{popup\.hidden=true;\}/);
+  assert.match(adminSource, /function ssvRenderEnrichFinderSummary\(result\)/);
+});
+
+test("Enrich Finder reports field-level saved counts and uncertain/failed product IDs", () => {
+  assert.match(adminSource, /occasionMissingCount=queue\.filter/);
+  assert.match(adminSource, /colourMissingCount=queue\.filter/);
+  assert.match(adminSource, /occasion\.textContent=result\.occasionsSaved\+" \/ "\+result\.occasionMissingCount/);
+  assert.match(adminSource, /colour\.textContent=result\.coloursSaved\+" \/ "\+result\.colourMissingCount/);
+  assert.match(adminSource, /Uncertain predictions: product IDs/);
+  assert.match(adminSource, /Failed products:/);
 });
 
 test("ambiguous catalogue writes are re-read before reporting an unknown outcome", () => {
