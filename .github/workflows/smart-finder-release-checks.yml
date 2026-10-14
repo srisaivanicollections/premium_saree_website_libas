@@ -1,0 +1,46 @@
+name: Smart Finder Release Checks
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [feature/smart-finder-all-categories]
+
+jobs:
+  syntax-and-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Validate JavaScript syntax
+        run: |
+          node --check app.js
+          node --check saree-finder.js
+      - name: Validate Smart Finder release contract
+        run: |
+          node --input-type=module <<'NODE'
+          import { readFileSync } from "node:fs";
+          import assert from "node:assert/strict";
+
+          const app = readFileSync("app.js", "utf8");
+          const finder = readFileSync("saree-finder.js", "utf8");
+          const catalogue = JSON.parse(readFileSync("data/products.json", "utf8"));
+
+          assert.match(app, /\["Sarees","Dresses","Jewellery"\]/, "Admin validation must allow Jewellery");
+          assert.match(app, /value="Jewellery".*Jewellery<\/option>/, "Admin editor must render a Jewellery option");
+          assert.match(app, /\["All","Sarees","Dresses","Jewellery","Best Seller"\]/, "Storefront must expose Jewellery");
+          assert.match(finder, /id="ssv-finder-color-field"/, "Colour preference must have a hideable wrapper");
+          assert.match(finder, /function syncColorField\(\)/, "Category changes must synchronize the colour field");
+          assert.match(finder, /field\.hidden=jewellery/, "Jewellery must hide the colour field");
+          assert.match(finder, /if\(jewellery&&select\)select\.value=""/, "Jewellery must clear stale colour selections");
+          assert.match(finder, /Number\(p\.price\)<=Number\(preferences\.budget\)/, "Budget must be a strict maximum");
+          assert.match(finder, /matches\.slice\(0,3\)/, "Finder must return at most three recommendations");
+          assert.match(finder, /!\["jewellery","jewelry"\]\.includes\(category\.trim\(\)\.toLowerCase\(\)\)/, "Jewellery must not be colour-filtered");
+          assert.ok(catalogue.some(p => p.category === "Jewellery"), "Catalogue must contain Jewellery");
+          assert.ok(catalogue.every(p => ["Sarees","Dresses","Jewellery"].includes(p.category)), "Catalogue categories must be canonical");
+          console.log("Smart Finder release contract checks passed.");
+          NODE
