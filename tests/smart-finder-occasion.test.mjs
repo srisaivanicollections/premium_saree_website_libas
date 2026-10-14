@@ -4,6 +4,7 @@ import test from "node:test";
 
 const source = readFileSync(new URL("../saree-finder.js", import.meta.url), "utf8");
 const aiSource = readFileSync(new URL("../saree-occasion-ai.js", import.meta.url), "utf8");
+const adminSource = readFileSync(new URL("../index.html", import.meta.url), "utf8");
 const start = source.indexOf("  const OCCASION_VALUES=new Set(");
 const end = source.indexOf("  // Customer-side image inference is intentionally disabled.", start);
 assert.ok(start >= 0 && end > start, "Finder occasion helpers must be present");
@@ -49,4 +50,25 @@ test("browser image inference uses the WASM-compatible uint8 model artifact", ()
   assert.match(aiSource, /dtype:\s*"uint8"/, "Avoid the q8 artifact that fails on ConvInteger during WASM session creation");
   assert.doesNotMatch(aiSource, /dtype:\s*"q8"/, "Do not select the incompatible q8 artifact");
   assert.match(aiSource, /pipeline\("zero-shot-image-classification",\s*MODEL_ID/, "Keep the existing free zero-shot image classification pipeline");
+});
+
+
+test("Admin enrichment exposes actionable safe failure diagnostics", () => {
+  assert.match(adminSource, /function ssvFinderFailureReason\(error\)/);
+  assert.match(adminSource, /GitHub denied access \(403\)/);
+  assert.match(adminSource, /Network\/CDN request failed/);
+  assert.match(adminSource, /console\.error\("Finder enrichment failed for product "/);
+  assert.match(adminSource, /Details: "\+failures\.map/);
+});
+
+test("Admin enrichment verifies persisted metadata before counting a product update", () => {
+  assert.match(adminSource, /githubWriteJson\("data\/products\.json"/);
+  assert.match(adminSource, /githubReadJsonFresh\("data\/products\.json"\)/);
+  assert.match(adminSource, /Save verification failed/);
+  assert.match(adminSource, /isGithubShaConflict\(e\)/);
+});
+
+test("Enrich Finder button resets after the catalogue view is rerendered", () => {
+  assert.match(adminSource, /const currentButton=\$\("#adminEnrichFinder"\)/);
+  assert.match(adminSource, /currentButton\.disabled=false;currentButton\.textContent="Enrich Finder"/);
 });
