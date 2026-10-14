@@ -115,12 +115,11 @@
     closePanel();
     const grid=$("#products");
     if(!grid||product.id==null)return;
-    const categoryTab=[...document.querySelectorAll("[data-tab]")].find(tab=>String(tab.dataset.tab||"").toLowerCase()===category.toLowerCase()||(["jewellery","jewelry"].includes(String(tab.dataset.tab||"").toLowerCase())&&["jewellery","jewelry"].includes(category.toLowerCase())));
-    if(!categoryTab){if($("#shop"))$("#shop").scrollIntoView({behavior:"auto",block:"start"});return;}
-    // Clear search before switching category so the target is rendered in the
-    // same synchronous catalogue render, regardless of the previous filters.
+    // Clear search first, because each catalogue render recreates its tabs.
     const search=$("#search")||$("#shop .lux-search input");
     if(search&&search.value){search.value="";search.dispatchEvent(new Event("input",{bubbles:true}));}
+    const categoryTab=[...document.querySelectorAll("[data-tab]")].find(tab=>String(tab.dataset.tab||"").toLowerCase()===category.toLowerCase()||(["jewellery","jewelry"].includes(String(tab.dataset.tab||"").toLowerCase())&&["jewellery","jewelry"].includes(category.toLowerCase())));
+    if(!categoryTab){if($("#shop"))$("#shop").scrollIntoView({behavior:"auto",block:"start"});return;}
     categoryTab.click();
     const item=[...grid.querySelectorAll("[data-product-id]")].find(card=>String(card.dataset.productId)===String(product.id));
     if(!item){if($("#shop"))$("#shop").scrollIntoView({behavior:"auto",block:"start"});return;}
