@@ -14495,4 +14495,74 @@ if ("serviceWorker" in navigator) {
 }
 </style>
 
+
+<style id="ssv-admin-enrich-finder-actions-fix-20261014">
+/* Keep both catalogue actions visible; the generic filter-clear rules must not
+   turn Enrich Finder into a full-width filter control on narrow screens. */
+#admin .admin-products-heading-actions {
+  display:flex!important;
+  flex:0 1 auto!important;
+  align-items:center!important;
+  justify-content:flex-end!important;
+  flex-wrap:wrap!important;
+  gap:8px!important;
+  min-width:0!important;
+  margin-left:auto!important;
+}
+#admin .admin-products-heading-actions > button {
+  display:inline-flex!important;
+  flex:0 0 auto!important;
+  align-items:center!important;
+  justify-content:center!important;
+  width:auto!important;
+  min-width:0!important;
+  min-height:42px!important;
+  margin:0!important;
+  padding:0 12px!important;
+  white-space:nowrap!important;
+  grid-column:auto!important;
+  box-sizing:border-box!important;
+}
+#admin .admin-products-heading-actions > #adminEnrichFinder {
+  border:1px solid #C8B28A!important;
+  border-radius:4px!important;
+  background:transparent!important;
+  color:#493A2B!important;
+  font:600 9px/1 Montserrat,Inter,Arial,sans-serif!important;
+  letter-spacing:.03em!important;
+}
+#admin .admin-products-heading-actions > #adminEnrichFinder:hover:not(:disabled) {
+  background:#F4EFEA!important;
+  border-color:#9D7A49!important;
+}
+#admin .admin-products-heading-actions > #adminEnrichFinder:disabled {
+  cursor:wait!important;
+  opacity:.7!important;
+}
+@media(max-width:600px) {
+  #admin .admin-products-heading {
+    flex-wrap:wrap!important;
+    align-items:center!important;
+  }
+  #admin .admin-products-heading > div:first-child {
+    flex:1 1 100%!important;
+    min-width:0!important;
+  }
+  #admin .admin-products-heading-actions {
+    flex:1 1 100%!important;
+    width:100%!important;
+    justify-content:flex-start!important;
+    margin-left:0!important;
+    gap:8px!important;
+  }
+  #admin .admin-products-heading-actions > button {
+    flex:1 1 0!important;
+    min-width:0!important;
+    min-height:40px!important;
+    padding:0 8px!important;
+    font-size:9px!important;
+  }
+}
+</style>
+
 </html>
