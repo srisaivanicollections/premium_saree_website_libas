@@ -598,6 +598,8 @@ async function verifyProductPersistence(product){
   const saved=list.find(p=>Number(p.id)===Number(product.id));
   if(!saved) throw new Error("GitHub saved the change, but the product could not be verified.");
   if(String(saved.name||"").trim()!==String(product.name||"").trim()) throw new Error("Product verification failed.");
+  if(String(saved.category||"")!==String(product.category||"")) throw new Error("Product category verification failed.");
+  if(Number(saved.price)!==Number(product.price)) throw new Error("Product price verification failed.");
   if(String(saved.image||"").trim()!==String(product.image||"").trim()) throw new Error("Product image verification failed.");
   if(product.dateAdded){
     if(!saved.dateAdded||!Number.isFinite(Date.parse(saved.dateAdded))) throw new Error("Product date could not be verified.");
