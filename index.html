@@ -11223,6 +11223,7 @@ window.addEventListener("pageshow",()=>{
   }
 });
 
+window.SSVStorefront=Object.freeze({showAllProducts(){category="All";const search=$("#search");if(search)search.value="";catalogPage=0;syncCatalogClear?.();render();}});
 all("[data-view]").forEach(b=>b.onclick=()=>showView(b.dataset.view));
 document.addEventListener("click",async e=>{const t=e.target.closest("[data-tab]");if(t){if(!isCategoryEnabled(t.dataset.tab))return;category=t.dataset.tab;catalogPage=0;render()}const c=e.target.closest("[data-cat]");if(c){if(!isCategoryEnabled(c.dataset.cat))return;category=c.dataset.cat;catalogPage=0;$("#nav").classList.remove("open");render()}const eb=e.target.closest(".edit");if(eb)edit(Number(eb.dataset.id));if(e.target.id==="saveSettings"){
   e.preventDefault();
