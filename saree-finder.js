@@ -4,7 +4,7 @@
   window.__SSV_SMART_FINDER_INIT__=true;
   const $=(selector,root=document)=>root.querySelector(selector);
   const esc=value=>String(value??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
-  let catalogue=[],loaded=false,loadPromise=null,lastFocus=null,backgroundState=[],preferences={category:"Sarees",budget:"",color:""},allMatches=[],shownCount=0,shopSettings={},quickFilter="";
+  let catalogue=[],loaded=false,loadPromise=null,lastFocus=null,backgroundState=[],preferences={category:"Sarees",budget:"",color:"",occasion:""},allMatches=[],shownCount=0,shopSettings={},quickFilter="",recommendationRun=0;
   const money=value=>new Intl.NumberFormat("en-IN",{style:"currency",currency:"INR",maximumFractionDigits:0}).format(Number(value));
   function shell(){
     if($("#ssv-smart-finder-trigger"))return;
@@ -32,10 +32,10 @@
     const hintClose=$(".ssv-finder-hint-close",hint);
     if(hintClose)hintClose.addEventListener("click",()=>dismissHint(true));
     trigger.addEventListener("click",()=>{dismissHint(false);lastFocus=document.activeElement;setBackgroundInert(panel,true);panel.hidden=false;trigger.hidden=true;trigger.setAttribute("aria-expanded","true");$("#ssv-finder-category").focus();loadCatalogue();});
-    $("#ssv-finder-category",panel).addEventListener("change",()=>{preferences.category=$("#ssv-finder-category").value;preferences.color="";quickFilter="";$("#ssv-finder-color").value="";syncColorField();populateColors();$("#ssv-finder-results").replaceChildren();$("#ssv-finder-intro").textContent=["jewellery","jewelry"].includes(preferences.category.toLowerCase())?"Choose your budget to find gold jewellery. No colour selection is needed.":"Choose a budget, optional recorded colour and occasion.";$("#ssv-finder-message").textContent="Category updated. Choose your preferences and find matching products.";});
+    $("#ssv-finder-category",panel).addEventListener("change",()=>{recommendationRun++;preferences.category=$("#ssv-finder-category").value;preferences.color="";quickFilter="";$("#ssv-finder-color").value="";syncColorField();populateColors();$("#ssv-finder-results").replaceChildren();$("#ssv-finder-intro").textContent=["jewellery","jewelry"].includes(preferences.category.toLowerCase())?"Choose your budget to find gold jewellery. No colour selection is needed.":"Choose a budget, optional recorded colour and occasion.";$("#ssv-finder-message").textContent="Category updated. Choose your preferences and find matching products.";});
     $(".ssv-finder-close",panel).addEventListener("click",closePanel);
     $("#ssv-finder-form",panel).addEventListener("submit",async event=>{event.preventDefault();const submit=$("#ssv-finder-form .ssv-finder-submit",panel);submit.disabled=true;try{await loadCatalogue();if(!loaded)return;readPreferences();quickFilter="";recommend();}finally{submit.disabled=false;}});
-    $("#ssv-finder-reset",panel).addEventListener("click",()=>{preferences={category:"Sarees",budget:"",color:"",occasion:""};quickFilter="";$("#ssv-finder-form").reset();$("#ssv-finder-intro").textContent="Choose a category and budget. Sarees and dresses can also be filtered by recorded colour.";syncColorField();populateColors();$("#ssv-finder-results").replaceChildren();$("#ssv-finder-message").textContent="Preferences cleared. Choose what matters to you.";});
+    $("#ssv-finder-reset",panel).addEventListener("click",()=>{recommendationRun++;preferences={category:"Sarees",budget:"",color:"",occasion:""};quickFilter="";$("#ssv-finder-form").reset();$("#ssv-finder-intro").textContent="Choose a category and budget. Sarees and dresses can also be filtered by recorded colour.";syncColorField();populateColors();$("#ssv-finder-results").replaceChildren();$("#ssv-finder-message").textContent="Preferences cleared. Choose what matters to you.";});
     document.addEventListener("keydown",event=>{
       if(panel.hidden)return;
       if(event.key==="Escape"){event.preventDefault();closePanel();return;}
@@ -303,6 +303,7 @@
     return resolved;
   }
   async function recommend(){
+    const runId=++recommendationRun;
     const message=$("#ssv-finder-message");
     const category=preferences.category||"Sarees";
     allMatches=catalogue.filter(p=>String(p.category||"").trim().toLowerCase()===category.toLowerCase()).filter(p=>isCategoryEnabled(p.category)).filter(p=>isAvailable(p));
@@ -321,6 +322,7 @@
       const requested=preferences.occasion.trim().toLowerCase();
       if(OCCASION_VALUES.has(requested)){
         const aiMatches=await addAiOccasionMatches(allMatches,requested);
+        if(runId!==recommendationRun||$("#ssv-smart-finder-panel")?.hidden)return;
         allMatches=allMatches.filter(product=>{
           if(hasExplicitOccasionDecision(product))return matchesOccasion(product,requested);
           const keywordMatches=matchesOccasion(product,requested);
