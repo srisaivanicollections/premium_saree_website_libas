@@ -39,7 +39,7 @@ jobs:
           assert.match(finder, /function syncColorField\(\)/, "Category changes must synchronize the colour field");
           assert.match(finder, /field\.hidden=jewellery/, "Jewellery must hide the colour field");
           assert.match(finder, /if\(jewellery&&select\)select\.value=""/, "Jewellery must clear stale colour selections");
-          assert.match(finder, /Number\(p\.price\)<=Number\(preferences\.budget\)/, "Budget must be a strict maximum");
+          assert.match(finder, /allMatches\.filter\(p=>Number\(p\.price\)<=budget\)/, "Budget must be a strict maximum");
           assert.match(finder, /shownCount=Math\.min\(3,allMatches\.length\)/, "Finder must show no more than three matches per page");
           assert.match(finder, /Show More Matches/, "Finder must allow customers to reveal more matches in batches");
           assert.match(finder, /Recommended for You/, "Finder must label its recommendations");
