@@ -245,13 +245,60 @@
     if(has(/\b(traditional wear|traditional collection|ethnic occasion wear|heritage collection|temple wear)\b/))inferred.push("traditional");
     return [...new Set(inferred)];
   }
+  function hasExplicitOccasionDecision(product){
+    const raw=product&&product.occasions;
+    if(!Array.isArray(raw))return false;
+    const values=raw.filter(value=>typeof value==="string").map(value=>value.trim().toLowerCase()).filter(Boolean);
+    // Any non-empty Admin metadata is authoritative, including malformed values:
+    // malformed values fail closed instead of being replaced by image guesses.
+    return values.length>0;
+  }
   function matchesOccasion(product,occasion){
     const wanted=String(occasion||"").trim().toLowerCase();
     if(!wanted)return true;
     if(!OCCASION_VALUES.has(wanted))return false;
     return inferOccasions(product).includes(wanted);
   }
-  function recommend(){
+  let aiOccasionModulePromise=null;
+  const AI_OCCASION_SCAN_LIMIT=24;
+  async function loadOccasionScanner(){
+    if(!aiOccasionModulePromise){
+      aiOccasionModulePromise=import("./saree-occasion-ai.js").then(module=>module.createOccasionScanner()).catch(error=>{
+        aiOccasionModulePromise=null;
+        throw error;
+      });
+    }
+    return aiOccasionModulePromise;
+  }
+  async function addAiOccasionMatches(products,occasion){
+    const resolved=new Map();
+    const eligible=products.filter(product=>!hasExplicitOccasionDecision(product));
+    if(!eligible.length)return resolved;
+    // Bound first-run CPU/network work. The browser model is loaded only when an
+    // occasion filter is used; explicit Admin decisions never trigger image analysis.
+    const toScan=eligible.slice(0,AI_OCCASION_SCAN_LIMIT);
+    try{
+      const scanner=await loadOccasionScanner();
+      for(let index=0;index<toScan.length;index++){
+        const product=toScan[index];
+        const message=$("#ssv-finder-message");
+        if(message)message.textContent="Checking product images for "+occasion+" ("+(index+1)+" of "+toScan.length+"). First use downloads a free AI model; it is cached by your browser where supported.";
+        try{
+          const result=await scanner.classify(product.image);
+          if(result&&OCCASION_VALUES.has(result.label)&&result.score>=0.30&&result.margin>=0.07){
+            resolved.set(String(product.id),result.label);
+          }
+        }catch(_){
+          // A broken image, offline browser, blocked CDN or model error must not
+          // break the Finder. Keyword inference remains the fallback.
+        }
+      }
+    }catch(_){
+      // Public, free model delivery is optional. Existing tag/keyword logic remains usable.
+    }
+    return resolved;
+  }
+  async function recommend(){
     const message=$("#ssv-finder-message");
     const category=preferences.category||"Sarees";
     allMatches=catalogue.filter(p=>String(p.category||"").trim().toLowerCase()===category.toLowerCase()).filter(p=>isCategoryEnabled(p.category)).filter(p=>isAvailable(p));
@@ -263,8 +310,19 @@
       allMatches=allMatches.filter(p=>Number(p.price)<=budget);
     }
     if(preferences.color&& !["jewellery","jewelry"].includes(category.trim().toLowerCase()))allMatches=allMatches.filter(p=>String(p.color||"").trim().toLowerCase()===preferences.color.toLowerCase());
-    // Prefer explicit Admin tags; infer only when the product has no occasion tags.
-    if(preferences.occasion)allMatches=allMatches.filter(p=>matchesOccasion(p,preferences.occasion));
+    // Explicit Admin tags are authoritative. For untagged products, run the free
+    // browser-side image model lazily, then retain conservative keyword inference
+    // for products outside the scan window or if the model is unavailable.
+    if(preferences.occasion){
+      const requested=preferences.occasion.trim().toLowerCase();
+      if(OCCASION_VALUES.has(requested)){
+        const aiMatches=await addAiOccasionMatches(allMatches,requested);
+        allMatches=allMatches.filter(product=>{
+          if(hasExplicitOccasionDecision(product))return matchesOccasion(product,requested);
+          return aiMatches.get(String(product.id))===requested||matchesOccasion(product,requested);
+        });
+      }else allMatches=[];
+    }
     // Deterministic recommendation score: products matching both merchandising
     // signals lead, followed by one signal, then price. Ties preserve catalogue order.
     allMatches=allMatches.map((product,index)=>({product,index,score:(product.bestSeller===true?2:0)+(product.newArrival===true?1:0)}))
