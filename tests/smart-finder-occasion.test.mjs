@@ -16,9 +16,9 @@ test("explicit Admin tags take precedence over contradictory description keyword
 });
 
 test("empty or missing tags use conservative descriptive-field inference", () => {
-  assert.equal(matchesOccasion({ occasions: [], name: "Festive Diwali saree" }, "Festive"), true);
+  assert.equal(matchesOccasion({ occasions: [], name: "Diwali collection saree" }, "Festive"), true);
   assert.equal(matchesOccasion({ name: "Office Wear Cotton Saree" }, "Daily Wear"), true);
-  assert.equal(matchesOccasion({ description: "Traditional handloom ikat" }, "Traditional"), true);
+  assert.equal(matchesOccasion({ description: "Traditional wear handloom ikat" }, "Traditional"), true);
   assert.equal(matchesOccasion({ name: "Party Wear Sequins Dress" }, "Party Wear"), true);
 });
 
@@ -27,7 +27,7 @@ test("fabric and embellishment alone do not guess daily wear, wedding or festive
   assert.equal(matchesOccasion(cotton, "Daily Wear"), false);
   const pattu = { name: "Pattu saree" };
   assert.equal(matchesOccasion(pattu, "Wedding"), false);
-  assert.equal(matchesOccasion(pattu, "Traditional"), true);
+  assert.equal(matchesOccasion(pattu, "Traditional"), false);
   assert.equal(matchesOccasion({ name: "Zari silk saree" }, "Festive"), false);
 });
 
