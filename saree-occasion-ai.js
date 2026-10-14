@@ -48,13 +48,13 @@ function imageUrl(path) {
 
 const VISUAL_COLORS=["Black","Blue","Brown","Gold","Green","Grey","Multicolor","Orange","Pink","Purple","Red","Silver","White","Yellow","Beige","Cream","Maroon","Peach","Teal"];
 const VISUAL_PATTERNS=["Plain","Floral","Geometric","Striped","Checked","Paisley","Traditional Motif","Embroidered","Woven","Printed","Sequin/Stone Work","Unknown"];
-async function bestLabel(classifier,url,itemType,descriptions){
+async function bestLabel(classifier,url,itemType,descriptions,minimumScore,minimumMargin){
   const prompts=descriptions.map(description=>"a "+itemType+" "+description.toLowerCase());
   const predictions=await classifier(url,prompts);
   const sorted=(Array.isArray(predictions)?predictions:[]).filter(item=>item&&typeof item.label==="string"&&Number.isFinite(Number(item.score))).sort((a,b)=>Number(b.score)-Number(a.score));
   if(!sorted.length)return null;
   const best=sorted[0],margin=Number(best.score)-Number(sorted[1]?.score||0);
-  if(Number(best.score)<0.19||margin<0.025)return null;
+  if(Number(best.score)<minimumScore||margin<minimumMargin)return null;
   const index=prompts.indexOf(best.label);return index>=0?{index,score:Number(best.score),margin}:null;
 }
 
@@ -93,11 +93,10 @@ export async function createOccasionScanner() {
       const itemType=["jewellery","jewelry"].includes(normalizedCategory)?"piece of jewellery":normalizedCategory==="dresses"?"dress":"saree";
       const classifier=await getPipeline();
       const occasionPrompts=["intended for everyday daily wear, simple and comfortable","intended for wedding wear, bridal wear or a wedding guest","intended for festive celebrations or festival wear","intended for party wear, evening events or cocktail occasions","intended for traditional cultural or religious occasions"];
-      const [occasion,color,pattern]=await Promise.all([
-        bestLabel(classifier,url,itemType,occasionPrompts),
-        bestLabel(classifier,url,itemType,VISUAL_COLORS.map(value=>"predominantly "+value+" in colour")),
-        bestLabel(classifier,url,itemType,VISUAL_PATTERNS.map(value=>value==="Unknown"?"with no clearly identifiable pattern":"with a "+value+" pattern or surface treatment"))
-      ]);
+      // Keep inference sequential to avoid concurrent WASM session pressure on phones.
+      const occasion=await bestLabel(classifier,url,itemType,occasionPrompts,0.24,0.035);
+      const color=await bestLabel(classifier,url,itemType,VISUAL_COLORS.map(value=>"predominantly "+value+" in colour"),0.075,0.012);
+      const pattern=await bestLabel(classifier,url,itemType,VISUAL_PATTERNS.map(value=>value==="Unknown"?"with no clearly identifiable pattern":"with a "+value+" pattern or surface treatment"),0.10,0.015);
       const occasionValues=["Daily Wear","Wedding","Festive","Party Wear","Traditional"];
       const mappedOccasion=occasion&&occasion.index>=0?[occasionValues[occasion.index]]:[];
       const colorValue=color&&color.index>=0?VISUAL_COLORS[color.index]:"";
