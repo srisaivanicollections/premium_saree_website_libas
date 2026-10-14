@@ -10260,7 +10260,7 @@ function showView(v){
     const knownColors=["Black","Blue","Brown","Gold","Green","Grey","Ivory","Maroon","Multi-colour","Orange","Pink","Purple","Red","Silver","White","Yellow"];
     const colorOptions=[...new Set([...knownColors,...products.map(p=>String(p.color||"").trim()).filter(Boolean)])].sort((a,b)=>a.localeCompare(b));
     const categoryOptions=[...new Set(products.map(p=>String(p.category||"").trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
-    b.innerHTML='<div class="admin-products-heading"><div><h3>Product Catalogue</h3><p>Manage your collection and product availability.</p></div><button type="button" id="adminAddProduct" class="admin-add-product"><span aria-hidden="true">+</span> Add Product</button></div><div class="admin-product-counts" aria-label="Product summary"><div><strong>'+productCounts.total+'</strong><span>PRODUCTS</span></div><div><strong>'+productCounts.newArrival+'</strong><span>NEW</span></div><div><strong>'+productCounts.bestSeller+'</strong><span>BEST SELLER</span></div><div><strong>'+productCounts.available+'</strong><span>AVAILABLE</span></div></div><div class="admin-product-filters"><label class="admin-product-search"><span class="admin-filter-label">Search products</span><input id="adminProductSearch" type="search" placeholder="Name, description or product ID" autocomplete="off"><span class="admin-search-icon" aria-hidden="true">⌕</span></label><label><span class="admin-filter-label">Category</span><select id="adminProductCategory"><option value="">All</option>'+categoryOptions.map(category=>'<option value="'+esc(category)+'">'+esc(category)+'</option>').join("")+'</select></label><label><span class="admin-filter-label">Colour</span><select id="adminProductColor"><option value="">All</option><option value="__none">Colour not set</option>'+colorOptions.map(color=>'<option value="'+esc(color)+'">'+esc(color)+'</option>').join("")+'</select></label><label><span class="admin-filter-label">Status</span><select id="adminProductStatus"><option value="">All</option><option value="available">Available</option><option value="unavailable">Unavailable</option><option value="new">New arrival</option><option value="best">Best seller</option></select></label><label><span class="admin-filter-label">Sort by</span><select id="adminProductSort"><option value="recommended">Recommended</option><option value="price-asc">Price: low to high</option><option value="price-desc">Price: high to low</option><option value="name-asc">Name: A to Z</option><option value="name-desc">Name: Z to A</option></select></label><button type="button" id="clearAdminProductFilters" class="admin-filter-clear">Reset</button></div><div id="adminProductResults" class="admin-product-results" aria-live="polite"></div><nav id="adminProductPagination" class="admin-product-pagination" aria-label="Product pages"></nav><div id="adminProductsScroll" class="admin-products-scroll" aria-label="Product list"></div>';
+    b.innerHTML='<div class="admin-products-heading"><div><h3>Product Catalogue</h3><p>Manage your collection and product availability.</p></div><div class="admin-products-heading-actions"><button type="button" id="adminEnrichFinder" class="admin-filter-clear" title="Manually detect and save missing occasion and colour metadata. Product saves never start the model.">Enrich Finder</button><button type="button" id="adminAddProduct" class="admin-add-product"><span aria-hidden="true">+</span> Add Product</button></div></div><div class="admin-product-counts" aria-label="Product summary"><div><strong>'+productCounts.total+'</strong><span>PRODUCTS</span></div><div><strong>'+productCounts.newArrival+'</strong><span>NEW</span></div><div><strong>'+productCounts.bestSeller+'</strong><span>BEST SELLER</span></div><div><strong>'+productCounts.available+'</strong><span>AVAILABLE</span></div></div><div class="admin-product-filters"><label class="admin-product-search"><span class="admin-filter-label">Search products</span><input id="adminProductSearch" type="search" placeholder="Name, description or product ID" autocomplete="off"><span class="admin-search-icon" aria-hidden="true">⌕</span></label><label><span class="admin-filter-label">Category</span><select id="adminProductCategory"><option value="">All</option>'+categoryOptions.map(category=>'<option value="'+esc(category)+'">'+esc(category)+'</option>').join("")+'</select></label><label><span class="admin-filter-label">Colour</span><select id="adminProductColor"><option value="">All</option><option value="__none">Colour not set</option>'+colorOptions.map(color=>'<option value="'+esc(color)+'">'+esc(color)+'</option>').join("")+'</select></label><label><span class="admin-filter-label">Status</span><select id="adminProductStatus"><option value="">All</option><option value="available">Available</option><option value="unavailable">Unavailable</option><option value="new">New arrival</option><option value="best">Best seller</option></select></label><label><span class="admin-filter-label">Sort by</span><select id="adminProductSort"><option value="recommended">Recommended</option><option value="price-asc">Price: low to high</option><option value="price-desc">Price: high to low</option><option value="name-asc">Name: A to Z</option><option value="name-desc">Name: Z to A</option></select></label><button type="button" id="clearAdminProductFilters" class="admin-filter-clear">Reset</button></div><div id="adminProductResults" class="admin-product-results" aria-live="polite"></div><nav id="adminProductPagination" class="admin-product-pagination" aria-label="Product pages"></nav><div id="adminProductsScroll" class="admin-products-scroll" aria-label="Product list"></div>';
     const searchInput=$("#adminProductSearch"), categoryFilter=$("#adminProductCategory"), colorFilter=$("#adminProductColor"), statusFilter=$("#adminProductStatus"), sortFilter=$("#adminProductSort"), results=$("#adminProductResults"), list=$("#adminProductsScroll");
     let adminProductPage=1;
     const adminProductsPerPage=10;
@@ -10309,6 +10309,7 @@ function showView(v){
     [categoryFilter,colorFilter,statusFilter,sortFilter].forEach(control=>control.addEventListener("change",resetAdminProductPage));
     $("#clearAdminProductFilters").onclick=()=>{searchInput.value="";categoryFilter.value="";colorFilter.value="";statusFilter.value="";sortFilter.value="recommended";adminProductPage=1;renderAdminProductList();};
     $("#adminAddProduct").onclick=()=>showView("add");
+    $("#adminEnrichFinder").onclick=async()=>{const button=$("#adminEnrichFinder");button.disabled=true;button.textContent="ENRICHING...";try{const result=await ssvEnrichFinderCatalogue({allMissing:true});showAdminToast("Finder enrichment finished: "+result.processed+" products updated, "+result.skipped+" skipped/uncertain, "+result.failed+" failed.","success");await load();showView("products");}catch(error){showAdminToast("Finder enrichment could not start. "+(error?.message||"Please try again."),"error");}finally{button.disabled=false;button.textContent="Enrich Finder";}};
     renderAdminProductList();
   }else if(v==="add"){
     b.innerHTML=form();
@@ -10643,6 +10644,53 @@ async function quarantineUploadedImage(path){
  return {moved:true,path:destination};
 }
 
+let ssvFinderEnrichmentPromise=null;
+const SSV_OCCASION_LABELS=new Set(["Daily Wear","Wedding","Festive","Party Wear","Traditional"]);
+const SSV_FINDER_COLOURS=new Set(["Black","Blue","Brown","Gold","Green","Grey","Ivory","Maroon","Multi-colour","Orange","Pink","Purple","Red","Silver","White","Yellow"]);
+function ssvHasOccasionDecision(p){return Array.isArray(p?.occasions)&&p.occasions.some(v=>SSV_OCCASION_LABELS.has(v));}
+function ssvOccasionLabel(v){const n=String(v||"").trim().toLowerCase();return [...SSV_OCCASION_LABELS].find(x=>x.toLowerCase()===n)||"";}
+function ssvHasNoOccasionMetadata(p){return p&&(p.occasions===undefined||p.occasions===null||(Array.isArray(p.occasions)&&p.occasions.length===0));}
+function ssvHasNoColour(p){return !String(p?.color||"").trim();}
+async function ssvEnrichFinderCatalogue({allMissing=false,productId=null}={}){
+ if(ssvFinderEnrichmentPromise)return ssvFinderEnrichmentPromise;
+ ssvFinderEnrichmentPromise=(async()=>{
+  const status=$("#adminProductResults");let processed=0,skipped=0,failed=0;
+  try{
+   const module=await import("./saree-occasion-ai.js"),scanner=await module.createOccasionScanner(),initial=await githubReadJson("data/products.json");
+   if(!Array.isArray(initial.value))throw new Error("Product catalogue is invalid.");
+   const candidates=initial.value.filter(p=>(!productId||Number(p.id)===Number(productId))&&(!ssvHasOccasionDecision(p)||ssvHasNoColour(p))&&p.image&&["Sarees","Dresses","Jewellery","Jewelry"].includes(String(p.category||"")));
+   const queue=allMissing?candidates:candidates.slice(0,1);
+   for(let i=0;i<queue.length;i++){
+    const candidate=queue[i];
+    try{
+     await new Promise(resolve=>setTimeout(resolve,0));
+     const result=await scanner.classify(candidate.image,candidate.category),occasion=result?.occasion||result,colour=result?.colour||null,label=ssvOccasionLabel(occasion?.label);
+     const addOccasion=ssvHasNoOccasionMetadata(candidate)&&!ssvHasOccasionDecision(candidate)&&!!occasion?.confident&&!!label;
+     const addColour=ssvHasNoColour(candidate)&&!!colour?.confident&&SSV_FINDER_COLOURS.has(colour.label);
+     if(!addOccasion&&!addColour){skipped++;continue;}
+     let saved=false,stop=false;
+     for(let attempt=0;attempt<3&&!saved&&!stop;attempt++){
+      const latest=await githubReadJson("data/products.json");
+      if(!Array.isArray(latest.value))throw new Error("Product catalogue is invalid.");
+      const index=latest.value.findIndex(p=>Number(p.id)===Number(candidate.id));
+      if(index<0){skipped++;stop=true;break;}
+      const current=latest.value[index];if(current.image!==candidate.image){skipped++;stop=true;break;}
+      const next={...current};let changed=false;
+      if(addOccasion&&ssvHasNoOccasionMetadata(current)&&!ssvHasOccasionDecision(current)){next.occasions=[label];next.occasionMetadata={source:"ai",model:"CLIP-ViT-B-32",score:Number(occasion.score.toFixed(4)),margin:Number(occasion.margin.toFixed(4)),image:String(current.image),version:1};changed=true;}
+      if(addColour&&ssvHasNoColour(current)){next.color=colour.label;next.colourMetadata={source:"ai",model:"CLIP-ViT-B-32",score:Number(colour.score.toFixed(4)),margin:Number(colour.margin.toFixed(4)),image:String(current.image),version:1};changed=true;}
+      if(!changed){skipped++;stop=true;break;}latest.value[index]=next;
+      try{await githubWriteJson("data/products.json",latest.value,latest.sha,"Enrich Smart Saree Finder metadata for product "+current.id);processed++;saved=true;}
+      catch(e){if(attempt===2||!/(409|422|conflict|sha)/i.test(String(e?.message||e)))throw e;await new Promise(resolve=>setTimeout(resolve,300*(attempt+1)));}
+     }
+    }catch(e){failed++;console.warn("Finder enrichment failed for product "+candidate.id,e);}
+    if(status)status.textContent="Enrich Finder: "+(i+1)+" of "+queue.length+" checked · "+processed+" saved · "+skipped+" skipped/uncertain · "+failed+" failed";
+   }
+   const refreshed=await githubReadJson("data/products.json");products=refreshed.value;githubOriginalIds=new Set(products.map(p=>Number(p.id)));
+   if(status)status.textContent="Enrich Finder complete: "+processed+" products updated · "+skipped+" skipped/uncertain · "+failed+" failed. Reopen Product Catalogue to refresh.";
+   return {processed,skipped,failed};
+  }finally{ssvFinderEnrichmentPromise=null;}
+ })();return ssvFinderEnrichmentPromise;
+}
 async function saveProduct(id){
   const btn=$("#saveItem");
   const originalText=btn?.textContent||"SAVE ITEM";
@@ -10709,6 +10757,20 @@ async function saveProduct(id){
       bestSeller:$("#fBest").checked,
       availability:$("#fAvail").checked
     };
+    // AI-derived occasion labels belong to the exact image that was scanned.
+    // If that image changes, clear only AI-generated metadata so it can be
+    // reclassified. Manual Admin-selected occasions are never removed.
+    const imageChanged=!!existing&&String(existing.image||"")!==String(image||"");
+    if(imageChanged&&existing?.occasionMetadata?.source==="ai"&&
+       String(existing.occasionMetadata.image||"")===String(existing.image||"")){
+      p.occasions=[];
+      delete p.occasionMetadata;
+    }
+    if(imageChanged&&existing?.colourMetadata?.source==="ai"&&
+       String(existing.colourMetadata.image||"")===String(existing.image||"")){
+      p.color="";
+      delete p.colourMetadata;
+    }
     productToSave=p;
 
     // Serialize catalog writes. Two rapid Admin operations must never race
@@ -10731,6 +10793,7 @@ async function saveProduct(id){
     if(uploadedImagePath && previousImagePath && previousImagePath!==uploadedImagePath){const cleanup=await cleanupReplacedImage(previousImagePath,uploadedImagePath);if(!cleanup.moved)cleanupMessage=" Previous image retained: "+cleanup.reason+".";}
     showView("products");
     showAdminToast((id?"Product updated successfully.":"Product added successfully.")+(cleanupMessage?" "+cleanupMessage.replace(/^ Previous image retained: /,"The previous image was retained safely: "):""),"success");
+    // Enrichment is opt-in from the catalogue button; CRUD never loads the model.
   }catch(e){
     let latestProducts=null;
     let exactMatch=false;
@@ -14411,7 +14474,7 @@ if ("serviceWorker" in navigator) {
 }
 </style>
 <script src="./checkout.js?v=guest-cart-1" defer></script>
-  <script src="./saree-finder.js?v=3" defer></script>
+  <script src="./saree-finder.js?v=4" defer></script>
 </body>
 
 <style id="sv-review-mobile-full-card-fix-20261013">
