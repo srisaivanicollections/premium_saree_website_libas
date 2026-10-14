@@ -9178,7 +9178,7 @@ body:not(#admin) [style*="font-size:7px"]{font-size:8px!important}
   <button type="button" id="resendOtpBtn" class="text-link" style="display:none;">RESEND OTP</button>
   <button type="button" id="forgotPassword" class="text-link" style="display:none;">Forgot password?</button>
   <small id="loginMsg" class="storage-status-msg" aria-live="polite"></small>
-</div><div id="studio" class="hidden"><div class="studio-nav"><button data-view="products">PRODUCTS</button><button data-view="enrich">ENRICH FINDER</button><button data-view="settings">SETTINGS</button></div><div id="adminFeedback" class="admin-feedback" role="status" aria-live="polite" aria-atomic="true" hidden></div><div id="studioBody"></div></div></div></div>
+</div><div id="studio" class="hidden"><div class="studio-nav"><button data-view="products">PRODUCTS</button><button data-view="settings">SETTINGS</button></div><div id="adminFeedback" class="admin-feedback" role="status" aria-live="polite" aria-atomic="true" hidden></div><div id="studioBody"></div></div></div></div>
 <style id="ssv-admin-responsive-touch-and-desktop-20261011">
 /* Admin Studio responsive correction. Touch devices stay readable even when the browser requests Desktop site.
    Scope is limited to #admin; no authentication, storage, CRUD or WhatsApp behavior changes. */
@@ -10223,6 +10223,49 @@ async function renderImageDangerZone(){
   };
   await refreshCount();
 }
+function ssvEnrichMissingCounts(items){
+  const eligible=(Array.isArray(items)?items:products).filter(p=>p&&p.image&&["Sarees","Dresses","Jewellery","Jewelry"].includes(String(p.category||"")));
+  return {occasions:eligible.filter(p=>ssvHasNoOccasionMetadata(p)).length,colours:eligible.filter(p=>ssvHasNoColour(p)).length,products:eligible.filter(p=>ssvHasNoOccasionMetadata(p)||ssvHasNoColour(p)).length};
+}
+function ssvEnsureEnrichFinderPopup(){
+  let popup=$("#adminEnrichFinderPopup");if(popup)return popup;
+  popup=document.createElement("div");popup.id="adminEnrichFinderPopup";popup.className="ssv-enrich-popup-backdrop";popup.hidden=true;
+  popup.innerHTML='<section class="ssv-enrich-popup" role="dialog" aria-modal="true" aria-labelledby="adminEnrichTitle" aria-describedby="adminEnrichIntro"><button type="button" class="ssv-enrich-popup-close" id="adminEnrichFinderClose" aria-label="Close Enrich Finder">×</button><p class="eyebrow">SMART SAREE FINDER</p><h3 id="adminEnrichTitle">Enrich Finder</h3><p id="adminEnrichIntro">Analyse product images to suggest missing occasion and colour metadata. Existing occasion tags, colour values, product images and unrelated product fields are preserved.</p><div class="ssv-enrich-count-grid"><div><strong id="adminEnrichCandidateCount">0</strong><span>PRODUCTS TO CHECK</span></div><div><strong id="adminEnrichOccasionCount">0 / 0</strong><span>OCCASIONS SAVED</span></div><div><strong id="adminEnrichColourCount">0 / 0</strong><span>COLOURS SAVED</span></div></div><p class="ssv-enrich-safety-note">Only confident predictions for fields that are still missing are saved.</p><button type="button" class="btn dark" id="adminEnrichFinder">ANALYSE MISSING METADATA</button><p id="adminEnrichFinderStatus" role="status" aria-live="polite" style="margin-top:16px;overflow-wrap:anywhere">Ready. Start enrichment to process products with missing occasion or colour metadata.</p><div id="adminEnrichFinderFailures" aria-live="polite"></div></section>';
+  document.body.appendChild(popup);
+  const close=()=>{popup.hidden=true;};popup.querySelector("#adminEnrichFinderClose").onclick=close;
+  popup.addEventListener("click",event=>{if(event.target===popup)close();});
+  popup.querySelector(".ssv-enrich-popup").addEventListener("click",event=>event.stopPropagation());
+  popup.querySelector("#adminEnrichFinder").onclick=async()=>{
+    const button=popup.querySelector("#adminEnrichFinder"),status=popup.querySelector("#adminEnrichFinderStatus");
+    if(button.disabled||ssvFinderEnrichmentPromise)return;
+    button.disabled=true;button.textContent="ANALYSING IMAGES…";status.removeAttribute("data-state");
+    try{const result=await ssvEnrichFinderCatalogue({allMissing:true});ssvRenderEnrichFinderSummary(result);}
+    catch(error){console.error("Finder enrichment could not start",error);status.textContent="Could not start enrichment. "+ssvFinderFailureReason(error);status.setAttribute("data-state","error");showAdminToast("Finder enrichment could not start. "+ssvFinderFailureReason(error),"error");}
+    finally{button.disabled=!!ssvFinderEnrichmentPromise;button.textContent=button.disabled?"ENRICHMENT RUNNING…":"ANALYSE MISSING METADATA";if(!button.disabled)ssvRefreshEnrichFinderCounts();}
+  };
+  document.addEventListener("keydown",event=>{if(event.key==="Escape"&&!popup.hidden)close();});
+  return popup;
+}
+function ssvRefreshEnrichFinderCounts(){
+  const counts=ssvEnrichMissingCounts(products);ssvEnsureEnrichFinderPopup();
+  const candidate=$("#adminEnrichCandidateCount"),occasion=$("#adminEnrichOccasionCount"),colour=$("#adminEnrichColourCount");
+  if(candidate)candidate.textContent=String(counts.products);
+  if(occasion&&!occasion.dataset.hasResult)occasion.textContent="0 / "+counts.occasions;
+  if(colour&&!colour.dataset.hasResult)colour.textContent="0 / "+counts.colours;
+}
+function ssvOpenEnrichFinderPopup(){
+  const popup=ssvEnsureEnrichFinderPopup();ssvRefreshEnrichFinderCounts();popup.hidden=false;
+  const close=popup.querySelector("#adminEnrichFinderClose");if(close)close.focus();
+  const button=popup.querySelector("#adminEnrichFinder");if(ssvFinderEnrichmentPromise&&button){button.disabled=true;button.textContent="ENRICHMENT RUNNING…";}
+}
+function ssvRenderEnrichFinderSummary(result){
+  const status=$("#adminEnrichFinderStatus"),occasion=$("#adminEnrichOccasionCount"),colour=$("#adminEnrichColourCount"),details=$("#adminEnrichFinderFailures"),button=$("#adminEnrichFinder");
+  if(occasion){occasion.textContent=result.occasionsSaved+" / "+result.occasionMissingCount;occasion.dataset.hasResult="true";}
+  if(colour){colour.textContent=result.coloursSaved+" / "+result.colourMissingCount;colour.dataset.hasResult="true";}
+  if(status){status.textContent="Complete: "+result.imageProcessed+" images analysed · "+result.occasionsSaved+"/"+result.occasionMissingCount+" missing occasions saved · "+result.coloursSaved+"/"+result.colourMissingCount+" missing colours saved · "+result.skipped+" skipped/uncertain · "+result.failed+" failed.";status.setAttribute("data-state",result.failed?"error":"success");}
+  if(details){const lines=[];if(result.uncertainProductIds?.length)lines.push("Uncertain predictions: product IDs "+result.uncertainProductIds.join(", ")+".");if(result.failures?.length)lines.push("Failed products: "+result.failures.map(item=>"ID "+item.id+": "+item.reason).join(" | "));details.textContent=lines.join(" ");}
+  if(button){button.disabled=false;button.textContent="ANALYSE MISSING METADATA";}
+}
 function showView(v){
   updateStudioNav(v);
   const studio=$("#studio");
@@ -10255,37 +10298,13 @@ function showView(v){
     };
     return;
   }
-  if(v==="enrich"){
-    b.innerHTML='<section class="admin-settings-group" aria-labelledby="adminEnrichTitle"><p class="eyebrow">SMART SAREE FINDER</p><h3 id="adminEnrichTitle">Enrich Finder</h3><p>Analyse product images to suggest missing occasion and colour metadata. Existing occasion tags, colour values and product images are never overwritten.</p><div class="admin-row" style="margin:18px 0"><div><strong id="adminEnrichCandidateCount">Checking catalogue…</strong><small style="display:block">Products with missing Finder metadata</small></div><div><strong>Conservative updates</strong><small style="display:block">Only confident predictions are saved</small></div></div><button type="button" class="btn dark" id="adminEnrichFinder">ANALYSE MISSING METADATA</button><p id="adminEnrichFinderStatus" role="status" aria-live="polite" style="margin-top:16px;overflow-wrap:anywhere">Ready. Start enrichment to process products that have missing occasion or colour metadata.</p><div id="adminEnrichFinderFailures" aria-live="polite"></div></section>';
-    const status=$("#adminEnrichFinderStatus"),button=$("#adminEnrichFinder"),count=$("#adminEnrichCandidateCount");
-    const candidates=products.filter(p=>(!ssvHasOccasionDecision(p)||ssvHasNoColour(p))&&p.image&&["Sarees","Dresses","Jewellery","Jewelry"].includes(String(p.category||"")));
-    if(count)count.textContent=String(candidates.length);
-    button.onclick=async()=>{
-      if(button.disabled)return;
-      button.disabled=true;button.textContent="ANALYSING IMAGES…";
-      try{
-        const result=await ssvEnrichFinderCatalogue({allMissing:true});
-        const summary="Complete: "+result.imageProcessed+" images analysed · "+result.occasionsIdentified+" occasions saved · "+result.processed+" products updated · "+result.skipped+" skipped/uncertain · "+result.failed+" failed.";
-        if(status)status.textContent=summary+(result.failures?.length?" Details: "+result.failures.slice(0,5).map(item=>"Product "+item.id+": "+item.reason).join(" | "):"");
-        if(result.failed&&status)status.setAttribute("data-state","error");else if(status)status.setAttribute("data-state","success");
-        await load();showView("enrich");
-      }catch(error){
-        console.error("Finder enrichment could not start",error);
-        if(status)status.textContent="Could not start enrichment. "+ssvFinderFailureReason(error);
-        showAdminToast("Finder enrichment could not start. "+ssvFinderFailureReason(error),"error");
-      }finally{
-        const currentButton=$("#adminEnrichFinder");
-        if(currentButton){currentButton.disabled=false;currentButton.textContent="ANALYSE MISSING METADATA";}
-      }
-    };
-    return;
-  }
   if(v==="products"){
     const productCounts={total:products.length,newArrival:products.filter(p=>p.newArrival).length,bestSeller:products.filter(p=>p.bestSeller).length,available:products.filter(p=>p.availability!==false).length};
     const knownColors=["Black","Blue","Brown","Gold","Green","Grey","Ivory","Maroon","Multi-colour","Orange","Pink","Purple","Red","Silver","White","Yellow"];
     const colorOptions=[...new Set([...knownColors,...products.map(p=>String(p.color||"").trim()).filter(Boolean)])].sort((a,b)=>a.localeCompare(b));
     const categoryOptions=[...new Set(products.map(p=>String(p.category||"").trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
-    b.innerHTML='<div class="admin-products-heading"><div><h3>Product Catalogue</h3><p>Manage your collection and product availability.</p></div><div class="admin-products-heading-actions"><button type="button" id="adminAddProduct" class="admin-add-product"><span aria-hidden="true">+</span> Add Product</button></div></div><div class="admin-product-counts" aria-label="Product summary"><div><strong>'+productCounts.total+'</strong><span>PRODUCTS</span></div><div><strong>'+productCounts.newArrival+'</strong><span>NEW</span></div><div><strong>'+productCounts.bestSeller+'</strong><span>BEST SELLER</span></div><div><strong>'+productCounts.available+'</strong><span>AVAILABLE</span></div></div><div class="admin-product-filters"><label class="admin-product-search"><span class="admin-filter-label">Search products</span><input id="adminProductSearch" type="search" placeholder="Name, description or product ID" autocomplete="off"><span class="admin-search-icon" aria-hidden="true">⌕</span></label><label><span class="admin-filter-label">Category</span><select id="adminProductCategory"><option value="">All</option>'+categoryOptions.map(category=>'<option value="'+esc(category)+'">'+esc(category)+'</option>').join("")+'</select></label><label><span class="admin-filter-label">Colour</span><select id="adminProductColor"><option value="">All</option><option value="__none">Colour not set</option>'+colorOptions.map(color=>'<option value="'+esc(color)+'">'+esc(color)+'</option>').join("")+'</select></label><label><span class="admin-filter-label">Status</span><select id="adminProductStatus"><option value="">All</option><option value="available">Available</option><option value="unavailable">Unavailable</option><option value="new">New arrival</option><option value="best">Best seller</option></select></label><label><span class="admin-filter-label">Sort by</span><select id="adminProductSort"><option value="recommended">Recommended</option><option value="price-asc">Price: low to high</option><option value="price-desc">Price: high to low</option><option value="name-asc">Name: A to Z</option><option value="name-desc">Name: Z to A</option></select></label><button type="button" id="clearAdminProductFilters" class="admin-filter-clear">Reset</button></div><div id="adminProductResults" class="admin-product-results" aria-live="polite"></div><nav id="adminProductPagination" class="admin-product-pagination" aria-label="Product pages"></nav><div id="adminProductsScroll" class="admin-products-scroll" aria-label="Product list"></div>';
+    b.innerHTML='<div class="admin-products-heading"><div><h3>Product Catalogue</h3><p>Manage your collection and product availability.</p></div><div class="admin-products-heading-actions"><a href="#" id="adminEnrichFinderLink" class="admin-enrich-finder-link">✦ Enrich Finder <span aria-hidden="true">→</span></a><button type="button" id="adminAddProduct" class="admin-add-product"><span aria-hidden="true">+</span> Add Product</button></div></div><div class="admin-product-counts" aria-label="Product summary"><div><strong>'+productCounts.total+'</strong><span>PRODUCTS</span></div><div><strong>'+productCounts.newArrival+'</strong><span>NEW</span></div><div><strong>'+productCounts.bestSeller+'</strong><span>BEST SELLER</span></div><div><strong>'+productCounts.available+'</strong><span>AVAILABLE</span></div></div><div class="admin-product-filters"><label class="admin-product-search"><span class="admin-filter-label">Search products</span><input id="adminProductSearch" type="search" placeholder="Name, description or product ID" autocomplete="off"><span class="admin-search-icon" aria-hidden="true">⌕</span></label><label><span class="admin-filter-label">Category</span><select id="adminProductCategory"><option value="">All</option>'+categoryOptions.map(category=>'<option value="'+esc(category)+'">'+esc(category)+'</option>').join("")+'</select></label><label><span class="admin-filter-label">Colour</span><select id="adminProductColor"><option value="">All</option><option value="__none">Colour not set</option>'+colorOptions.map(color=>'<option value="'+esc(color)+'">'+esc(color)+'</option>').join("")+'</select></label><label><span class="admin-filter-label">Status</span><select id="adminProductStatus"><option value="">All</option><option value="available">Available</option><option value="unavailable">Unavailable</option><option value="new">New arrival</option><option value="best">Best seller</option></select></label><label><span class="admin-filter-label">Sort by</span><select id="adminProductSort"><option value="recommended">Recommended</option><option value="price-asc">Price: low to high</option><option value="price-desc">Price: high to low</option><option value="name-asc">Name: A to Z</option><option value="name-desc">Name: Z to A</option></select></label><button type="button" id="clearAdminProductFilters" class="admin-filter-clear">Reset</button></div><div id="adminProductResults" class="admin-product-results" aria-live="polite"></div><nav id="adminProductPagination" class="admin-product-pagination" aria-label="Product pages"></nav><div id="adminProductsScroll" class="admin-products-scroll" aria-label="Product list"></div>';
+    const enrichLink=$("#adminEnrichFinderLink");if(enrichLink)enrichLink.onclick=event=>{event.preventDefault();ssvOpenEnrichFinderPopup();};
     const searchInput=$("#adminProductSearch"), categoryFilter=$("#adminProductCategory"), colorFilter=$("#adminProductColor"), statusFilter=$("#adminProductStatus"), sortFilter=$("#adminProductSort"), results=$("#adminProductResults"), list=$("#adminProductsScroll");
     let adminProductPage=1;
     const adminProductsPerPage=10;
@@ -10689,22 +10708,27 @@ function ssvFinderFailureReason(error){
 async function ssvEnrichFinderCatalogue({allMissing=false,productId=null}={}){
  if(ssvFinderEnrichmentPromise)return ssvFinderEnrichmentPromise;
  ssvFinderEnrichmentPromise=(async()=>{
-  const status=$("#adminEnrichFinderStatus")||$("#adminProductResults");let processed=0,skipped=0,failed=0;const failures=[];
+  const status=$("#adminEnrichFinderStatus")||$("#adminProductResults");let processed=0,skipped=0,failed=0,occasionsSaved=0,coloursSaved=0,occasionUncertain=0,colourUncertain=0;const failures=[],uncertainProductIds=[];
   const paint=(message)=>{if(status)status.textContent=message;};
   try{
    const module=await import("./saree-occasion-ai.js"),scanner=await module.createOccasionScanner(),initial=await githubReadJson("data/products.json");
    if(!Array.isArray(initial.value))throw new Error("Product catalogue is invalid.");
    const candidates=initial.value.filter(p=>(!productId||Number(p.id)===Number(productId))&&(!ssvHasOccasionDecision(p)||ssvHasNoColour(p))&&p.image&&["Sarees","Dresses","Jewellery","Jewelry"].includes(String(p.category||"")));
    const queue=allMissing?candidates:candidates.slice(0,1);
-   let imageProcessed=0,occasionsIdentified=0;
+   const occasionMissingCount=queue.filter(p=>ssvHasNoOccasionMetadata(p)).length,colourMissingCount=queue.filter(p=>ssvHasNoColour(p)).length;
+   let imageProcessed=0;
    for(let i=0;i<queue.length;i++){
     const candidate=queue[i];
     try{
      await new Promise(resolve=>setTimeout(resolve,0));
      const result=await scanner.classify(candidate.image,candidate.category);imageProcessed++;
      const occasion=result?.occasion||result,colour=result?.colour||null,label=ssvOccasionLabel(occasion?.label);
-     const addOccasion=ssvHasNoOccasionMetadata(candidate)&&!ssvHasOccasionDecision(candidate)&&!!occasion?.confident&&!!label;
-     const addColour=ssvHasNoColour(candidate)&&!!colour?.confident&&SSV_FINDER_COLOURS.has(colour.label);
+     const needsOccasion=ssvHasNoOccasionMetadata(candidate)&&!ssvHasOccasionDecision(candidate),needsColour=ssvHasNoColour(candidate);
+     const addOccasion=needsOccasion&&!!occasion?.confident&&!!label;
+     const addColour=needsColour&&!!colour?.confident&&SSV_FINDER_COLOURS.has(colour.label);
+     if(needsOccasion&&!addOccasion)occasionUncertain++;
+     if(needsColour&&!addColour)colourUncertain++;
+     if((needsOccasion&&!addOccasion)||(needsColour&&!addColour))if(!uncertainProductIds.includes(candidate.id))uncertainProductIds.push(candidate.id);
      if(!addOccasion&&!addColour){skipped++;continue;}
      let saved=false,stop=false;
      for(let attempt=0;attempt<3&&!saved&&!stop;attempt++){
@@ -10733,7 +10757,7 @@ async function ssvEnrichFinderCatalogue({allMissing=false,productId=null}={}){
        const occasionVerified=!addOccasion||(Array.isArray(savedProduct?.occasions)&&savedProduct.occasions.includes(label)&&savedProduct?.occasionMetadata?.image===String(current.image));
        const colourVerified=!addColour||(savedProduct?.color===colour.label&&savedProduct?.colourMetadata?.image===String(current.image));
        if(!savedProduct||!occasionVerified||!colourVerified)throw new Error("Save verification failed: GitHub did not return the expected metadata for this product.");
-       processed++;if(addOccasion)occasionsIdentified++;saved=true;
+       processed++;if(addOccasion)occasionsSaved++;if(addColour)coloursSaved++;saved=true;
       }catch(e){
        if(isGithubShaConflict(e)&&attempt<2){await new Promise(resolve=>setTimeout(resolve,300*(attempt+1)));continue;}
        if(writeAttempted){
@@ -10743,7 +10767,7 @@ async function ssvEnrichFinderCatalogue({allMissing=false,productId=null}={}){
          const occasionPersisted=!addOccasion||(Array.isArray(persisted?.occasions)&&persisted.occasions.includes(label)&&persisted?.occasionMetadata?.image===String(current.image));
          const colourPersisted=!addColour||(persisted?.color===colour.label&&persisted?.colourMetadata?.image===String(current.image));
          if(persisted&&persisted.image===current.image&&occasionPersisted&&colourPersisted){
-          processed++;if(addOccasion)occasionsIdentified++;saved=true;stop=true;break;
+          processed++;if(addOccasion)occasionsSaved++;if(addColour)coloursSaved++;saved=true;stop=true;break;
          }
          throw new Error("Save outcome unknown: the write was attempted but expected metadata could not be confirmed. Refresh the catalogue before retrying.");
         }catch(recoveryError){
@@ -10759,12 +10783,12 @@ async function ssvEnrichFinderCatalogue({allMissing=false,productId=null}={}){
      failed++;const reason=ssvFinderFailureReason(e);failures.push({id:candidate.id,reason});
      console.error("Finder enrichment failed for product "+candidate.id,{status:e?.status||null,reason,error:e});
     }
-    paint("Enrich Finder: "+(i+1)+" of "+queue.length+" products checked · "+imageProcessed+" images processed · "+occasionsIdentified+" occasions saved · "+processed+" products updated · "+skipped+" skipped/uncertain · "+failed+" failed");
+    paint("Enrich Finder: "+(i+1)+" of "+queue.length+" products checked · "+imageProcessed+" images processed · "+occasionsSaved+" occasions saved · "+processed+" products updated · "+skipped+" skipped/uncertain · "+failed+" failed");
    }
    const refreshed=await githubReadJsonFresh("data/products.json");products=refreshed.value;githubOriginalIds=new Set(products.map(p=>Number(p.id)));
-   const summary="Enrich Finder complete: "+imageProcessed+" of "+queue.length+" images processed · "+occasionsIdentified+" occasions saved · "+processed+" products updated · "+skipped+" skipped/uncertain · "+failed+" failed.";
+   const summary="Enrich Finder complete: "+imageProcessed+" of "+queue.length+" images processed · "+occasionsSaved+"/"+occasionMissingCount+" missing occasions saved · "+coloursSaved+"/"+colourMissingCount+" missing colours saved · "+processed+" products updated · "+skipped+" skipped/uncertain · "+failed+" failed.";
    paint(summary+(failures.length?" Details: "+failures.map(item=>"Product "+item.id+": "+item.reason).join(" | "):""));
-   return {processed,skipped,failed,imageProcessed,occasionsIdentified,failures};
+   return {processed,skipped,failed,imageProcessed,occasionsSaved,coloursSaved,occasionMissingCount,colourMissingCount,occasionUncertain,colourUncertain,uncertainProductIds,failures};
   }finally{ssvFinderEnrichmentPromise=null;}
  })();return ssvFinderEnrichmentPromise;
 }
@@ -14574,71 +14598,36 @@ if ("serviceWorker" in navigator) {
 
 
 <style id="ssv-admin-enrich-finder-actions-fix-20261014">
-/* Keep both catalogue actions visible; the generic filter-clear rules must not
-   turn Enrich Finder into a full-width filter control on narrow screens. */
-#admin .admin-products-heading-actions {
-  display:flex!important;
-  flex:0 1 auto!important;
-  align-items:center!important;
-  justify-content:flex-end!important;
-  flex-wrap:wrap!important;
-  gap:8px!important;
-  min-width:0!important;
-  margin-left:auto!important;
-}
-#admin .admin-products-heading-actions > button {
-  display:inline-flex!important;
-  flex:0 0 auto!important;
-  align-items:center!important;
-  justify-content:center!important;
-  width:auto!important;
-  min-width:0!important;
-  min-height:42px!important;
-  margin:0!important;
-  padding:0 12px!important;
-  white-space:nowrap!important;
-  grid-column:auto!important;
-  box-sizing:border-box!important;
-}
-#admin .admin-products-heading-actions > #adminEnrichFinder {
-  border:1px solid #C8B28A!important;
-  border-radius:4px!important;
-  background:transparent!important;
-  color:#493A2B!important;
-  font:600 9px/1 Montserrat,Inter,Arial,sans-serif!important;
-  letter-spacing:.03em!important;
-}
-#admin .admin-products-heading-actions > #adminEnrichFinder:hover:not(:disabled) {
-  background:#F4EFEA!important;
-  border-color:#9D7A49!important;
-}
-#admin .admin-products-heading-actions > #adminEnrichFinder:disabled {
-  cursor:wait!important;
-  opacity:.7!important;
-}
-@media(max-width:600px) {
-  #admin .admin-products-heading {
-    flex-wrap:wrap!important;
-    align-items:center!important;
-  }
-  #admin .admin-products-heading > div:first-child {
-    flex:1 1 100%!important;
-    min-width:0!important;
-  }
-  #admin .admin-products-heading-actions {
-    flex:1 1 100%!important;
-    width:100%!important;
-    justify-content:flex-start!important;
-    margin-left:0!important;
-    gap:8px!important;
-  }
-  #admin .admin-products-heading-actions > button {
-    flex:1 1 0!important;
-    min-width:0!important;
-    min-height:40px!important;
-    padding:0 8px!important;
-    font-size:9px!important;
-  }
+#admin .admin-products-heading-actions{display:flex!important;flex:0 1 auto!important;align-items:center!important;justify-content:flex-end!important;flex-wrap:wrap!important;gap:12px!important;min-width:0!important;margin-left:auto!important}
+#admin .admin-products-heading-actions>#adminEnrichFinderLink{display:inline-flex!important;align-items:center!important;gap:5px!important;min-height:40px!important;padding:8px 0!important;border:0!important;background:transparent!important;color:#80653f!important;font:600 11px/1.3 Montserrat,Inter,Arial,sans-serif!important;letter-spacing:.02em!important;text-decoration:underline!important;text-underline-offset:4px!important;white-space:nowrap!important;cursor:pointer}
+#admin .admin-products-heading-actions>#adminEnrichFinderLink:hover{color:#493A2B!important}
+#admin .admin-products-heading-actions>#adminAddProduct{display:inline-flex!important;flex:0 0 auto!important;align-items:center!important;justify-content:center!important;width:auto!important;min-width:0!important;min-height:42px!important;margin:0!important;padding:0 12px!important;white-space:nowrap!important;box-sizing:border-box!important}
+.ssv-enrich-popup-backdrop{position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(28,25,23,.58);backdrop-filter:blur(3px)}
+.ssv-enrich-popup-backdrop[hidden]{display:none!important}
+.ssv-enrich-popup{position:relative;width:min(620px,100%);max-height:min(88vh,800px);overflow:auto;overscroll-behavior:contain;padding:30px 28px 26px;background:#FAF7F2;color:#1C1917;border:1px solid #E4D8C5;box-shadow:0 22px 70px rgba(0,0,0,.28)}
+.ssv-enrich-popup h3{margin:0 38px 10px 0;font:500 28px/1.15 "Cormorant Garamond",Georgia,serif}
+.ssv-enrich-popup p{line-height:1.55}
+.ssv-enrich-popup-close{position:absolute;top:12px;right:12px;width:40px;height:40px;border:1px solid #E4D8C5;background:transparent;color:#1C1917;font-size:28px;line-height:1;cursor:pointer}
+.ssv-enrich-count-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:20px 0 12px}
+.ssv-enrich-count-grid>div{min-width:0;padding:14px 12px;border:1px solid #E4D8C5;background:rgba(255,255,255,.55)}
+.ssv-enrich-count-grid strong{display:block;font-size:22px;font-weight:600;font-variant-numeric:tabular-nums}
+.ssv-enrich-count-grid span{display:block;margin-top:6px;font-size:9px;letter-spacing:.08em;line-height:1.35;color:#6F6252}
+.ssv-enrich-safety-note{font-size:12px;color:#6F6252}
+#adminEnrichFinderStatus[data-state="error"]{color:#9b332b}
+#adminEnrichFinderStatus[data-state="success"]{color:#356347}
+#adminEnrichFinderFailures{font-size:12px;line-height:1.5;overflow-wrap:anywhere}
+@media(max-width:600px){
+ #admin .admin-products-heading{flex-wrap:wrap!important;align-items:center!important}
+ #admin .admin-products-heading>div:first-child{flex:1 1 100%!important;min-width:0!important}
+ #admin .admin-products-heading-actions{flex:1 1 100%!important;width:100%!important;justify-content:space-between!important;margin-left:0!important;gap:12px!important}
+ #admin .admin-products-heading-actions>#adminEnrichFinderLink{font-size:10px!important}
+ #admin .admin-products-heading-actions>#adminAddProduct{min-height:40px!important;padding:0 10px!important;font-size:10px!important}
+ .ssv-enrich-popup-backdrop{align-items:flex-end;padding:0}
+ .ssv-enrich-popup{width:100%;max-height:92dvh;padding:28px 18px 24px;border-left:0;border-right:0;border-bottom:0}
+ .ssv-enrich-count-grid{gap:7px}
+ .ssv-enrich-count-grid>div{padding:11px 8px}
+ .ssv-enrich-count-grid strong{font-size:19px}
+ .ssv-enrich-count-grid span{font-size:8px}
 }
 </style>
 
