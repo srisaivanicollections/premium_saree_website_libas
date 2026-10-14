@@ -10685,20 +10685,32 @@ async function ssvEnrichOccasionCatalogue({allMissing=false,productId=null}={}){
             continue;
           }
           // Re-read before every write, so concurrent product edits are preserved.
-          const latest=await githubReadJson("data/products.json");
-          if(!Array.isArray(latest.value))throw new Error("Product catalogue is invalid.");
-          const index=latest.value.findIndex(p=>Number(p.id)===Number(candidate.id));
-          if(index<0){skipped++;continue;}
-          const current=latest.value[index];
-          if(current.image!==candidate.image||ssvHasOccasionDecision(current)||
-             !ssvHasNoOccasionMetadata(current)){skipped++;continue;}
-          latest.value[index]={...current,occasions:[normalizedLabel],occasionMetadata:{
-            source:"ai",model:"CLIP-ViT-B-32",score:Number(prediction.score.toFixed(4)),
-            margin:Number(prediction.margin.toFixed(4)),image:String(current.image),version:1
-          }};
-          await githubWriteJson("data/products.json",latest.value,latest.sha,
-            "Enrich Finder occasion metadata for product "+current.id);
-          processed++;
+          let saved=false;
+          for(let attempt=0;attempt<3&&!saved;attempt++){
+            // Always re-read the latest SHA and product before writing. On a
+            // GitHub 409/422 SHA conflict, retry against fresh catalogue data.
+            const latest=await githubReadJson("data/products.json");
+            if(!Array.isArray(latest.value))throw new Error("Product catalogue is invalid.");
+            const index=latest.value.findIndex(p=>Number(p.id)===Number(candidate.id));
+            if(index<0){skipped++;break;}
+            const current=latest.value[index];
+            if(current.image!==candidate.image||ssvHasOccasionDecision(current)||
+               !ssvHasNoOccasionMetadata(current)){skipped++;break;}
+            latest.value[index]={...current,occasions:[normalizedLabel],occasionMetadata:{
+              source:"ai",model:"CLIP-ViT-B-32",score:Number(prediction.score.toFixed(4)),
+              margin:Number(prediction.margin.toFixed(4)),image:String(current.image),version:1
+            }};
+            try{
+              await githubWriteJson("data/products.json",latest.value,latest.sha,
+                "Enrich Finder occasion metadata for product "+current.id);
+              processed++;
+              saved=true;
+            }catch(writeError){
+              const message=String(writeError?.message||writeError);
+              if(attempt===2||!/(409|422|conflict|sha)/i.test(message))throw writeError;
+              await new Promise(resolve=>setTimeout(resolve,250*(attempt+1)));
+            }
+          }
         }catch(error){failed++;console.warn("Occasion enrichment failed for product "+candidate.id,error);}
         if(status)status.textContent="Occasion enrichment: "+(i+1)+" of "+queue.length+" checked · "+processed+" saved · "+skipped+" uncertain/skipped · "+failed+" failed";
         // Yield between images to keep the Admin Studio responsive.
