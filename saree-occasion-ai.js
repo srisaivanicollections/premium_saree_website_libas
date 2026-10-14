@@ -57,18 +57,26 @@ export async function createOccasionScanner() {
         : normalizedCategory === "dresses" ? "dress" : "saree";
       const cacheKey = url + "|" + itemType;
       if (resultCache.has(cacheKey)) return resultCache.get(cacheKey);
-      const candidates = LABELS.map(item => "a " + itemType + " " + item.description);
-      const predictions = await classifier(url, candidates);
-      if (!Array.isArray(predictions) || !predictions.length) {
-        throw new Error("The image model returned no predictions.");
+      let result = { label: "", score: 0, margin: 0, confident: false };
+      let colour = { label: "", score: 0, margin: 0, confident: false };
+      try {
+        const predictions = await classifier(url, LABELS.map(item => "a " + itemType + " " + item.description));
+        const inferred = selectOccasionPrediction(predictions, itemType);
+        inferred.confident = isConfidentOccasionPrediction(inferred);
+        result = inferred;
+      } catch (error) {
+        console.warn("Finder occasion inference was inconclusive:", error);
       }
-      const result = selectOccasionPrediction(predictions, itemType);
-      result.confident = isConfidentOccasionPrediction(result);
-      const colourPredictions = await classifier(url, COLOURS.map(colour =>
-        "a product photo of a " + itemType + " whose main visible fabric or material colour is " + colour.toLowerCase()
-      ));
-      const colour = selectColourPrediction(colourPredictions);
-      colour.confident = isConfidentColourPrediction(colour);
+      try {
+        const colourPredictions = await classifier(url, COLOURS.map(value =>
+          "a product photo of a " + itemType + " whose main visible fabric or material colour is " + value.toLowerCase()
+        ));
+        const inferredColour = selectColourPrediction(colourPredictions);
+        inferredColour.confident = isConfidentColourPrediction(inferredColour);
+        colour = inferredColour;
+      } catch (error) {
+        console.warn("Finder colour inference was inconclusive:", error);
+      }
       const combined = { occasion: result, colour };
       resultCache.set(cacheKey, combined);
       return combined;
