@@ -61,19 +61,37 @@ export async function createOccasionScanner() {
       if (!Array.isArray(predictions) || !predictions.length) {
         throw new Error("The image model returned no predictions.");
       }
-      const labelByPrompt = new Map(LABELS.map(item => ["a " + itemType + " " + item.description, item.label]));
-      const sorted = predictions
-        .filter(item => item && typeof item.label === "string" && Number.isFinite(Number(item.score)))
-        .sort((a, b) => Number(b.score) - Number(a.score));
-      if (!sorted.length) throw new Error("The image model returned invalid predictions.");
-      const best = sorted[0];
-      const result = {
-        label: labelByPrompt.get(best.label) || "",
-        score: Number(best.score),
-        margin: Number(best.score) - Number(sorted[1]?.score || 0)
-      };
+      const result = selectOccasionPrediction(predictions, itemType);
       resultCache.set(cacheKey, result);
       return result;
     }
   };
+}
+
+/**
+ * Pure prediction normalization, exported so confidence and malformed-output
+ * handling can be tested without downloading the browser model.
+ */
+export function selectOccasionPrediction(predictions, itemType = "saree") {
+  if (!Array.isArray(predictions) || !predictions.length) {
+    throw new Error("The image model returned no predictions.");
+  }
+  const labelByPrompt = new Map(LABELS.map(item => ["a " + itemType + " " + item.description, item.label]));
+  const sorted = predictions
+    .filter(item => item && typeof item.label === "string" && Number.isFinite(Number(item.score)))
+    .sort((a, b) => Number(b.score) - Number(a.score));
+  if (!sorted.length) throw new Error("The image model returned invalid predictions.");
+  const best = sorted[0];
+  return {
+    label: labelByPrompt.get(best.label) || "",
+    score: Number(best.score),
+    margin: Number(best.score) - Number(sorted[1]?.score || 0)
+  };
+}
+
+export function isConfidentOccasionPrediction(result) {
+  return Boolean(result &&
+    LABELS.some(item => item.label === result.label) &&
+    Number.isFinite(result.score) && result.score >= 0.30 &&
+    Number.isFinite(result.margin) && result.margin >= 0.07);
 }
