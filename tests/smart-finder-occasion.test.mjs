@@ -108,3 +108,27 @@ test("ambiguous catalogue writes are re-read before reporting an unknown outcome
   assert.match(adminSource, /const recovery=await githubReadJsonFresh\("data\/products\.json"\)/);
   assert.match(adminSource, /persisted\.image===current\.image/);
 });
+
+test("Enrichment candidate selection and field counts share one eligibility decision", () => {
+  assert.match(adminSource, /function ssvEnrichFieldNeeds\(product\)/);
+  assert.match(adminSource, /occasion:eligible&&ssvHasNoOccasionMetadata\(product\)&&!ssvHasOccasionDecision\(product\)/);
+  assert.match(adminSource, /products:needs\.filter\(item=>item\.occasion\|\|item\.colour\)\.length/);
+  assert.match(adminSource, /ssvEnrichFieldNeeds\(p\)\.occasion\|\|ssvEnrichFieldNeeds\(p\)\.colour/);
+  assert.match(adminSource, /const candidateNeeds=ssvEnrichFieldNeeds\(candidate\)/);
+});
+
+test("Enrich Finder popup traps keyboard focus and restores focus to its opener", () => {
+  assert.match(adminSource, /popup\.addEventListener\("keydown",event=>\{/);
+  assert.match(adminSource, /event\.shiftKey&&\(document\.activeElement===first\|\|!popup\.contains\(document\.activeElement\)\)/);
+  assert.match(adminSource, /document\.activeElement===last\|\|!popup\.contains\(document\.activeElement\)/);
+  assert.match(adminSource, /const opener=popup\._opener;if\(opener&&opener\.isConnected\)opener\.focus\(\)/);
+  assert.match(adminSource, /if\(popup\.hidden\)popup\._opener=document\.activeElement/);
+});
+
+test("A failed final catalogue refresh preserves partial-save results and warns before retry", () => {
+  assert.match(adminSource, /let refreshFailed=false/);
+  assert.match(adminSource, /Final catalogue refresh failed\. Some saves may already be complete\. Refresh the catalogue before retrying\./);
+  assert.match(adminSource, /refreshFailed\};/);
+  assert.match(adminSource, /result\.refreshFailed\?"Partial results: ":"Complete: "/);
+  assert.match(adminSource, /result\.failed\|\|result\.refreshFailed\?"error":"success"/);
+});
