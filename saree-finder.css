@@ -161,6 +161,15 @@
 #ssv-finder-occasion{width:100%;min-height:42px;padding:0 11px;border:1px solid #E7E0D8;border-radius:8px;background:#fff;color:#1C1917;font:400 12px Inter,Arial,sans-serif}
 
 
+/* Keep the top-ranked recommendation visibly distinct without changing product merchandising badges. */
+.ssv-finder-badges span:first-child{display:inline-block}
+.ssv-finder-badges span:first-child{border:1px solid #C8B28A}
+.ssv-finder-badges span.ssv-finder-top-pick{background:#E4D8C5;color:#5D3B22;border-color:#C8B28A;font-weight:700;letter-spacing:.05em}
+.admin-occasion-field{display:flex;flex-wrap:wrap;gap:8px 14px;min-width:0;width:100%;margin:0;padding:10px 12px;border:1px solid #E7E0D8;border-radius:8px}
+.admin-occasion-field legend{padding:0 5px;font-size:12px;font-weight:600}
+.admin-occasion-field label{display:inline-flex;align-items:center;gap:5px;font-size:12px}
+.admin-occasion-row{grid-template-columns:minmax(0,1fr)!important}
+
 /* Finder result image sizing and the existing bag handoff. */
 .ssv-finder-result-media{position:relative;width:76px;height:100px;min-width:0}
 .ssv-finder-result-media img{width:100%;height:100%;object-fit:contain}
