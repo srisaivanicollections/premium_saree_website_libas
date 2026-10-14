@@ -160,7 +160,6 @@
 /* Clearly identify the first-ranked result without changing other product cards. */
 .ssv-finder-result-media{position:relative;width:76px;height:100px;min-width:0}
 .ssv-finder-result-media img{width:100%;height:100%;object-fit:contain}
-.ssv-finder-top-pick{position:absolute;top:4px;left:4px;z-index:1;padding:4px 5px;border:1px solid #C8B28A;border-radius:4px;background:#FAF7F2;color:#6E2735;font-size:8px;line-height:1.1;font-weight:700;letter-spacing:.025em}
 .ssv-finder-view-bag{display:inline-flex;align-items:center;min-height:30px;margin:3px 0 0 4px;padding:5px 10px;border:1px solid #6E2735;border-radius:6px;background:#6E2735;color:#FAF7F2;font-size:11px;font-weight:600;cursor:pointer}
 .ssv-finder-view-bag:focus-visible{outline:2px solid #B38E5D;outline-offset:2px}
 .ssv-finder-message:has(.ssv-finder-view-bag){padding-bottom:10px}
