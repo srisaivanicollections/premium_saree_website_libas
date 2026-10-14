@@ -51,11 +51,11 @@ jobs:
           const page = readFileSync("index.html", "utf8");
           const checkout = readFileSync("checkout.js", "utf8");
 
-          assert.match(app, /\["Sarees","Dresses","Jewellery"\]/, "Admin validation must allow Jewellery");
-          assert.match(app, /value="Jewellery".*Jewellery<\/option>/, "Admin editor must render a Jewellery option");
-          assert.match(app, /Product category verification failed/, "Saved product category must be verified after persistence");
-          assert.match(app, /Product price verification failed/, "Saved product price must be verified after persistence");
-          assert.match(app, /\["All","Sarees","Dresses","Jewellery","Best Seller"\]/, "Storefront must expose Jewellery");
+          assert.match(page, /function validateProductInput\(product\)\{[\s\S]*?\["Sarees","Dresses","Jewellery"\]/, "Live Admin validation must allow Jewellery");
+          assert.match(page, /id="fCat"[\s\S]{0,700}value="Jewellery"/, "Live Admin editor must render a Jewellery option");
+          assert.match(page, /Product category verification failed/, "Live Admin save must verify the saved category");
+          assert.match(page, /Product price verification failed/, "Live Admin save must verify the saved price");
+          assert.match(page, /const enabled=\["Sarees","Dresses","Jewellery"\]/, "Live storefront must expose enabled Sarees, Dresses, and Jewellery categories");
           assert.match(finder, /id="ssv-finder-color-field"/, "Colour preference must have a hideable wrapper");
           assert.match(finder, /function syncColorField\(\)/, "Category changes must synchronize the colour field");
           assert.match(finder, /field\.hidden=jewellery/, "Jewellery must hide the colour field");
@@ -71,6 +71,9 @@ jobs:
           assert.match(finder, /View Product/, "Finder must provide a route to the matching catalogue product");
           assert.match(finder, /Add to Bag/, "Finder must offer an explicit add-to-bag action");
           assert.match(finder, /data-recovery="all"/, "No-match state must offer a browse-all recovery action");
+          assert.match(finder, /storefront\.showAllProducts\(\)/, "Browse All must call the live storefront API");
+          assert.match(page, /window\.SSVStorefront=Object\.freeze\(\{showAllProducts\(\)\{category="All"/, "Live storefront must expose a real Browse All operation");
+          assert.match(finder, /rawPrice===null\|\|rawPrice===undefined\|\|String\(rawPrice\)\.trim\(\)===""[\s\S]*?price<=0/, "Finder must reject missing, empty, and non-positive prices");
           assert.match(finder, /textContent="New Arrivals"/, "Finder must offer a New Arrivals shortcut");
           assert.match(finder, /textContent="Best Sellers"/, "Finder must offer a Best Sellers shortcut");
           assert.match(finder, /function isCategoryEnabled\(category\)/, "Finder must respect storefront category visibility settings");
@@ -81,7 +84,7 @@ jobs:
           assert.match(finder, /card.dataset.productId=String\(product.id/, "Finder results must retain stable product IDs");
           assert.match(finder, /window\.SSVCart/, "Finder must use the shared cart API, not a DOM timing race");
           assert.match(finder, /cartApi.addProduct\(product.id\)/, "Add to Bag must call the cart API with the stable product ID");
-          assert.match(app, /class="lux-item-card" data-product-id=/, "Storefront product cards must expose stable product IDs in the render template");
+          assert.match(page, /class="lux-item-card" data-product-id=/, "Live storefront product cards must expose stable product IDs in the render template");
           assert.match(checkout, /function addProductToCart\(id\)/, "Cart must expose one validated add operation");
           assert.match(checkout, /if\(!saveCart\(nextCart\)\)return \{ok:false,reason:"storage"\}/, "Cart must not report success when persistence fails");
           assert.match(checkout, /window\.SSVCart=Object\.freeze\(\{addProduct:addProductToCart\}\)/, "Finder and storefront must share the same cart operation");
