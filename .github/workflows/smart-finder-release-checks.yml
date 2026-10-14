@@ -63,7 +63,7 @@ jobs:
           assert.match(aiScanner, /selectColourPrediction/, "AI scanner must detect product colour");
           assert.match(aiScanner, /device:\s*"wasm"/, "AI scanner must run in the browser rather than a hosted inference service");
           assert.doesNotMatch(finder, /import\("\.\/saree-occasion-ai\.js"\)|AI_OCCASION_SCAN_LIMIT|addAiOccasionMatches/, "Customer Finder must not download or run the AI model");
-          assert.match(page, /function ssvEnrichOccasionCatalogue\(/, "Admin Studio must provide persisted occasion enrichment");
+          assert.match(page, /function ssvEnrichFinderCatalogue\(/, "Admin Studio must provide persisted Finder enrichment");
           assert.match(page, /id="adminEnrichOccasions"[^>]*>Enrich Finder/, "Admin Studio must expose the Enrich Finder action");
           assert.match(page, /occasionMetadata=\{source:"ai"/, "AI occasion results must record their provenance");
           assert.match(page, /colourMetadata=\{source:"ai"/, "AI colour results must record their provenance");
