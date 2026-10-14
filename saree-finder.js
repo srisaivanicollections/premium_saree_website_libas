@@ -4,7 +4,7 @@
   window.__SSV_SMART_FINDER_INIT__=true;
   const $=(selector,root=document)=>root.querySelector(selector);
   const esc=value=>String(value??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
-  let catalogue=[],loaded=false,loadPromise=null,lastFocus=null,backgroundState=[],preferences={category:"Sarees",budget:"",color:""},allMatches=[],shownCount=0,shopSettings={};
+  let catalogue=[],loaded=false,loadPromise=null,lastFocus=null,backgroundState=[],preferences={category:"Sarees",budget:"",color:""},allMatches=[],shownCount=0,shopSettings={},quickFilter="";
   const money=value=>new Intl.NumberFormat("en-IN",{style:"currency",currency:"INR",maximumFractionDigits:0}).format(Number(value));
   function shell(){
     if($("#ssv-smart-finder-trigger"))return;
@@ -17,10 +17,10 @@
     panel.innerHTML='<header class="ssv-finder-head"><h2 class="ssv-finder-title" id="ssv-finder-heading"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.8l1.8 6.1 6.1 1.8-6.1 1.8-1.8 6.1-1.8-6.1-6.1-1.8 6.1-1.8z"/></svg>Find My Style</h2><button type="button" class="ssv-finder-close" aria-label="Close Find My Style">×</button></header><p class="ssv-finder-intro" id="ssv-finder-intro">Choose a category and budget. Sarees and dresses can also be filtered by recorded colour.</p><form id="ssv-finder-form"><div class="ssv-finder-fields"><div class="ssv-finder-field"><label for="ssv-finder-category">What are you shopping for?</label><select id="ssv-finder-category" name="category"><option value="Sarees">Sarees</option><option value="Dresses">Dresses</option><option value="Jewellery">Jewellery</option></select></div><div class="ssv-finder-field"><label for="ssv-finder-budget">Your maximum budget in ₹ (optional)</label><input id="ssv-finder-budget" name="budget" type="number" min="0" step="100" inputmode="numeric" placeholder="Any budget" autocomplete="off"></div><div class="ssv-finder-field" id="ssv-finder-color-field"><label for="ssv-finder-color">Preferred colour (optional)</label><select id="ssv-finder-color" name="color"><option value="">Any colour</option></select></div></div><div class="ssv-finder-actions"><button type="button" class="ssv-finder-reset" id="ssv-finder-reset">Reset</button><button type="submit" class="ssv-finder-submit">Find Matches</button></div></form><p class="ssv-finder-message" id="ssv-finder-message" role="status" aria-live="polite"></p><div class="ssv-finder-results" id="ssv-finder-results"></div><p class="ssv-finder-note">Colour matches use recorded product details only. We do not guess missing product attributes.</p>';
     document.body.append(trigger,panel);
     trigger.addEventListener("click",()=>{lastFocus=document.activeElement;setBackgroundInert(panel,true);panel.hidden=false;trigger.hidden=true;trigger.setAttribute("aria-expanded","true");$("#ssv-finder-category").focus();loadCatalogue();});
-    $("#ssv-finder-category",panel).addEventListener("change",()=>{preferences.category=$("#ssv-finder-category").value;preferences.color="";$("#ssv-finder-color").value="";syncColorField();populateColors();$("#ssv-finder-results").replaceChildren();$("#ssv-finder-intro").textContent=["jewellery","jewelry"].includes(preferences.category.toLowerCase())?"Choose your budget to find gold jewellery. No colour selection is needed.":"Choose a budget and, if you like, a recorded colour.";$("#ssv-finder-message").textContent="Category updated. Choose your preferences and find matching products.";});
+    $("#ssv-finder-category",panel).addEventListener("change",()=>{preferences.category=$("#ssv-finder-category").value;preferences.color="";quickFilter="";$("#ssv-finder-color").value="";syncColorField();populateColors();$("#ssv-finder-results").replaceChildren();$("#ssv-finder-intro").textContent=["jewellery","jewelry"].includes(preferences.category.toLowerCase())?"Choose your budget to find gold jewellery. No colour selection is needed.":"Choose a budget and, if you like, a recorded colour.";$("#ssv-finder-message").textContent="Category updated. Choose your preferences and find matching products.";});
     $(".ssv-finder-close",panel).addEventListener("click",closePanel);
     $("#ssv-finder-form",panel).addEventListener("submit",async event=>{event.preventDefault();const submit=$("#ssv-finder-form .ssv-finder-submit",panel);submit.disabled=true;try{await loadCatalogue();if(!loaded)return;readPreferences();recommend();}finally{submit.disabled=false;}});
-    $("#ssv-finder-reset",panel).addEventListener("click",()=>{preferences={category:"Sarees",budget:"",color:""};$("#ssv-finder-form").reset();$("#ssv-finder-intro").textContent="Choose a category and budget. Sarees and dresses can also be filtered by recorded colour.";syncColorField();populateColors();$("#ssv-finder-results").replaceChildren();$("#ssv-finder-message").textContent="Preferences cleared. Choose what matters to you.";});
+    $("#ssv-finder-reset",panel).addEventListener("click",()=>{preferences={category:"Sarees",budget:"",color:""};quickFilter="";$("#ssv-finder-form").reset();$("#ssv-finder-intro").textContent="Choose a category and budget. Sarees and dresses can also be filtered by recorded colour.";syncColorField();populateColors();$("#ssv-finder-results").replaceChildren();$("#ssv-finder-message").textContent="Preferences cleared. Choose what matters to you.";});
     document.addEventListener("keydown",event=>{
       if(panel.hidden)return;
       if(event.key==="Escape"){event.preventDefault();closePanel();return;}
@@ -140,14 +140,14 @@
       recovery.querySelector('[data-recovery="budget"]').addEventListener("click",()=>{$("#ssv-finder-budget").focus();$("#ssv-finder-budget").scrollIntoView({block:"center",behavior:"smooth"});});
       const colorAction=recovery.querySelector('[data-recovery="color"]');
       if(colorAction)colorAction.addEventListener("click",()=>{$("#ssv-finder-color").value="";readPreferences();preferences.color="";$("#ssv-finder-color").value="";recommend();});
-      recovery.querySelector('[data-recovery="all"]').addEventListener("click",()=>{preferences.budget="";preferences.color="";$("#ssv-finder-budget").value="";$("#ssv-finder-color").value="";recommend();});
+      recovery.querySelector('[data-recovery="all"]').addEventListener("click",()=>{closePanel();const allTab=[...document.querySelectorAll("[data-tab]")].find(tab=>tab.dataset.tab==="All");if(allTab)allTab.click();const search=$("#search")||$("#shop .lux-search input");if(search&&search.value){search.value="";search.dispatchEvent(new Event("input",{bubbles:true}));}if($("#shop"))$("#shop").scrollIntoView({behavior:"auto",block:"start"});});
       resultBox.append(recovery);
       const help=helpUrl();
       if(help){const link=document.createElement("a");link.className="ssv-finder-help";link.href=help;link.target="_blank";link.rel="noopener noreferrer";link.textContent="Need help choosing? Chat with us on WhatsApp";resultBox.append(link);}
       return;
     }
     message.textContent="We found "+allMatches.length+" matching "+categoryLabel+(allMatches.length===1?" option.":" options.")+" Showing "+Math.min(shownCount,allMatches.length)+" of "+allMatches.length+".";
-    const heading=document.createElement("p");heading.className="ssv-finder-recommendation-heading";heading.textContent="Recommended for You";resultBox.append(heading);
+    const heading=document.createElement("p");heading.className="ssv-finder-recommendation-heading";heading.textContent=quickFilter==="newArrival"?"New Arrivals":quickFilter==="bestSeller"?"Best Sellers":"Recommended for You";resultBox.append(heading);
     results.forEach((product,index)=>{
       const image=String(product.image||"").replace(/^\.\//,"");
       const imageUrl=/^https?:\/\//i.test(image)?image:"./"+image.replace(/^\//,"");
@@ -187,6 +187,8 @@
     const change=document.createElement("button");change.type="button";change.className="ssv-finder-recovery-action";change.textContent="Change Preferences";
     change.addEventListener("click",()=>{$("#ssv-finder-budget").focus();$("#ssv-finder-form").scrollIntoView({block:"start",behavior:"smooth"});});
     controls.append(change);
+    const arrivals=document.createElement("button");arrivals.type="button";arrivals.className="ssv-finder-recovery-action";arrivals.textContent="New Arrivals";arrivals.addEventListener("click",()=>{quickFilter="newArrival";recommend();});controls.append(arrivals);
+    const bestSellers=document.createElement("button");bestSellers.type="button";bestSellers.className="ssv-finder-recovery-action";bestSellers.textContent="Best Sellers";bestSellers.addEventListener("click",()=>{quickFilter="bestSeller";recommend();});controls.append(bestSellers);
     const genericHelp=helpUrl();
     if(genericHelp){const link=document.createElement("a");link.className="ssv-finder-help";link.href=genericHelp;link.target="_blank";link.rel="noopener noreferrer";link.textContent="Need Help Choosing? WhatsApp Us";controls.append(link);}
     resultBox.append(controls);
@@ -195,6 +197,8 @@
     const message=$("#ssv-finder-message");
     const category=preferences.category||"Sarees";
     allMatches=catalogue.filter(p=>String(p.category||"").trim().toLowerCase()===category.toLowerCase()).filter(p=>isAvailable(p));
+    if(quickFilter==="newArrival")allMatches=allMatches.filter(p=>p.newArrival===true);
+    if(quickFilter==="bestSeller")allMatches=allMatches.filter(p=>p.bestSeller===true);
     if(preferences.budget!==""){
       const budget=Number(preferences.budget);
       if(!Number.isFinite(budget)||budget<0){allMatches=[];shownCount=3;renderMatches();return;}
