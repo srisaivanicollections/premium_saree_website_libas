@@ -230,6 +230,8 @@ jobs:
               const add = page.locator(".ssv-finder-result .ssv-finder-add");
               for (let i = 0; i < 11; i++) await add.click();
               assert.match(await page.locator("#ssv-finder-message").innerText(), /up to 10/i, label + ": 10-item limit message");
+              await page.locator(".ssv-finder-close").click();
+              await page.locator("#ssv-smart-finder-panel").waitFor({ state: "hidden" });
 
               await page.locator("#ssv-cart-trigger").click();
               assert.equal((await page.locator(".ssv-cart-item .ssv-qty-value").innerText()).trim(), "10", label + ": bag quantity capped at 10");
