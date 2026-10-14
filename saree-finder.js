@@ -215,31 +215,41 @@
     if(genericHelp){const link=document.createElement("a");link.className="ssv-finder-help";link.href=genericHelp;link.target="_blank";link.rel="noopener noreferrer";link.textContent="Need Help Choosing? WhatsApp Us";controls.append(link);}
     resultBox.append(controls);
   }
-  // Occasion inference is a fallback only when Admin has not supplied any occasion tags.
-  // It deliberately uses descriptive product fields, never image pixels, image filenames,
-  // colour, price, stock or merchandising flags. Keywords are signals, not guarantees.
+  // Occasion inference is conservative: explicit Admin tags win. Otherwise only
+  // specific occasion language is strong enough to infer a use case. Fabric/embellishment
+  // terms alone are not reliable occasion labels and must not create false certainty.
+  const OCCASION_VALUES=new Set(["daily wear","wedding","festive","party wear","traditional"]);
   function inferOccasions(product){
-    const explicit=Array.isArray(product.occasions)
-      ? product.occasions.map(value=>String(value||"").trim()).filter(Boolean)
+    const raw=product&&product.occasions;
+    const explicit=Array.isArray(raw)
+      ? [...new Set(raw.filter(value=>typeof value==="string").map(value=>value.trim().toLowerCase()).filter(value=>OCCASION_VALUES.has(value)))]
       : [];
-    if(explicit.length)return [...new Set(explicit.map(value=>value.toLowerCase()))];
+    // A non-empty, valid explicit tag list is authoritative. Do not augment or override it.
+    if(explicit.length)return explicit;
+    // Invalid non-empty metadata is not treated as "untagged": fail closed rather than
+    // silently replacing an Admin decision with a guess.
+    if(Array.isArray(raw)&&raw.some(value=>String(value||"").trim())&&explicit.length===0)return [];
     const text=[product.name,product.description,product.material,product.fabric,product.style,product.type,product.subcategory,product.tags]
       .flatMap(value=>Array.isArray(value)?value:[value])
       .filter(value=>typeof value==="string"&&value.trim())
-      .join(" ").toLowerCase().replace(/[_-]+/g," ").replace(/\s+/g," ");
+      .join(" ").toLowerCase().normalize("NFKC").replace(/[_-]+/g," ").replace(/\s+/g," ");
     if(!text)return [];
     const inferred=[];
     const has=pattern=>pattern.test(text);
-    if(has(/\b(daily wear|everyday|every day|casual wear|office wear|workwear|cotton|linen|lightweight|printed|basic wear)\b/))inferred.push("daily wear");
-    if(has(/\b(wedding|bridal|bride|bridalwear|weddingwear|kanjivaram|kanchipuram|banarasi|benarasi|pattu|bridal silk|wedding guest|heavy work)\b/))inferred.push("wedding");
-    if(has(/\b(festive|festival|diwali|sankranti|dasara|navratri|celebration|brocade|zari|festive wear)\b/))inferred.push("festive");
-    if(has(/\b(party wear|partywear|party|sequins?|shimmer|glitter|cocktail wear|evening wear|gown)\b/))inferred.push("party wear");
-    if(has(/\b(traditional|ethnic|temple|heritage|kanjivaram|kanchipuram|banarasi|benarasi|pattu|zari|ikat|kalamkari|handloom)\b/))inferred.push("traditional");
+    // Only direct occasion wording / explicit use cases qualify. Generic textile words
+    // such as cotton, pattu, zari, silk, handloom and embroidery are intentionally excluded.
+    if(has(/\b(daily wear|everyday wear|every day wear|casual wear|office wear|workwear|for daily use|everyday saree)\b/))inferred.push("daily wear");
+    if(has(/\b(wedding wear|wedding guest|bridal wear|bridal saree|for weddings|wedding collection|bride to be)\b/))inferred.push("wedding");
+    if(has(/\b(festive wear|festival wear|for festivals|diwali collection|sankranti collection|dasara collection|navratri collection|festive collection)\b/))inferred.push("festive");
+    if(has(/\b(party wear|partywear|cocktail wear|evening wear|party collection|for parties)\b/))inferred.push("party wear");
+    if(has(/\b(traditional wear|traditional collection|ethnic occasion wear|heritage collection|temple wear)\b/))inferred.push("traditional");
     return [...new Set(inferred)];
   }
   function matchesOccasion(product,occasion){
-    if(!occasion)return true;
-    return inferOccasions(product).includes(String(occasion).trim().toLowerCase());
+    const wanted=String(occasion||"").trim().toLowerCase();
+    if(!wanted)return true;
+    if(!OCCASION_VALUES.has(wanted))return false;
+    return inferOccasions(product).includes(wanted);
   }
   function recommend(){
     const message=$("#ssv-finder-message");
