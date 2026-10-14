@@ -1,5 +1,5 @@
 /*
- * Free, client-side occasion inference for Smart Saree Finder.
+ * Free, client-side occasion and colour inference for Smart Saree Finder.
  * No API key, paid inference endpoint, backend, or image upload is used.
  * The model and runtime are downloaded from public CDN/model hosting on first use.
  * Selected ONNX model card declares MIT; re-check model card before future upgrades.
@@ -12,6 +12,7 @@ const LABELS = [
   { label: "party wear", description: "intended for party wear, evening events or cocktail occasions" },
   { label: "traditional", description: "intended for traditional cultural or religious occasions" }
 ];
+const COLOURS = ["Black","Blue","Brown","Gold","Green","Grey","Ivory","Maroon","Multi-colour","Orange","Pink","Purple","Red","Silver","White","Yellow"];
 let pipelinePromise;
 const resultCache = new Map();
 
@@ -63,8 +64,14 @@ export async function createOccasionScanner() {
       }
       const result = selectOccasionPrediction(predictions, itemType);
       result.confident = isConfidentOccasionPrediction(result);
-      resultCache.set(cacheKey, result);
-      return result;
+      const colourPredictions = await classifier(url, COLOURS.map(colour =>
+        "a product photo of a " + itemType + " whose main visible fabric or material colour is " + colour.toLowerCase()
+      ));
+      const colour = selectColourPrediction(colourPredictions);
+      colour.confident = isConfidentColourPrediction(colour);
+      const combined = { occasion: result, colour };
+      resultCache.set(cacheKey, combined);
+      return combined;
     }
   };
 }
@@ -95,4 +102,19 @@ export function isConfidentOccasionPrediction(result) {
     LABELS.some(item => item.label === result.label) &&
     Number.isFinite(result.score) && result.score >= 0.30 &&
     Number.isFinite(result.margin) && result.margin >= 0.07);
+}
+
+export function selectColourPrediction(predictions) {
+  if (!Array.isArray(predictions) || !predictions.length) throw new Error("The image model returned no colour predictions.");
+  const normalized = predictions.filter(item => item && typeof item.label === "string" && Number.isFinite(Number(item.score)))
+    .map(item => ({ ...item, colour: COLOURS.find(colour => item.label.toLowerCase().includes("colour is " + colour.toLowerCase())) || "" }))
+    .sort((a, b) => Number(b.score) - Number(a.score));
+  if (!normalized.length) throw new Error("The image model returned invalid colour predictions.");
+  const best = normalized[0];
+  return { label: best.colour, score: Number(best.score), margin: Number(best.score) - Number(normalized[1]?.score || 0) };
+}
+
+export function isConfidentColourPrediction(result) {
+  return Boolean(result && COLOURS.includes(result.label) && Number.isFinite(result.score) &&
+    result.score >= 0.20 && Number.isFinite(result.margin) && result.margin >= 0.045);
 }
