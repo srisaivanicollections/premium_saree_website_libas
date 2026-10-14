@@ -284,7 +284,7 @@
         const message=$("#ssv-finder-message");
         if(message)message.textContent="Checking product images for "+occasion+" ("+(index+1)+" of "+toScan.length+"). First use downloads a free AI model; it is cached by your browser where supported.";
         try{
-          const result=await scanner.classify(product.image);
+          const result=await scanner.classify(product.image,product.category);
           if(result&&OCCASION_VALUES.has(result.label)&&result.score>=0.30&&result.margin>=0.07){
             resolved.set(String(product.id),result.label);
           }
