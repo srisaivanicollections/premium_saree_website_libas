@@ -454,7 +454,7 @@ function render(){
       (p.newArrival?'<span class="ssv-badge-pill pill-new">NEW</span>':"")+
       (p.bestSeller?'<span class="ssv-badge-pill pill-best">BEST SELLER</span>':"")+
       '</div>':"";
-    return '<article class="lux-item-card">'+
+    return '<article class="lux-item-card" data-product-id="'+Number(p.id)+'">'+
       '<div class="lux-item-media">'+
         '<img src="'+esc(productImageSrc(p.image))+'" alt="'+esc(p.name)+'" loading="lazy" decoding="async" onerror="this.onerror=null;this.closest(".lux-item-media").classList.add("image-missing");this.classList.add("image-failed");">'+
         badgeDock+
