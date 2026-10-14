@@ -12107,7 +12107,10 @@ if(catalogReset)catalogReset.onclick=()=>{
 <script>
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("./sw.js?v=guest-cart-checkout-1", { updateViaCache: "none" }).catch(error => {
+    navigator.serviceWorker.register("./sw.js?v=20261015-cache-fix-1", { updateViaCache: "none" }).then(registration => {
+      // Prompt the browser to check for a new worker whenever the page loads.
+      return registration.update();
+    }).catch(error => {
       console.warn("Offline support could not be enabled:", error);
     });
   });
