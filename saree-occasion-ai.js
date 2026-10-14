@@ -23,9 +23,13 @@ async function getPipeline() {
         env.allowRemoteModels = true;
         env.allowLocalModels = false;
         // Transformers.js uses browser-managed caching for model assets where available.
+        // The model's q8 artifact contains ConvInteger nodes that fail to
+        // initialize in the browser WASM execution provider on some devices.
+        // The model repository's uint8 artifact avoids that unsupported path
+        // while keeping the download substantially smaller than the fp32 model.
         return pipeline("zero-shot-image-classification", MODEL_ID, {
           device: "wasm",
-          dtype: "q8"
+          dtype: "uint8"
         });
       })
       .catch(error => {
