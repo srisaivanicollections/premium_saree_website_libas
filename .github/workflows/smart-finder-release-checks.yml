@@ -64,10 +64,14 @@ jobs:
           assert.match(aiScanner, /device:\s*"wasm"/, "AI scanner must run in the browser rather than a hosted inference service");
           assert.doesNotMatch(finder, /import\("\.\/saree-occasion-ai\.js"\)|AI_OCCASION_SCAN_LIMIT|addAiOccasionMatches/, "Customer Finder must not download or run the AI model");
           assert.match(page, /function ssvEnrichFinderCatalogue\(/, "Admin Studio must provide persisted Finder enrichment");
-          assert.match(page, /id="adminEnrichFinder"[^>]*>ANALYSE MISSING METADATA/, "Admin Studio must expose the Enrich Finder action");
+          assert.match(page, /id="adminEnrichFinderLink" class="admin-enrich-finder-link"/, "Admin Products must expose the Enrich Finder text link");
+          assert.match(page, /id="adminEnrichFinderPopup"/, "Admin must provide the Enrich Finder popup");
+          assert.match(page, /id="adminEnrichFinderClose" aria-label="Close Enrich Finder"/, "Enrich Finder popup must provide a close control");
+          assert.doesNotMatch(page, /data-view="enrich">ENRICH FINDER/, "Enrich Finder must not occupy a separate Admin tab");
+          assert.match(page, /occasionMissingCount=queue\\.filter[\\s\\S]*?colourMissingCount=queue\\.filter/, "Enrich Finder must count missing occasion and colour fields separately");
           assert.match(page, /#admin \.admin-products-heading-actions\s*\{[\s\S]*?display:flex!important;[\s\S]*?flex-wrap:wrap!important;/, "Admin catalogue actions must have a wrapping flex layout");
-          assert.match(page, /#admin \.admin-products-heading-actions > #adminEnrichFinder/, "Enrich Finder must have a scoped style override");
-          assert.match(page, /@media\(max-width:600px\)[\s\S]*?#admin \.admin-products-heading-actions\s*\{[\s\S]*?width:100%!important;[\s\S]*?justify-content:flex-start!important;/, "Enrich Finder and Add Product must remain visible in the mobile action row");
+          assert.match(page, /#admin \.admin-products-heading-actions>#adminEnrichFinderLink/, "Enrich Finder text link must have a scoped style override");
+          assert.match(page, /@media\(max-width:600px\)[\s\S]*?#admin \.admin-products-heading-actions\s*\{[\s\S]*?width:100%!important;[\s\S]*?justify-content:space-between!important;/, "Enrich Finder link and Add Product must remain visible in the mobile action row");
           assert.match(page, /occasionMetadata=\{source:"ai"/, "AI occasion results must record their provenance");
           assert.match(page, /colourMetadata=\{source:"ai"/, "AI colour results must record their provenance");
           assert.match(page, /attempt<3&&!saved/, "Occasion metadata writes must retry GitHub SHA conflicts");
@@ -280,6 +284,25 @@ jobs:
               await page.locator("#verifyOtpBtn").click();
               await page.locator("#adminProductResults").waitFor();
               assert.ok(state.workerActions.includes("send") && state.workerActions.includes("verify"), label + ": OTP request and verification UI path");
+
+              // Enrich Finder is a closable Products-page popup; closing/reopening preserves the catalogue view.
+              assert.equal(await page.locator('[data-view="enrich"]').count(), 0, label + ": no separate Enrich Finder tab");
+              const enrichLink = page.locator("#adminEnrichFinderLink");
+              assert.ok(await enrichLink.isVisible(), label + ": Products page exposes Enrich Finder text link");
+              await page.locator("#adminProductSearch").fill("saree");
+              const catalogueCountBeforePopup = await page.locator("#adminProductResults").innerText();
+              await enrichLink.click();
+              await page.getByRole("dialog", { name: "Enrich Finder" }).waitFor({ state: "visible" });
+              assert.ok(await page.locator("#adminEnrichFinderClose").isVisible(), label + ": popup has a visible close control");
+              assert.ok((await page.locator("#adminEnrichOccasionCount").innerText()).includes("/"), label + ": occasion field count is displayed");
+              assert.ok((await page.locator("#adminEnrichColourCount").innerText()).includes("/"), label + ": colour field count is displayed");
+              await page.locator("#adminEnrichFinderClose").click();
+              await page.getByRole("dialog", { name: "Enrich Finder" }).waitFor({ state: "hidden" });
+              assert.equal(await page.locator("#adminProductSearch").inputValue(), "saree", label + ": close preserves catalogue search");
+              assert.equal(await page.locator("#adminProductResults").innerText(), catalogueCountBeforePopup, label + ": close preserves catalogue results");
+              await page.locator("#adminEnrichFinderLink").click();
+              await page.getByRole("dialog", { name: "Enrich Finder" }).waitFor({ state: "visible" });
+              await page.locator("#adminEnrichFinderClose").click();
 
               await page.locator("#adminAddProduct").click();
               await page.locator("#fName").fill("E2E Jewellery Regression Item");
