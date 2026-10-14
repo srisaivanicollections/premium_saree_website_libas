@@ -50,6 +50,10 @@ jobs:
           assert.match(finder, /View Product/, "Finder must provide a route to the matching catalogue product");
           assert.match(finder, /Add to Bag/, "Finder must offer an explicit add-to-bag action");
           assert.match(finder, /data-recovery="all"/, "No-match state must offer a browse-all recovery action");
+          assert.match(finder, /textContent="New Arrivals"/, "Finder must offer a New Arrivals shortcut");
+          assert.match(finder, /textContent="Best Sellers"/, "Finder must offer a Best Sellers shortcut");
+          assert.match(finder, /function navigateToProduct\(product,addToBag=false\)/, "Finder product actions must reuse the storefront catalogue");
+          assert.match(finder, /querySelector\("\[data-add-cart\],\.ssv-add-cart"\)/, "Add to Bag must delegate to the existing cart control");
           assert.match(finder, /!\["jewellery","jewelry"\]\.includes\(category\.trim\(\)\.toLowerCase\(\)\)/, "Jewellery must not be colour-filtered");
           assert.ok(catalogue.some(p => p.category === "Jewellery"), "Catalogue must contain Jewellery");
           assert.ok(catalogue.every(p => ["Sarees","Dresses","Jewellery"].includes(p.category)), "Catalogue categories must be canonical");
