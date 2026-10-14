@@ -284,7 +284,7 @@
     const resolved=new Map();
     // Keyword inference has priority. AI only examines untagged products for which
     // the existing conservative keyword rules found no occasion at all.
-    const eligible=products.filter(product=>!hasExplicitOccasionDecision(product)&&inferOccasions(product).length===0);
+    const eligible=products.filter(product=>!hasExplicitOccasionDecision(product)&&!(product.visualAttributes&&product.visualAttributes.source==="admin-approved")&&inferOccasions(product).length===0);
     if(!eligible.length)return resolved;
     // Bound first-run CPU/network work. The browser model is loaded only when an
     // occasion filter is used; explicit Admin decisions never trigger image analysis.
