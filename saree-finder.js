@@ -15,8 +15,23 @@
     const panel=document.createElement("section");
     panel.id="ssv-smart-finder-panel";panel.className="ssv-finder-panel";panel.hidden=true;panel.tabIndex=-1;panel.setAttribute("role","dialog");panel.setAttribute("aria-modal","true");panel.setAttribute("aria-labelledby","ssv-finder-heading");
     panel.innerHTML='<header class="ssv-finder-head"><h2 class="ssv-finder-title" id="ssv-finder-heading"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.8l1.8 6.1 6.1 1.8-6.1 1.8-1.8 6.1-1.8-6.1-6.1-1.8 6.1-1.8z"/></svg>Find My Style</h2><button type="button" class="ssv-finder-close" aria-label="Close Find My Style">×</button></header><p class="ssv-finder-intro" id="ssv-finder-intro">Choose a category and budget. Sarees and dresses can also be filtered by recorded colour.</p><form id="ssv-finder-form"><div class="ssv-finder-fields"><div class="ssv-finder-field"><label for="ssv-finder-category">What are you shopping for?</label><select id="ssv-finder-category" name="category"><option value="Sarees">Sarees</option><option value="Dresses">Dresses</option><option value="Jewellery">Jewellery</option></select></div><div class="ssv-finder-field"><label for="ssv-finder-budget">Your maximum budget in ₹ (optional)</label><input id="ssv-finder-budget" name="budget" type="number" min="0" step="100" inputmode="numeric" placeholder="Any budget" autocomplete="off"></div><div class="ssv-finder-field" id="ssv-finder-color-field"><label for="ssv-finder-color">Preferred colour (optional)</label><select id="ssv-finder-color" name="color"><option value="">Any colour</option></select></div></div><div class="ssv-finder-actions"><button type="button" class="ssv-finder-reset" id="ssv-finder-reset">Reset</button><button type="submit" class="ssv-finder-submit">Find Matches</button></div></form><p class="ssv-finder-message" id="ssv-finder-message" role="status" aria-live="polite"></p><div class="ssv-finder-results" id="ssv-finder-results"></div><p class="ssv-finder-note">Colour matches use recorded product details only. We do not guess missing product attributes.</p>';
+    const hint=document.createElement("div");
+    hint.id="ssv-finder-hint";hint.className="ssv-finder-hint";hint.setAttribute("role","status");
+    hint.innerHTML='<span>Find your perfect saree <span aria-hidden="true">✨</span></span><button type="button" class="ssv-finder-hint-close" aria-label="Dismiss Finder hint">×</button>';
+    let hintSeen=false;
+    try{hintSeen=sessionStorage.getItem("ssv-finder-hint-seen")==="1";}catch(_){}
+    if(!hintSeen){
+      document.body.append(hint);
+      try{sessionStorage.setItem("ssv-finder-hint-seen","1");}catch(_){}
+    }
+    function dismissHint(returnFocus){
+      if(hint.isConnected)hint.remove();
+      if(returnFocus)trigger.focus();
+    }
     document.body.append(trigger,panel);
-    trigger.addEventListener("click",()=>{lastFocus=document.activeElement;setBackgroundInert(panel,true);panel.hidden=false;trigger.hidden=true;trigger.setAttribute("aria-expanded","true");$("#ssv-finder-category").focus();loadCatalogue();});
+    const hintClose=$(".ssv-finder-hint-close",hint);
+    if(hintClose)hintClose.addEventListener("click",()=>dismissHint(true));
+    trigger.addEventListener("click",()=>{dismissHint(false);lastFocus=document.activeElement;setBackgroundInert(panel,true);panel.hidden=false;trigger.hidden=true;trigger.setAttribute("aria-expanded","true");$("#ssv-finder-category").focus();loadCatalogue();});
     $("#ssv-finder-category",panel).addEventListener("change",()=>{preferences.category=$("#ssv-finder-category").value;preferences.color="";quickFilter="";$("#ssv-finder-color").value="";syncColorField();populateColors();$("#ssv-finder-results").replaceChildren();$("#ssv-finder-intro").textContent=["jewellery","jewelry"].includes(preferences.category.toLowerCase())?"Choose your budget to find gold jewellery. No colour selection is needed.":"Choose a budget and, if you like, a recorded colour.";$("#ssv-finder-message").textContent="Category updated. Choose your preferences and find matching products.";});
     $(".ssv-finder-close",panel).addEventListener("click",closePanel);
     $("#ssv-finder-form",panel).addEventListener("submit",async event=>{event.preventDefault();const submit=$("#ssv-finder-form .ssv-finder-submit",panel);submit.disabled=true;try{await loadCatalogue();if(!loaded)return;readPreferences();quickFilter="";recommend();}finally{submit.disabled=false;}});
