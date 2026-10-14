@@ -25,7 +25,17 @@
     "newArrival": true,
     "bestSeller": true,
     "availability": true,
-    "occasions": []
+    "occasions": [
+      "Traditional"
+    ],
+    "occasionMetadata": {
+      "source": "ai",
+      "model": "CLIP-ViT-B-32",
+      "score": 0.5365,
+      "margin": 0.2637,
+      "image": "assets/products/1791811628233-d22037403bd0-Viva_Jewels_Antique_Temple_Lakshmi___Peacock_Grand_Combo___Premium_Gold_Plated_Short___Long_Haram_Set_with_Matching_Jhumkas_PWTE5A2TXX_2026-05-15_1.webp",
+      "version": 1
+    }
   },
   {
     "id": 1791810958129,
