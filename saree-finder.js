@@ -4,7 +4,7 @@
   window.__SSV_SMART_FINDER_INIT__=true;
   const $=(selector,root=document)=>root.querySelector(selector);
   const esc=value=>String(value??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
-  let catalogue=[],loaded=false,lastFocus=null,preferences={budget:"",color:"",priority:"any"};
+  let catalogue=[],loaded=false,loadPromise=null,lastFocus=null,preferences={budget:"",color:"",priority:"any"};
   const money=value=>new Intl.NumberFormat("en-IN",{style:"currency",currency:"INR",maximumFractionDigits:0}).format(Number(value));
   function shell(){
     if($("#ssv-smart-finder-trigger"))return;
@@ -18,21 +18,35 @@
     document.body.append(trigger,panel);
     trigger.addEventListener("click",()=>{lastFocus=document.activeElement;panel.hidden=false;trigger.hidden=true;trigger.setAttribute("aria-expanded","true");$("#ssv-finder-budget").focus();loadCatalogue();});
     $(".ssv-finder-close",panel).addEventListener("click",closePanel);
-    $("#ssv-finder-form",panel).addEventListener("submit",event=>{event.preventDefault();readPreferences();recommend();});
+    $("#ssv-finder-form",panel).addEventListener("submit",async event=>{event.preventDefault();const submit=$("#ssv-finder-form .ssv-finder-submit",panel);submit.disabled=true;try{await loadCatalogue();if(!loaded)return;readPreferences();recommend();}finally{submit.disabled=false;}});
     $("#ssv-finder-reset",panel).addEventListener("click",()=>{preferences={budget:"",color:"",priority:"any"};$("#ssv-finder-form").reset();$("#ssv-finder-results").replaceChildren();$("#ssv-finder-message").textContent="Preferences cleared. Choose what matters to you.";});
     document.addEventListener("keydown",event=>{if(event.key==="Escape"&&!panel.hidden){event.preventDefault();closePanel();}});
   }
   function closePanel(){const panel=$("#ssv-smart-finder-panel"),trigger=$("#ssv-smart-finder-trigger");if(!panel||!trigger)return;panel.hidden=true;trigger.hidden=false;trigger.setAttribute("aria-expanded","false");(lastFocus&&lastFocus.isConnected?lastFocus:trigger).focus();}
-  async function loadCatalogue(){
-    if(loaded){populateColors();return;}
-    const message=$("#ssv-finder-message");message.textContent="Loading current collection…";
-    try{
-      const response=await fetch("./data/products.json?finder="+Date.now(),{cache:"no-store",headers:{Accept:"application/json"}});
-      if(!response.ok)throw new Error("Catalogue request failed ("+response.status+").");
-      const data=await response.json();if(!Array.isArray(data))throw new Error("Catalogue format is not valid.");
-      catalogue=data.filter(p=>p&&String(p.category||"").toLowerCase()==="sarees"&&Number.isFinite(Number(p.price))&&Number(p.price)>=0);
-      loaded=true;populateColors();message.textContent=catalogue.length?"Choose any preferences, then show matching sarees.":"No saree products are currently available in the catalogue.";
-    }catch(error){message.textContent="The finder could not load the catalogue. Your normal shopping page is still available. Please close this panel and try again.";}
+  function loadCatalogue(){
+    if(loaded){populateColors();return Promise.resolve(true);}
+    if(loadPromise)return loadPromise;
+    const message=$("#ssv-finder-message");
+    const submit=$("#ssv-finder-form .ssv-finder-submit");
+    message.textContent="Loading current collection…";
+    loadPromise=(async()=>{
+      try{
+        const response=await fetch("./data/products.json?finder="+Date.now(),{cache:"no-store",headers:{Accept:"application/json"}});
+        if(!response.ok)throw new Error("Catalogue request failed ("+response.status+").");
+        const data=await response.json();if(!Array.isArray(data))throw new Error("Catalogue format is not valid.");
+        catalogue=data.filter(p=>p&&String(p.category||"").toLowerCase()==="sarees"&&Number.isFinite(Number(p.price))&&Number(p.price)>=0);
+        loaded=true;populateColors();
+        message.textContent=catalogue.length?"Choose any preferences, then show matching sarees.":"No saree products are currently available in the catalogue.";
+        return true;
+      }catch(error){
+        loadPromise=null;
+        message.textContent="The finder could not load the catalogue. Please try again.";
+        return false;
+      }finally{
+        if(submit)submit.disabled=false;
+      }
+    })();
+    return loadPromise;
   }
   function populateColors(){
     const select=$("#ssv-finder-color");if(!select)return;const current=select.value;
