@@ -250,6 +250,7 @@ jobs:
               assert.ok(state.workerActions.includes("submitOrder"), label + ": checkout worker contract called");
               await page.locator(".ssv-order-continue").click();
 
+              if (await page.locator("#menu").isVisible()) { await page.locator("#menu").click(); await page.locator("#nav.open").waitFor(); }
               await page.locator("#adminOpen").click();
               await page.locator("#adminEmail").fill("vinith.paithari@gmail.com");
               await page.locator("#sendOtpBtn").click();
@@ -272,6 +273,7 @@ jobs:
               assert.ok(state.products.some(p => p.name === "E2E Jewellery Regression Item" && p.category === "Jewellery" && Number(p.price) === 1250), label + ": Admin Jewellery create and GitHub-persistence verification path");
 
               await page.reload();
+              if (await page.locator("#menu").isVisible()) { await page.locator("#menu").click(); await page.locator("#nav.open").waitFor(); }
               await page.locator("#adminOpen").click();
               await page.locator("#adminEmail").fill("vinith.paithari@gmail.com");
               await page.locator("#sendOtpBtn").click();
@@ -291,6 +293,7 @@ jobs:
               assert.ok(state.products.some(p => p.name === "E2E Jewellery Regression Item" && p.category === "Jewellery" && Number(p.price) === 1350), label + ": Admin edit and verified save");
 
               await page.reload();
+              if (await page.locator("#menu").isVisible()) { await page.locator("#menu").click(); await page.locator("#nav.open").waitFor(); }
               await page.locator("#adminOpen").click();
               await page.locator("#adminEmail").fill("vinith.paithari@gmail.com");
               await page.locator("#sendOtpBtn").click();
