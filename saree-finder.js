@@ -58,9 +58,15 @@
     message.textContent="Found "+matches.length+" matching "+(matches.length===1?"saree":"sarees")+". Showing "+results.length+".";
     results.forEach(product=>{
       const image=String(product.image||"").replace(/^\.\//,"");
-      const imageUrl=/^(https?:|data:|blob:)/i.test(image)?image:"./"+image.replace(/^\//,"");
+      const imageUrl=/^https?:\/\//i.test(image)?image:"./"+image.replace(/^\//,"");
+      const originalPrice=Number(product.originalPrice);
+      const hasOriginalPrice=Number.isFinite(originalPrice)&&originalPrice>Number(product.price);
+      const badges=[];
+      if(product.bestSeller===true)badges.push("Best Seller");
+      if(product.newArrival===true)badges.push("New Arrival");
+      const details=[product.color?"Recorded colour: "+String(product.color).trim():"","In stock"].filter(Boolean).join(" · ");
       const card=document.createElement("article");card.className="ssv-finder-result";
-      card.innerHTML='<img loading="lazy" src="'+esc(imageUrl)+'" alt="'+esc(product.name||"Saree")+'"><div><h3>'+esc(product.name||"Saree")+'</h3><p class="ssv-finder-price">'+money(product.price)+'</p><p class="ssv-finder-meta">'+(product.bestSeller? "Best Seller · ":"")+(product.newArrival?"New Arrival · ":"")+"In stock</p><button type="button" class="ssv-finder-view">View in collection</button></div>';
+      card.innerHTML='<img loading="lazy" src="'+esc(imageUrl)+'" alt="'+esc(product.name||"Saree")+'"><div><h3>'+esc(product.name||"Saree")+'</h3><p class="ssv-finder-price">'+money(product.price)+(hasOriginalPrice?' <del class="ssv-finder-original">'+money(originalPrice)+'</del>':"")+'</p>'+(badges.length?'<p class="ssv-finder-badges">'+badges.map(badge=>'<span>'+esc(badge)+'</span>').join("")+'</p>':"")+'<p class="ssv-finder-meta">'+esc(details)+'</p><button type="button" class="ssv-finder-view">Browse collection</button></div>';
       $(".ssv-finder-view",card).addEventListener("click",()=>{
         closePanel();
         const grid=$("#products");if(!grid)return;
