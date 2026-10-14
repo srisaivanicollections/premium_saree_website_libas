@@ -2,8 +2,9 @@
  * Free, client-side occasion inference for Smart Saree Finder.
  * No API key, paid inference endpoint, backend, or image upload is used.
  * The model and runtime are downloaded from public CDN/model hosting on first use.
+ * Selected ONNX model card declares MIT; re-check model card before future upgrades.
  */
-const MODEL_ID = "Xenova/clip-vit-base-patch32";
+const MODEL_ID = "onnx-community/CLIP-ViT-B-32-laion2B-s34B-b79K-ONNX";
 const LABELS = [
   { label: "daily wear", prompt: "a saree intended for everyday daily wear, simple and comfortable" },
   { label: "wedding", prompt: "a saree intended for wedding wear, bridal wear or a wedding guest" },
