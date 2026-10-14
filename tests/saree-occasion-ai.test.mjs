@@ -14,7 +14,9 @@ test("selects the highest valid known occasion prediction", () => {
     { label: prompts.wedding, score: 0.68 },
     { label: prompts.daily, score: 0.21 }
   ]);
-  assert.deepEqual(result, { label: "wedding", score: 0.68, margin: 0.26 });
+  assert.equal(result.label, "wedding");
+  assert.equal(result.score, 0.68);
+  assert.ok(Math.abs(result.margin - 0.26) < 1e-12, "margin should equal the difference between the top two scores");
   assert.equal(isConfidentOccasionPrediction(result), true);
 });
 
