@@ -53,3 +53,17 @@
  .ssv-finder-results{padding:0 15px 14px}.ssv-finder-note{padding:0 15px 13px}
 }
 @media(prefers-reduced-motion:reduce){.ssv-finder-trigger{transition:none}}
+
+/* Finder result details and numeric budget control, isolated to finder UI. */
+.ssv-finder-field input{
+  width:100%;min-height:42px;padding:0 11px;border:1px solid #E7E0D8;
+  border-radius:8px;background:#fff;color:#1C1917;font:400 12px Inter,Arial,sans-serif;
+}
+.ssv-finder-original{margin-left:5px;color:#78716C;font-size:11px;font-weight:400}
+.ssv-finder-badges{display:flex;flex-wrap:wrap;gap:5px;margin:7px 0 5px}
+.ssv-finder-badges span{
+  display:inline-block;padding:4px 5px;border:1px solid #E7E0D8;
+  background:#FAF7F2;color:#6E2735;font-size:9px;line-height:1.1;
+  letter-spacing:.04em;font-weight:600
+}
+.ssv-finder-field input:focus-visible{outline:2px solid #B38E5D;outline-offset:3px}
