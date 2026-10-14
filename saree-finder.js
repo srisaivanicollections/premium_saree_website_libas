@@ -90,7 +90,14 @@
     let matches=catalogue.filter(p=>String(p.category||"").trim().toLowerCase()===category.toLowerCase()||false).filter(p=>isAvailable(p));
     if(preferences.budget!=="")matches=matches.filter(p=>Number(p.price)<=Number(preferences.budget));
     if(preferences.color)matches=matches.filter(p=>String(p.color||"").trim().toLowerCase()===preferences.color.toLowerCase());
-    matches.sort((a,b)=>{\n      const best=Number(Boolean(b.bestSeller))-Number(Boolean(a.bestSeller));\n      if(best)return best;\n      const fresh=Number(Boolean(b.newArrival))-Number(Boolean(a.newArrival));\n      if(fresh)return fresh;\n      return Number(a.price)-Number(b.price);\n    });\n    const results=matches.slice(0,3);
+    matches.sort((a,b)=>{
+      const best=Number(Boolean(b.bestSeller))-Number(Boolean(a.bestSeller));
+      if(best)return best;
+      const fresh=Number(Boolean(b.newArrival))-Number(Boolean(a.newArrival));
+      if(fresh)return fresh;
+      return Number(a.price)-Number(b.price);
+    });
+    const results=matches.slice(0,3);
     if(!results.length){message.textContent="No verified in-stock "+(category==="Jewellery"?"jewellery":category.toLowerCase())+" match those choices. Try a higher budget or choose Any colour. Your stated budget will never be exceeded.";return;}
     const categoryLabel=category==="Jewellery"?"jewellery":category.toLowerCase();
     message.textContent="Found "+matches.length+" matching "+categoryLabel+(matches.length===1?" item":" items")+". Showing "+results.length+".";
@@ -105,7 +112,23 @@
       const details=[product.color?"Recorded colour: "+String(product.color).trim():"","In stock"].filter(Boolean).join(" · ");
       const card=document.createElement("article");card.className="ssv-finder-result";
       card.innerHTML='<img loading="lazy" src="'+esc(imageUrl)+'" alt="'+esc(product.name||categoryLabel)+'"><div><h3>'+esc(product.name||categoryLabel)+'</h3><p class="ssv-finder-price">'+money(product.price)+(hasOriginalPrice?' <del class="ssv-finder-original">'+money(originalPrice)+'</del>':"")+'</p>'+(badges.length?'<p class="ssv-finder-badges">'+badges.map(badge=>'<span>'+esc(badge)+'</span>').join("")+'</p>':"")+'<p class="ssv-finder-meta">'+esc(details)+'</p><button type="button" class="ssv-finder-view">Browse collection</button></div>';
-      $(".ssv-finder-view",card).addEventListener("click",()=>{\n        const targetName=String(product.name||"");\n        closePanel();\n        const grid=$("#products");\n        if(!grid||!targetName)return;\n        const categoryTab=[...document.querySelectorAll("[data-tab]")].find(tab=>tab.dataset.tab===category);\n        if(categoryTab)categoryTab.click();\n        const search=$("#search");\n        if(search&&search.value){search.value="";search.dispatchEvent(new Event("input",{bubbles:true}));}\n        const target=[...grid.querySelectorAll("img[alt]")].find(img=>img.alt===targetName);\n        if(target){\n          const item=target.closest(".lux-item-card,.product-card,article")||target;\n          item.scrollIntoView({behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",block:"center"});\n          item.setAttribute("tabindex","-1");item.focus({preventScroll:true});\n        }else if($("#shop"))$("#shop").scrollIntoView({behavior:"auto",block:"start"});\n      });\n      const img=$("img",card);img.addEventListener("error",()=>{img.hidden=true;},{once:true});
+      $(".ssv-finder-view",card).addEventListener("click",()=>{
+        const targetName=String(product.name||"");
+        closePanel();
+        const grid=$("#products");
+        if(!grid||!targetName)return;
+        const categoryTab=[...document.querySelectorAll("[data-tab]")].find(tab=>tab.dataset.tab===category);
+        if(categoryTab)categoryTab.click();
+        const search=$("#search");
+        if(search&&search.value){search.value="";search.dispatchEvent(new Event("input",{bubbles:true}));}
+        const target=[...grid.querySelectorAll("img[alt]")].find(img=>img.alt===targetName);
+        if(target){
+          const item=target.closest(".lux-item-card,.product-card,article")||target;
+          item.scrollIntoView({behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",block:"center"});
+          item.setAttribute("tabindex","-1");item.focus({preventScroll:true});
+        }else if($("#shop"))$("#shop").scrollIntoView({behavior:"auto",block:"start"});
+      });
+      const img=$("img",card);img.addEventListener("error",()=>{img.hidden=true;},{once:true});
       resultBox.append(card);
     });
   }
