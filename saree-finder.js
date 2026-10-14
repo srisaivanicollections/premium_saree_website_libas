@@ -14,7 +14,7 @@
     trigger.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.8l1.8 6.1 6.1 1.8-6.1 1.8-1.8 6.1-1.8-6.1-6.1-1.8 6.1-1.8z"/><path d="M19 15.5l.8 2.7 2.7.8-2.7.8-.8 2.7-.8-2.7-2.7-.8 2.7-.8z"/></svg><span class="ssv-finder-trigger-label">Find My Style</span>';
     const panel=document.createElement("section");
     panel.id="ssv-smart-finder-panel";panel.className="ssv-finder-panel";panel.hidden=true;panel.tabIndex=-1;panel.setAttribute("role","dialog");panel.setAttribute("aria-modal","true");panel.setAttribute("aria-labelledby","ssv-finder-heading");
-    panel.innerHTML='<header class="ssv-finder-head"><h2 class="ssv-finder-title" id="ssv-finder-heading"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.8l1.8 6.1 6.1 1.8-6.1 1.8-1.8 6.1-1.8-6.1-6.1-1.8 6.1-1.8z"/></svg>Find My Style</h2><button type="button" class="ssv-finder-close" aria-label="Close Find My Style">×</button></header><p class="ssv-finder-intro" id="ssv-finder-intro">Choose a category, budget and optional occasion. Sarees and dresses can also be filtered by recorded colour.</p><form id="ssv-finder-form"><div class="ssv-finder-fields"><div class="ssv-finder-field"><label for="ssv-finder-category">What are you shopping for?</label><select id="ssv-finder-category" name="category"><option value="Sarees">Sarees</option><option value="Dresses">Dresses</option><option value="Jewellery">Jewellery</option></select></div><div class="ssv-finder-field"><label for="ssv-finder-budget">Your maximum budget in ₹ (optional)</label><input id="ssv-finder-budget" name="budget" type="number" min="0" step="100" inputmode="numeric" placeholder="Any budget" autocomplete="off"></div><div class="ssv-finder-field" id="ssv-finder-color-field"><label for="ssv-finder-color">Preferred colour (optional)</label><select id="ssv-finder-color" name="color"><option value="">Any colour</option></select></div><div class="ssv-finder-field" id="ssv-finder-occasion-field"><label for="ssv-finder-occasion">Occasion (optional)</label><select id="ssv-finder-occasion" name="occasion"><option value="">Any occasion</option><option value="Daily Wear">Daily wear</option><option value="Wedding">Wedding</option><option value="Festive">Festive</option><option value="Party Wear">Party wear</option><option value="Traditional">Traditional</option></select></div></div><div class="ssv-finder-actions"><button type="button" class="ssv-finder-reset" id="ssv-finder-reset">Reset</button><button type="submit" class="ssv-finder-submit">Find Matches</button></div></form><p class="ssv-finder-message" id="ssv-finder-message" role="status" aria-live="polite"></p><div class="ssv-finder-results" id="ssv-finder-results"></div><p class="ssv-finder-note">Colour uses recorded product details. Occasion uses Admin tags first, then free browser-based image analysis for untagged products, with keyword fallback if AI is unavailable. The first AI scan may download a large model; your product images are analysed in your browser.</p>';
+    panel.innerHTML='<header class="ssv-finder-head"><h2 class="ssv-finder-title" id="ssv-finder-heading"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.8l1.8 6.1 6.1 1.8-6.1 1.8-1.8 6.1-1.8-6.1-6.1-1.8 6.1-1.8z"/></svg>Find My Style</h2><button type="button" class="ssv-finder-close" aria-label="Close Find My Style">×</button></header><p class="ssv-finder-intro" id="ssv-finder-intro">Choose a category, budget and optional occasion. Sarees and dresses can also be filtered by recorded colour.</p><form id="ssv-finder-form"><div class="ssv-finder-fields"><div class="ssv-finder-field"><label for="ssv-finder-category">What are you shopping for?</label><select id="ssv-finder-category" name="category"><option value="Sarees">Sarees</option><option value="Dresses">Dresses</option><option value="Jewellery">Jewellery</option></select></div><div class="ssv-finder-field"><label for="ssv-finder-budget">Your maximum budget in ₹ (optional)</label><input id="ssv-finder-budget" name="budget" type="number" min="0" step="100" inputmode="numeric" placeholder="Any budget" autocomplete="off"></div><div class="ssv-finder-field" id="ssv-finder-color-field"><label for="ssv-finder-color">Preferred colour (optional)</label><select id="ssv-finder-color" name="color"><option value="">Any colour</option></select></div><div class="ssv-finder-field" id="ssv-finder-occasion-field"><label for="ssv-finder-occasion">Occasion (optional)</label><select id="ssv-finder-occasion" name="occasion"><option value="">Any occasion</option><option value="Daily Wear">Daily wear</option><option value="Wedding">Wedding</option><option value="Festive">Festive</option><option value="Party Wear">Party wear</option><option value="Traditional">Traditional</option></select></div></div><div class="ssv-finder-actions"><button type="button" class="ssv-finder-reset" id="ssv-finder-reset">Reset</button><button type="submit" class="ssv-finder-submit">Find Matches</button></div></form><p class="ssv-finder-message" id="ssv-finder-message" role="status" aria-live="polite"></p><div class="ssv-finder-results" id="ssv-finder-results"></div><p class="ssv-finder-note">Colour and occasion use saved product details. Occasion recommendations are instant and do not download an AI model.</p>';
     const hint=document.createElement("div");
     hint.id="ssv-finder-hint";hint.className="ssv-finder-hint";hint.setAttribute("role","status");
     hint.innerHTML='<span>Find your perfect saree <span aria-hidden="true">✨</span></span><button type="button" class="ssv-finder-hint-close" aria-label="Dismiss Finder hint">×</button>';
@@ -263,47 +263,9 @@
     if(!OCCASION_VALUES.has(wanted))return false;
     return inferOccasions(product).includes(wanted);
   }
-  let aiOccasionModulePromise=null;
-  const AI_OCCASION_SCAN_LIMIT=24;
-  async function loadOccasionScanner(){
-    if(!aiOccasionModulePromise){
-      aiOccasionModulePromise=import("./saree-occasion-ai.js").then(module=>module.createOccasionScanner()).catch(error=>{
-        aiOccasionModulePromise=null;
-        throw error;
-      });
-    }
-    return aiOccasionModulePromise;
-  }
-  async function addAiOccasionMatches(products,occasion){
-    const resolved=new Map();
-    // Keyword inference has priority. AI only examines untagged products for which
-    // the existing conservative keyword rules found no occasion at all.
-    const eligible=products.filter(product=>!hasExplicitOccasionDecision(product)&&inferOccasions(product).length===0);
-    if(!eligible.length)return resolved;
-    // Bound first-run CPU/network work. The browser model is loaded only when an
-    // occasion filter is used; explicit Admin decisions never trigger image analysis.
-    const toScan=eligible.slice(0,AI_OCCASION_SCAN_LIMIT);
-    try{
-      const scanner=await loadOccasionScanner();
-      for(let index=0;index<toScan.length;index++){
-        const product=toScan[index];
-        const message=$("#ssv-finder-message");
-        if(message)message.textContent="Checking product images for "+occasion+" ("+(index+1)+" of "+toScan.length+"). First use downloads a free AI model; it is cached by your browser where supported.";
-        try{
-          const result=await scanner.classify(product.image,product.category);
-          if(result&&result.confident&&OCCASION_VALUES.has(result.label)){
-            resolved.set(String(product.id),result.label);
-          }
-        }catch(_){
-          // A broken image, offline browser, blocked CDN or model error must not
-          // break the Finder. Keyword inference remains the fallback.
-        }
-      }
-    }catch(_){
-      // Public, free model delivery is optional. Existing tag/keyword logic remains usable.
-    }
-    return resolved;
-  }
+  // Customer-side image inference is intentionally disabled. The Finder reads
+  // persisted occasion metadata and conservative text inference only, so it never
+  // downloads an AI model or delays customer recommendations.
   async function recommend(){
     const runId=++recommendationRun;
     const message=$("#ssv-finder-message");
@@ -317,19 +279,12 @@
       allMatches=allMatches.filter(p=>Number(p.price)<=budget);
     }
     if(preferences.color&& !["jewellery","jewelry"].includes(category.trim().toLowerCase()))allMatches=allMatches.filter(p=>String(p.color||"").trim().toLowerCase()===preferences.color.toLowerCase());
-    // Explicit Admin tags are authoritative. For untagged products, run the free
-    // browser-side image model lazily, then retain conservative keyword inference
-    // for products outside the scan window or if the model is unavailable.
+    // Customer recommendations use only saved metadata and conservative keyword
+    // inference. AI enrichment belongs in Admin Studio, never in the customer path.
     if(preferences.occasion){
       const requested=preferences.occasion.trim().toLowerCase();
       if(OCCASION_VALUES.has(requested)){
-        const aiMatches=await addAiOccasionMatches(allMatches,requested);
-        if(runId!==recommendationRun||$("#ssv-smart-finder-panel")?.hidden)return;
-        allMatches=allMatches.filter(product=>{
-          if(hasExplicitOccasionDecision(product))return matchesOccasion(product,requested);
-          const keywordMatches=matchesOccasion(product,requested);
-          return keywordMatches||aiMatches.get(String(product.id))===requested;
-        });
+        allMatches=allMatches.filter(product=>matchesOccasion(product,requested));
       }else allMatches=[];
     }
     // Deterministic recommendation score: products matching both merchandising
