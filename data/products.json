@@ -41,7 +41,7 @@
     "id": 1791810958129,
     "name": "Chinnon Saree",
     "category": "Sarees",
-    "color": "",
+    "color": "Grey",
     "price": 3500,
     "originalPrice": 4000,
     "image": "assets/products/1791828771779-999930cbc550-file_000000005b208211ac51b8b8724d07d6.png",
@@ -49,7 +49,25 @@
     "newArrival": true,
     "bestSeller": true,
     "availability": true,
-    "occasions": []
+    "occasions": [
+      "Traditional"
+    ],
+    "occasionMetadata": {
+      "source": "ai",
+      "model": "CLIP-ViT-B-32",
+      "score": 0.4288,
+      "margin": 0.0798,
+      "image": "assets/products/1791828771779-999930cbc550-file_000000005b208211ac51b8b8724d07d6.png",
+      "version": 1
+    },
+    "colourMetadata": {
+      "source": "ai",
+      "model": "CLIP-ViT-B-32",
+      "score": 0.3088,
+      "margin": 0.1588,
+      "image": "assets/products/1791828771779-999930cbc550-file_000000005b208211ac51b8b8724d07d6.png",
+      "version": 1
+    }
   },
   {
     "id": 1791751897314,
