@@ -10645,6 +10645,7 @@ async function quarantineUploadedImage(path){
 }
 
 let ssvOccasionEnrichmentPromise=null;
+const ssvOccasionEnrichmentPendingIds=new Set();
 const SSV_OCCASION_LABELS=new Set(["Daily Wear","Wedding","Festive","Party Wear","Traditional"]);
 function ssvHasOccasionDecision(product){
   return Array.isArray(product?.occasions)&&product.occasions.some(value=>SSV_OCCASION_LABELS.has(value));
@@ -10658,7 +10659,10 @@ function ssvHasNoOccasionMetadata(product){
     (Array.isArray(product.occasions)&&product.occasions.length===0));
 }
 async function ssvEnrichOccasionCatalogue({allMissing=false,productId=null}={}){
-  if(ssvOccasionEnrichmentPromise)return ssvOccasionEnrichmentPromise;
+  if(ssvOccasionEnrichmentPromise){
+    if(productId!==null&&productId!==undefined)ssvOccasionEnrichmentPendingIds.add(Number(productId));
+    return ssvOccasionEnrichmentPromise;
+  }
   ssvOccasionEnrichmentPromise=(async()=>{
     const status=$("#adminProductResults");
     const originalText=status?.textContent||"";
@@ -10724,6 +10728,13 @@ async function ssvEnrichOccasionCatalogue({allMissing=false,productId=null}={}){
       return {processed,skipped,failed};
     }finally{
       ssvOccasionEnrichmentPromise=null;
+      const pendingIds=[...ssvOccasionEnrichmentPendingIds];
+      ssvOccasionEnrichmentPendingIds.clear();
+      if(pendingIds.length){
+        Promise.resolve().then(async()=>{
+          for(const pendingId of pendingIds)await ssvEnrichOccasionCatalogue({productId:pendingId});
+        }).catch(error=>console.warn("Queued occasion enrichment deferred:",error));
+      }
     }
   })();
   return ssvOccasionEnrichmentPromise;
