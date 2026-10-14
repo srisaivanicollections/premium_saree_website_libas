@@ -103,7 +103,7 @@
     closePanel();
     const grid=$("#products");
     if(!grid||!targetName)return;
-    const categoryTab=[...document.querySelectorAll("[data-tab]")].find(tab=>tab.dataset.tab===category);
+    const categoryTab=[...document.querySelectorAll("[data-tab]")].find(tab=>String(tab.dataset.tab||"").toLowerCase()===category.toLowerCase()||(["jewellery","jewelry"].includes(String(tab.dataset.tab||"").toLowerCase())&&["jewellery","jewelry"].includes(category.toLowerCase())));
     if(categoryTab)categoryTab.click();
     const search=$("#search")||$("#shop .lux-search input");
     if(search&&search.value){search.value="";search.dispatchEvent(new Event("input",{bubbles:true}));}
@@ -163,7 +163,8 @@
       $(".ssv-finder-add",card).addEventListener("click",()=>{
         const targetName=String(product.name||"");
         const grid=$("#products");
-        const categoryTab=[...document.querySelectorAll("[data-tab]")].find(tab=>tab.dataset.tab===String(product.category||preferences.category));
+        const targetCategory=String(product.category||preferences.category);
+        const categoryTab=[...document.querySelectorAll("[data-tab]")].find(tab=>String(tab.dataset.tab||"").toLowerCase()===targetCategory.toLowerCase()||(["jewellery","jewelry"].includes(String(tab.dataset.tab||"").toLowerCase())&&["jewellery","jewelry"].includes(targetCategory.toLowerCase())));
         if(categoryTab)categoryTab.click();
         const search=$("#search")||$("#shop .lux-search input");
         if(search&&search.value){search.value="";search.dispatchEvent(new Event("input",{bubbles:true}));}
