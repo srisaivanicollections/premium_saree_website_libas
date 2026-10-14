@@ -136,10 +136,14 @@ jobs:
               localStorage.setItem("ssv_github_token_v1", "ghp_" + "e2eTestToken012345678901234567890123456789");
             });
             await page.route(workerPattern, async route => {
+              if (route.request().method() === "OPTIONS") {
+                await route.fulfill({ status: 204, headers: { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Methods": "POST, OPTIONS", "Access-Control-Allow-Headers": "Content-Type" }, body: "" });
+                return;
+              }
               const body = route.request().postDataJSON() || {};
               state.workerActions.push(body.action);
               if (body.action === "submitOrder") {
-                await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ success: true, accepted: true, reference: "E2E-TEST-ORDER" }) });
+                await route.fulfill({ status: 200, headers: { "Access-Control-Allow-Origin": "*" }, contentType: "application/json", body: JSON.stringify({ success: true, accepted: true, reference: "E2E-TEST-ORDER" }) });
               } else if (body.action === "send" || body.action === "verify") {
                 // OTP UI and verification code path only. Never send a real email or OTP.
                 await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ success: true, message: "Mock OTP accepted" }) });
@@ -149,12 +153,17 @@ jobs:
             });
             await page.route(githubPattern, async route => {
               const request = route.request();
+              if (request.method() === "OPTIONS") {
+                await route.fulfill({ status: 204, headers: { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Methods": "GET, PUT, OPTIONS", "Access-Control-Allow-Headers": "Authorization, Content-Type, Accept, X-GitHub-Api-Version" }, body: "" });
+                return;
+              }
               const url = new URL(request.url());
               const isProducts = url.pathname.endsWith("/data/products.json");
               if (request.method() === "GET") {
                 const value = isProducts ? state.products : state.settings;
                 await route.fulfill({
                   status: 200,
+                  headers: { "Access-Control-Allow-Origin": "*" },
                   contentType: "application/vnd.github+json",
                   body: JSON.stringify({ sha: isProducts ? "products-test-sha" : "settings-test-sha", content: Buffer.from(JSON.stringify(value)).toString("base64") })
                 });
