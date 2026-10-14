@@ -14,7 +14,7 @@
     trigger.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.8l1.8 6.1 6.1 1.8-6.1 1.8-1.8 6.1-1.8-6.1-6.1-1.8 6.1-1.8z"/><path d="M19 15.5l.8 2.7 2.7.8-2.7.8-.8 2.7-.8-2.7-2.7-.8 2.7-.8z"/></svg><span class="ssv-finder-trigger-label">Find My Style</span>';
     const panel=document.createElement("section");
     panel.id="ssv-smart-finder-panel";panel.className="ssv-finder-panel";panel.hidden=true;panel.tabIndex=-1;panel.setAttribute("role","dialog");panel.setAttribute("aria-modal","true");panel.setAttribute("aria-labelledby","ssv-finder-heading");
-    panel.innerHTML='<header class="ssv-finder-head"><h2 class="ssv-finder-title" id="ssv-finder-heading"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.8l1.8 6.1 6.1 1.8-6.1 1.8-1.8 6.1-1.8-6.1-6.1-1.8 6.1-1.8z"/></svg>Find My Style</h2><button type="button" class="ssv-finder-close" aria-label="Close Find My Style">×</button></header><p class="ssv-finder-intro" id="ssv-finder-intro">Choose a category, budget and optional occasion. Sarees and dresses can also be filtered by recorded colour.</p><form id="ssv-finder-form"><div class="ssv-finder-fields"><div class="ssv-finder-field"><label for="ssv-finder-category">What are you shopping for?</label><select id="ssv-finder-category" name="category"><option value="Sarees">Sarees</option><option value="Dresses">Dresses</option><option value="Jewellery">Jewellery</option></select></div><div class="ssv-finder-field"><label for="ssv-finder-budget">Your maximum budget in ₹ (optional)</label><input id="ssv-finder-budget" name="budget" type="number" min="0" step="100" inputmode="numeric" placeholder="Any budget" autocomplete="off"></div><div class="ssv-finder-field" id="ssv-finder-color-field"><label for="ssv-finder-color">Preferred colour (optional)</label><select id="ssv-finder-color" name="color"><option value="">Any colour</option></select></div><div class="ssv-finder-field"><label for="ssv-finder-occasion">Occasion (optional)</label><select id="ssv-finder-occasion" name="occasion"><option value="">Any occasion</option><option value="Daily Wear">Daily wear</option><option value="Wedding">Wedding</option><option value="Festive">Festive</option><option value="Party Wear">Party wear</option><option value="Traditional">Traditional</option></select></div></div><div class="ssv-finder-actions"><button type="button" class="ssv-finder-reset" id="ssv-finder-reset">Reset</button><button type="submit" class="ssv-finder-submit">Find Matches</button></div></form><p class="ssv-finder-message" id="ssv-finder-message" role="status" aria-live="polite"></p><div class="ssv-finder-results" id="ssv-finder-results"></div><p class="ssv-finder-note">Colour and occasion matches use recorded product details only. We do not guess missing product attributes.</p>';
+    panel.innerHTML='<header class="ssv-finder-head"><h2 class="ssv-finder-title" id="ssv-finder-heading"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.8l1.8 6.1 6.1 1.8-6.1 1.8-1.8 6.1-1.8-6.1-6.1-1.8 6.1-1.8z"/></svg>Find My Style</h2><button type="button" class="ssv-finder-close" aria-label="Close Find My Style">×</button></header><p class="ssv-finder-intro" id="ssv-finder-intro">Choose a category, budget and optional occasion. Sarees and dresses can also be filtered by recorded colour.</p><form id="ssv-finder-form"><div class="ssv-finder-fields"><div class="ssv-finder-field"><label for="ssv-finder-category">What are you shopping for?</label><select id="ssv-finder-category" name="category"><option value="Sarees">Sarees</option><option value="Dresses">Dresses</option><option value="Jewellery">Jewellery</option></select></div><div class="ssv-finder-field"><label for="ssv-finder-budget">Your maximum budget in ₹ (optional)</label><input id="ssv-finder-budget" name="budget" type="number" min="0" step="100" inputmode="numeric" placeholder="Any budget" autocomplete="off"></div><div class="ssv-finder-field" id="ssv-finder-color-field"><label for="ssv-finder-color">Preferred colour (optional)</label><select id="ssv-finder-color" name="color"><option value="">Any colour</option></select></div><div class="ssv-finder-field"><label for="ssv-finder-occasion">Occasion (optional)</label><select id="ssv-finder-occasion" name="occasion"><option value="">Any occasion</option><option value="Daily Wear">Daily wear</option><option value="Wedding">Wedding</option><option value="Festive">Festive</option><option value="Party Wear">Party wear</option><option value="Traditional">Traditional</option></select></div></div><div class="ssv-finder-actions"><button type="button" class="ssv-finder-reset" id="ssv-finder-reset">Reset</button><button type="submit" class="ssv-finder-submit">Find Matches</button></div></form><p class="ssv-finder-message" id="ssv-finder-message" role="status" aria-live="polite"></p><div class="ssv-finder-results" id="ssv-finder-results"></div><p class="ssv-finder-note">Colour uses recorded product details. Occasion uses Admin tags when available, otherwise the Finder estimates likely matches from product names and descriptions.</p>';
     const hint=document.createElement("div");
     hint.id="ssv-finder-hint";hint.className="ssv-finder-hint";hint.setAttribute("role","status");
     hint.innerHTML='<span>Find your perfect saree <span aria-hidden="true">✨</span></span><button type="button" class="ssv-finder-hint-close" aria-label="Dismiss Finder hint">×</button>';
@@ -215,6 +215,32 @@
     if(genericHelp){const link=document.createElement("a");link.className="ssv-finder-help";link.href=genericHelp;link.target="_blank";link.rel="noopener noreferrer";link.textContent="Need Help Choosing? WhatsApp Us";controls.append(link);}
     resultBox.append(controls);
   }
+  // Occasion inference is a fallback only when Admin has not supplied any occasion tags.
+  // It deliberately uses descriptive product fields, never image pixels, image filenames,
+  // colour, price, stock or merchandising flags. Keywords are signals, not guarantees.
+  function inferOccasions(product){
+    const explicit=Array.isArray(product.occasions)
+      ? product.occasions.map(value=>String(value||"").trim()).filter(Boolean)
+      : [];
+    if(explicit.length)return [...new Set(explicit.map(value=>value.toLowerCase()))];
+    const text=[product.name,product.description,product.material,product.fabric,product.style,product.type,product.subcategory,product.tags]
+      .flatMap(value=>Array.isArray(value)?value:[value])
+      .filter(value=>typeof value==="string"&&value.trim())
+      .join(" ").toLowerCase().replace(/[_-]+/g," ").replace(/\\s+/g," ");
+    if(!text)return [];
+    const inferred=[];
+    const has=pattern=>pattern.test(text);
+    if(has(/\\b(daily wear|everyday|every day|casual wear|office wear|workwear|cotton|linen|lightweight|printed|basic wear)\\b/))inferred.push("daily wear");
+    if(has(/\\b(wedding|bridal|bride|bridalwear|weddingwear|kanjivaram|kanchipuram|banarasi|benarasi|pattu|bridal silk|wedding guest|heavy work)\\b/))inferred.push("wedding");
+    if(has(/\\b(festive|festival|diwali|sankranti|dasara|navratri|celebration|brocade|zari|festive wear)\\b/))inferred.push("festive");
+    if(has(/\\b(party wear|partywear|party|sequins?|shimmer|glitter|cocktail wear|evening wear|gown)\\b/))inferred.push("party wear");
+    if(has(/\\b(traditional|ethnic|temple|heritage|kanjivaram|kanchipuram|banarasi|benarasi|pattu|zari|ikat|kalamkari|handloom)\\b/))inferred.push("traditional");
+    return [...new Set(inferred)];
+  }
+  function matchesOccasion(product,occasion){
+    if(!occasion)return true;
+    return inferOccasions(product).includes(String(occasion).trim().toLowerCase());
+  }
   function recommend(){
     const message=$("#ssv-finder-message");
     const category=preferences.category||"Sarees";
@@ -227,8 +253,8 @@
       allMatches=allMatches.filter(p=>Number(p.price)<=budget);
     }
     if(preferences.color&& !["jewellery","jewelry"].includes(category.trim().toLowerCase()))allMatches=allMatches.filter(p=>String(p.color||"").trim().toLowerCase()===preferences.color.toLowerCase());
-    // Only explicit product metadata can satisfy a selected occasion.
-    if(preferences.occasion)allMatches=allMatches.filter(p=>Array.isArray(p.occasions)&&p.occasions.some(value=>String(value).trim().toLowerCase()===preferences.occasion.toLowerCase()));
+    // Prefer explicit Admin tags; infer only when the product has no occasion tags.
+    if(preferences.occasion)allMatches=allMatches.filter(p=>matchesOccasion(p,preferences.occasion));
     // Deterministic recommendation score: products matching both merchandising
     // signals lead, followed by one signal, then price. Ties preserve catalogue order.
     allMatches=allMatches.map((product,index)=>({product,index,score:(product.bestSeller===true?2:0)+(product.newArrival===true?1:0)}))
