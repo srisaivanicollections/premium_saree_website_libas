@@ -25,7 +25,7 @@ jobs:
           import { readFileSync } from "node:fs";
           import assert from "node:assert/strict";
           const html = readFileSync("index.html", "utf8");
-          const scripts = [...html.matchAll(/<script\\b([^>]*)>([\\s\\S]*?)<\\/script\\s*>/gi)];
+          const scripts = [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi)];
           let checked = 0;
           for (const [, attrs, source] of scripts) {
             if (/\\bsrc\\s*=/i.test(attrs)) continue;
@@ -73,8 +73,16 @@ jobs:
           assert.match(finder, /data-recovery="all"/, "No-match state must offer a browse-all recovery action");
           assert.match(finder, /textContent="New Arrivals"/, "Finder must offer a New Arrivals shortcut");
           assert.match(finder, /textContent="Best Sellers"/, "Finder must offer a Best Sellers shortcut");
-          assert.match(finder, /function navigateToProduct\(product,addToBag=false\)/, "Finder product actions must reuse the storefront catalogue");
-          assert.match(finder, /querySelector\("\[data-add-cart\],\.ssv-add-cart"\)/, "Add to Bag must delegate to the existing cart control");
+          assert.match(finder, /function isCategoryEnabled\(category\)/, "Finder must respect storefront category visibility settings");
+          assert.match(finder, /filter\(p=>isCategoryEnabled\(p.category\)\)/, "Disabled storefront categories must not be recommended");
+          assert.match(finder, /card.dataset.productId=String\(product.id/, "Finder results must retain stable product IDs");
+          assert.match(finder, /window\.SSVCart/, "Finder must use the shared cart API, not a DOM timing race");
+          assert.match(finder, /cartApi.addProduct\(product.id\)/, "Add to Bag must call the cart API with the stable product ID");
+          assert.match(page, /class="lux-item-card" data-product-id=/, "Storefront product cards must expose stable product IDs");
+          assert.match(checkout, /function addProductToCart\(id\)/, "Cart must expose one validated add operation");
+          assert.match(checkout, /if\(!saveCart\(nextCart\)\)return \{ok:false,reason:"storage"\}/, "Cart must not report success when persistence fails");
+          assert.match(checkout, /window\.SSVCart=Object\.freeze\(\{addProduct:addProductToCart\}\)/, "Finder and storefront must share the same cart operation");
+          assert.match(checkout, /const card=media\.closest\("\[data-product-id\]"\)/, "Cart controls must resolve products by stable ID");
           assert.match(finder, /!\["jewellery","jewelry"\]\.includes\(category\.trim\(\)\.toLowerCase\(\)\)/, "Jewellery must not be colour-filtered");
           assert.ok(catalogue.some(p => p.category === "Jewellery"), "Catalogue must contain Jewellery");
           assert.ok(catalogue.every(p => ["Sarees","Dresses","Jewellery"].includes(p.category)), "Catalogue categories must be canonical");
