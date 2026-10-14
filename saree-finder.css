@@ -1,0 +1,69 @@
+/* Smart Saree Finder: isolated styles only. */
+.ssv-finder-trigger{
+  position:fixed;right:18px;bottom:calc(18px + env(safe-area-inset-bottom,0px));z-index:90;
+  display:inline-flex;align-items:center;justify-content:center;gap:9px;
+  min-width:46px;min-height:46px;padding:0 15px;border:1px solid rgba(179,142,93,.58);
+  border-radius:999px;background:#6E2735;color:#E8D4A9;
+  box-shadow:0 5px 18px rgba(28,25,23,.13);cursor:pointer;
+  transition:background .18s ease,transform .18s ease,box-shadow .18s ease;
+}
+.ssv-finder-trigger:hover{background:#5d202d;box-shadow:0 7px 20px rgba(28,25,23,.17);transform:translateY(-1px)}
+.ssv-finder-trigger:active{transform:translateY(0)}
+.ssv-finder-trigger:focus-visible,.ssv-finder-panel button:focus-visible,.ssv-finder-panel select:focus-visible{outline:2px solid #B38E5D;outline-offset:3px}
+.ssv-finder-trigger svg{width:18px;height:18px;flex:0 0 18px;fill:none;stroke:currentColor;stroke-width:1.55;stroke-linecap:round;stroke-linejoin:round}
+.ssv-finder-trigger-label{font-size:11px;letter-spacing:.035em;font-weight:500;white-space:nowrap}
+.ssv-finder-panel{
+  position:fixed;right:18px;bottom:calc(76px + env(safe-area-inset-bottom,0px));z-index:91;
+  display:flex;flex-direction:column;width:min(390px,calc(100vw - 28px));max-height:min(76vh,720px);
+  overflow:hidden;border:1px solid #E7E0D8;border-radius:16px;background:#FAF7F2;color:#1C1917;
+  box-shadow:0 18px 54px rgba(28,25,23,.2);font:400 13px/1.5 Inter,Arial,sans-serif;
+}
+.ssv-finder-panel[hidden],.ssv-finder-trigger[hidden]{display:none!important}
+.ssv-finder-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:17px 18px 13px;border-bottom:1px solid #E7E0D8}
+.ssv-finder-title{display:flex;align-items:center;gap:8px;margin:0;color:#6E2735;font:500 25px/1.1 "Cormorant Garamond",Georgia,serif}
+.ssv-finder-title svg{width:18px;height:18px;stroke:#B38E5D;fill:none;stroke-width:1.6}
+.ssv-finder-close{display:grid;place-items:center;width:34px;height:34px;border:0;border-radius:50%;background:transparent;color:#1C1917;font-size:25px;line-height:1}
+.ssv-finder-close:hover{background:#F0E8DF}
+.ssv-finder-intro{margin:0;padding:12px 18px 4px;color:#78716C;font-size:12px}
+.ssv-finder-fields{display:grid;gap:15px;padding:12px 18px 16px;overflow:auto}
+.ssv-finder-field{display:grid;gap:7px;min-width:0}
+.ssv-finder-field label,.ssv-finder-legend{color:#3D332F;font-size:11px;font-weight:600}
+.ssv-finder-field select{width:100%;min-height:42px;padding:0 11px;border:1px solid #E7E0D8;border-radius:8px;background:#fff;color:#1C1917;font:400 12px Inter,Arial,sans-serif}
+.ssv-finder-actions{display:flex;gap:9px;padding:12px 18px 16px;border-top:1px solid #E7E0D8;background:#FAF7F2}
+.ssv-finder-submit{flex:1;min-height:44px;padding:10px 14px;border:1px solid #6E2735;border-radius:8px;background:#6E2735;color:#FAF7F2;font-size:11px;font-weight:600;letter-spacing:.025em}
+.ssv-finder-submit:hover{background:#5d202d}
+.ssv-finder-reset{min-height:44px;padding:9px 12px;border:1px solid #E7E0D8;border-radius:8px;background:transparent;color:#5D514A;font-size:11px}
+.ssv-finder-message{margin:0;padding:0 18px 14px;color:#78716C;font-size:12px}
+.ssv-finder-results{display:grid;gap:10px;padding:0 18px 18px;overflow:auto}
+.ssv-finder-result{display:grid;grid-template-columns:76px minmax(0,1fr);gap:12px;padding:10px;border:1px solid #E7E0D8;border-radius:10px;background:#fff}
+.ssv-finder-result img{display:block;width:76px;height:100px;object-fit:cover;border-radius:5px;background:#F4EFEA}
+.ssv-finder-result h3{margin:2px 0 5px;font:500 18px/1.15 "Cormorant Garamond",Georgia,serif}
+.ssv-finder-price{margin:0;color:#6E2735;font-size:13px;font-weight:600}
+.ssv-finder-meta{margin:4px 0 8px;color:#78716C;font-size:10px}
+.ssv-finder-view{display:inline-flex;align-items:center;min-height:30px;padding:6px 10px;border:1px solid #6E2735;border-radius:6px;background:#fff;color:#6E2735;text-decoration:none;font-size:10px;font-weight:600}
+.ssv-finder-view:hover{background:#6E2735;color:#fff}
+.ssv-finder-note{margin:0;padding:0 18px 16px;color:#78716C;font-size:10px}
+@media(min-width:901px){.ssv-finder-trigger{right:24px;bottom:24px;min-height:42px;padding:0 16px}.ssv-finder-panel{right:24px;bottom:78px}}
+@media(max-width:600px){
+ .ssv-finder-trigger{right:14px;bottom:calc(14px + env(safe-area-inset-bottom,0px));width:46px;min-width:46px;height:46px;min-height:46px;padding:0;border-radius:50%}
+ .ssv-finder-trigger-label{display:none}
+ .ssv-finder-panel{right:8px;bottom:calc(68px + env(safe-area-inset-bottom,0px));width:calc(100vw - 16px);max-height:min(78dvh,700px);border-radius:16px}
+ .ssv-finder-head{padding:14px 15px 11px}.ssv-finder-intro{padding:10px 15px 3px}
+ .ssv-finder-fields{padding:10px 15px 14px;gap:12px}.ssv-finder-actions{padding:10px 15px 13px}
+ .ssv-finder-results{padding:0 15px 14px}.ssv-finder-note{padding:0 15px 13px}
+}
+@media(prefers-reduced-motion:reduce){.ssv-finder-trigger{transition:none}}
+
+/* Finder result details and numeric budget control, isolated to finder UI. */
+.ssv-finder-field input{
+  width:100%;min-height:42px;padding:0 11px;border:1px solid #E7E0D8;
+  border-radius:8px;background:#fff;color:#1C1917;font:400 12px Inter,Arial,sans-serif;
+}
+.ssv-finder-original{margin-left:5px;color:#78716C;font-size:11px;font-weight:400}
+.ssv-finder-badges{display:flex;flex-wrap:wrap;gap:5px;margin:7px 0 5px}
+.ssv-finder-badges span{
+  display:inline-block;padding:4px 5px;border:1px solid #E7E0D8;
+  background:#FAF7F2;color:#6E2735;font-size:9px;line-height:1.1;
+  letter-spacing:.04em;font-weight:600
+}
+.ssv-finder-field input:focus-visible{outline:2px solid #B38E5D;outline-offset:3px}
