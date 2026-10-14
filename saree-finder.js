@@ -226,9 +226,11 @@
       : [];
     // A non-empty, valid explicit tag list is authoritative. Do not augment or override it.
     if(explicit.length)return explicit;
-    // Invalid non-empty metadata is not treated as "untagged": fail closed rather than
-    // silently replacing an Admin decision with a guess.
-    if(Array.isArray(raw)&&raw.some(value=>String(value||"").trim())&&explicit.length===0)return [];
+    // Any malformed non-empty metadata fails closed instead of falling through to inference.
+    if(raw!==undefined&&raw!==null){
+      const hasRawValue=Array.isArray(raw)?raw.some(value=>String(value??"").trim().length>0):String(raw).trim().length>0;
+      if(hasRawValue)return [];
+    }
     const text=[product.name,product.description,product.material,product.fabric,product.style,product.type,product.subcategory,product.tags]
       .flatMap(value=>Array.isArray(value)?value:[value])
       .filter(value=>typeof value==="string"&&value.trim())
@@ -272,7 +274,9 @@
   }
   async function addAiOccasionMatches(products,occasion){
     const resolved=new Map();
-    const eligible=products.filter(product=>!hasExplicitOccasionDecision(product));
+    // Keyword inference has priority. AI only examines untagged products for which
+    // the existing conservative keyword rules found no occasion at all.
+    const eligible=products.filter(product=>!hasExplicitOccasionDecision(product)&&inferOccasions(product).length===0);
     if(!eligible.length)return resolved;
     // Bound first-run CPU/network work. The browser model is loaded only when an
     // occasion filter is used; explicit Admin decisions never trigger image analysis.
@@ -319,7 +323,8 @@
         const aiMatches=await addAiOccasionMatches(allMatches,requested);
         allMatches=allMatches.filter(product=>{
           if(hasExplicitOccasionDecision(product))return matchesOccasion(product,requested);
-          return aiMatches.get(String(product.id))===requested||matchesOccasion(product,requested);
+          const keywordMatches=matchesOccasion(product,requested);
+          return keywordMatches||aiMatches.get(String(product.id))===requested;
         });
       }else allMatches=[];
     }
