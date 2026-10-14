@@ -247,9 +247,10 @@
   }
   function hasExplicitOccasionDecision(product){
     const raw=product&&product.occasions;
-    if(!Array.isArray(raw))return false;
+    if(raw===undefined||raw===null)return false;
     // Any non-empty Admin metadata is authoritative, including malformed values:
     // malformed values fail closed instead of being replaced by image guesses.
+    if(!Array.isArray(raw))return String(raw).trim().length>0;
     return raw.some(value=>String(value??"").trim().length>0);
   }
   function matchesOccasion(product,occasion){
