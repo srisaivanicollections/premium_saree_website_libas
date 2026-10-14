@@ -1,4 +1,4 @@
-const CACHE_NAME = "ssv-offline-v20";
+const CACHE_NAME = "ssv-offline-v21";
 const SCOPE_URL = self.registration.scope;
 const HOME_URL = new URL("./", SCOPE_URL).href;
 const INDEX_URL = new URL("index.html", SCOPE_URL).href;
@@ -41,7 +41,7 @@ self.addEventListener("fetch", event => {
     event.respondWith((async () => {
       const cache = await caches.open(CACHE_NAME);
       try {
-        const response = await fetch(request);
+        const response = await fetch(request, { cache: "no-store" });
         if (response && response.ok) {
           // Save the requested page and keep the canonical homepage fallback fresh.
           await cache.put(request, response.clone());
