@@ -9178,7 +9178,7 @@ body:not(#admin) [style*="font-size:7px"]{font-size:8px!important}
   <button type="button" id="resendOtpBtn" class="text-link" style="display:none;">RESEND OTP</button>
   <button type="button" id="forgotPassword" class="text-link" style="display:none;">Forgot password?</button>
   <small id="loginMsg" class="storage-status-msg" aria-live="polite"></small>
-</div><div id="studio" class="hidden"><div class="studio-nav"><button data-view="products">PRODUCTS</button><button data-view="settings">SETTINGS</button></div><div id="adminFeedback" class="admin-feedback" role="status" aria-live="polite" aria-atomic="true" hidden></div><div id="studioBody"></div></div></div></div>
+</div><div id="studio" class="hidden"><div class="studio-nav"><button data-view="products">PRODUCTS</button><button data-view="ai-review">AI REVIEW</button><button data-view="settings">SETTINGS</button></div><div id="adminFeedback" class="admin-feedback" role="status" aria-live="polite" aria-atomic="true" hidden></div><div id="studioBody"></div></div></div></div>
 <style id="ssv-admin-responsive-touch-and-desktop-20261011">
 /* Admin Studio responsive correction. Touch devices stay readable even when the browser requests Desktop site.
    Scope is limited to #admin; no authentication, storage, CRUD or WhatsApp behavior changes. */
@@ -14432,4 +14432,21 @@ if ("serviceWorker" in navigator) {
 }
 </style>
 
+<style id="ssv-admin-ai-review-20261014">
+#admin .admin-ai-review{color:#29231e}
+#admin .admin-ai-review h3{font:500 27px/1.2 "Cormorant Garamond",Georgia,serif;margin:0 0 8px}
+#admin .admin-ai-review>p{font:12px/1.6 Inter,Arial,sans-serif;color:#75695e;max-width:720px}
+#admin .admin-ai-actions{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}
+#admin .admin-ai-actions button{min-height:40px;padding:9px 13px;border:1px solid #d9cdbb;background:#fff;color:#29231e;border-radius:4px;font:600 9px Montserrat,Arial,sans-serif;letter-spacing:.05em}
+#admin .admin-ai-actions button:disabled{opacity:.45;cursor:not-allowed}
+#admin .admin-ai-actions #aiScanCatalog{background:#29231e;color:#fff}
+#admin .admin-ai-card{border:1px solid #e4d8c5;border-radius:5px;padding:12px;margin:10px 0;background:#fff}
+#admin .admin-ai-select{display:flex;align-items:center;gap:8px;font:600 11px Inter,Arial,sans-serif;margin-bottom:10px}
+#admin .admin-ai-product{display:grid;grid-template-columns:90px minmax(0,1fr);gap:12px}
+#admin .admin-ai-product img{width:90px;height:120px;object-fit:contain;background:#faf7f2;border:1px solid #eee5d9}
+#admin .admin-ai-product strong{display:block;font:500 18px/1.2 "Cormorant Garamond",Georgia,serif;overflow-wrap:anywhere}
+#admin .admin-ai-product small{display:block;color:#82766a;font:10px/1.5 Inter,Arial,sans-serif;margin:4px 0}
+#admin .admin-ai-product p{font:11px/1.45 Inter,Arial,sans-serif;margin:5px 0;overflow-wrap:anywhere}
+@media(max-width:500px){#admin .admin-ai-product{grid-template-columns:68px minmax(0,1fr);gap:9px}#admin .admin-ai-product img{width:68px;height:92px}#admin .admin-ai-actions button{flex:1 1 100%}}
+</style>
 </html>
