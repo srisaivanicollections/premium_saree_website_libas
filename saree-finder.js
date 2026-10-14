@@ -182,7 +182,7 @@
       const availabilityLabel=(product.availability===true||product.inStock===true)?"In stock":"Availability not specified";
       const details=[product.color?"Recorded colour: "+String(product.color).trim():"",availabilityLabel].filter(Boolean).join(" · ");
       const card=document.createElement("article");card.className="ssv-finder-result";card.dataset.productId=String(product.id??"");
-      card.innerHTML='<img loading="lazy" src="'+esc(imageUrl)+'" alt="'+esc(product.name||categoryLabel)+'"><div class="ssv-finder-result-copy">'+'<h3>'+esc(product.name||categoryLabel)+'</h3><p class="ssv-finder-price">'+money(product.price)+(hasOriginalPrice?' <del class="ssv-finder-original">'+money(originalPrice)+'</del>':"")+'</p>'+(badges.length?'<p class="ssv-finder-badges">'+badges.map(badge=>'<span>'+esc(badge)+'</span>').join("")+'</p>':"")+'<p class="ssv-finder-meta">'+esc(details)+'</p><div class="ssv-finder-product-actions"><button type="button" class="ssv-finder-view">View Product</button><button type="button" class="ssv-finder-add">Add to Bag</button></div></div>';
+      card.innerHTML='<div class="ssv-finder-result-media"><img loading="lazy" src="'+esc(imageUrl)+'" alt="'+esc(product.name||categoryLabel)+'"></div><div class="ssv-finder-result-copy">'+'<h3>'+esc(product.name||categoryLabel)+'</h3><p class="ssv-finder-price">'+money(product.price)+(hasOriginalPrice?' <del class="ssv-finder-original">'+money(originalPrice)+'</del>':"")+'</p>'+(badges.length?'<p class="ssv-finder-badges">'+badges.map(badge=>'<span>'+esc(badge)+'</span>').join("")+'</p>':"")+'<p class="ssv-finder-meta">'+esc(details)+'</p><div class="ssv-finder-product-actions"><button type="button" class="ssv-finder-view">View Product</button><button type="button" class="ssv-finder-add">Add to Bag</button></div></div>';
       $(".ssv-finder-view",card).addEventListener("click",()=>navigateToProduct(product,false));
       $(".ssv-finder-add",card).addEventListener("click",()=>{
         const cartApi=window.SSVCart;
@@ -191,7 +191,14 @@
           return;
         }
         const result=cartApi.addProduct(product.id);
-        if(result.ok){$("#ssv-finder-message").textContent="Added to your bag: "+String(product.name||"item")+". Quantity in bag: "+result.quantity+".";return;}
+        if(result.ok){
+          const message=$("#ssv-finder-message");
+          message.textContent="Added to your bag: "+String(product.name||"item")+". Quantity in bag: "+result.quantity+". ";
+          let viewBag=$(".ssv-finder-view-bag",message);
+          if(!viewBag){viewBag=document.createElement("button");viewBag.type="button";viewBag.className="ssv-finder-view-bag";viewBag.textContent="View Bag";message.append(viewBag);}
+          viewBag.onclick=()=>{closePanel();$("#ssv-cart-trigger")?.click();};
+          return;
+        }
         const messages={"unavailable":"This item is no longer available.","out-of-stock":"This item is sold out.","max-quantity":"You can add up to 10 of this item.","storage":"We couldn’t save your bag. Please check your browser storage and try again."};
         $("#ssv-finder-message").textContent=messages[result.reason]||"We couldn’t add this item. Please try again.";
       });
