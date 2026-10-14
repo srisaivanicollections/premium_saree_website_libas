@@ -43,7 +43,7 @@ jobs:
           assert.match(finder, /shownCount=Math\.min\(3,allMatches\.length\)/, "Finder must show no more than three matches per page");
           assert.match(finder, /Show More Matches/, "Finder must allow customers to reveal more matches in batches");
           assert.match(finder, /Recommended for You/, "Finder must label its recommendations");
-          assert.match(finder, /Best Match/, "Finder must identify the top-ranked result");
+          assert.doesNotMatch(finder, /ssv-finder-match-label|Best Match/, "Finder must avoid a redundant Best Match label");
           assert.match(finder, /Change Preferences/, "Finder must allow customers to refine preferences");
           assert.match(finder, /function helpUrl\(product\)/, "Finder must provide optional WhatsApp assistance using store settings");
           assert.match(finder, /wa\.me\//, "Finder must create WhatsApp help links");
