@@ -61,10 +61,13 @@ jobs:
           assert.match(aiScanner, /onnx-community\/CLIP-ViT-B-32-laion2B-s34B-b79K-ONNX/, "AI scanner must use the selected MIT-licensed model");
           assert.match(aiScanner, /zero-shot-image-classification/, "AI scanner must use browser-side zero-shot image classification");
           assert.match(aiScanner, /device:\s*"wasm"/, "AI scanner must run in the browser rather than a hosted inference service");
-          assert.match(finder, /import\("\.\/saree-occasion-ai\.js"\)/, "AI scanner must load lazily from local site code");
-          assert.match(finder, /AI_OCCASION_SCAN_LIMIT=24/, "AI scan must bound work per search");
-          assert.match(finder, /hasExplicitOccasionDecision\(product\)/, "Explicit Admin occasion decisions must take precedence over AI");
-          assert.match(finder, /Keyword inference remains the fallback/, "Finder must preserve keyword fallback when AI fails");
+          assert.doesNotMatch(finder, /import\("\.\/saree-occasion-ai\.js"\)|AI_OCCASION_SCAN_LIMIT|addAiOccasionMatches/, "Customer Finder must not download or run the AI model");
+          assert.match(page, /function ssvEnrichOccasionCatalogue\(/, "Admin Studio must provide persisted occasion enrichment");
+          assert.match(page, /id="adminEnrichOccasions"/, "Admin Studio must expose catalogue backfill action");
+          assert.match(page, /occasionMetadata:\{[\s\S]*?source:"ai"/, "AI occasion results must record their provenance");
+          assert.match(page, /attempt<3&&!saved/, "Occasion metadata writes must retry GitHub SHA conflicts");
+          assert.match(page, /ssvHasNoOccasionMetadata\(current\)/, "Enrichment must skip products with existing occasion metadata");
+          assert.match(page, /fire-and-forget: product save success never waits/, "New product enrichment must not block CRUD");
           assert.match(finder, /id="ssv-finder-color-field"/, "Colour preference must have a hideable wrapper");
           assert.match(finder, /function syncColorField\(\)/, "Category changes must synchronize the colour field");
           assert.match(finder, /field\.hidden=jewellery/, "Jewellery must hide the colour field");
