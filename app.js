@@ -198,6 +198,34 @@ async function localApi(body){
     }
     return {ok:true};
   }
+  if(body.action==="saveVisualAttributes"){
+    const updates=Array.isArray(body.updates)?body.updates:[];
+    if(!updates.length||updates.length>500)throw new Error("Choose at least one approved suggestion (maximum 500 per save).");
+    const normalizeList=(value,allowed)=>Array.isArray(value)?[...new Set(value.filter(x=>typeof x==="string").map(x=>x.trim()).filter(x=>allowed.includes(x)))]:[];
+    const allowedOccasions=["Daily Wear","Wedding","Festive","Party Wear","Traditional"];
+    const allowedColors=["Black","Blue","Brown","Gold","Green","Grey","Multicolor","Orange","Pink","Purple","Red","Silver","White","Yellow","Beige","Cream","Maroon","Peach","Teal"];
+    const allowedPatterns=["Plain","Floral","Geometric","Striped","Checked","Paisley","Traditional Motif","Embroidered","Woven","Printed","Sequin/Stone Work","Unknown"];
+    const byId=new Map();
+    for(const update of updates){
+      const id=Number(update?.id),source=update?.visualAttributes;
+      if(!Number.isSafeInteger(id)||id<=0||!source||typeof source!=="object")throw new Error("Invalid approved visual attribute.");
+      const attributes={occasions:normalizeList(source.occasions,allowedOccasions),color:allowedColors.includes(source.color)?source.color:"",pattern:allowedPatterns.includes(source.pattern)?source.pattern:"",description:typeof source.description==="string"?source.description.trim().slice(0,180):""};
+      if(!attributes.occasions.length&&!attributes.color&&!attributes.pattern&&!attributes.description)throw new Error("An approved suggestion has no valid attributes.");
+      byId.set(id,attributes);
+    }
+    const write=async()=>{
+      const current=await githubReadJson("data/products.json"),list=Array.isArray(current.value)?current.value:[];
+      const found=new Set();
+      const merged=list.map(product=>{const attrs=byId.get(Number(product.id));if(!attrs)return product;found.add(Number(product.id));return {...product,visualAttributes:{...(product.visualAttributes||{}),...attrs,source:"admin-approved",model:"CLIP-ViT-B-32-laion2b-q8",reviewedAt:new Date().toISOString()}};});
+      if(found.size!==byId.size)throw new Error("One or more products changed or no longer exist. Refresh Admin and scan again.");
+      await githubWriteJson("data/products.json",merged,current.sha,"Save approved AI visual attributes");
+      const verified=await githubReadJson("data/products.json");
+      for(const [id,attrs] of byId){const saved=verified.value.find(p=>Number(p.id)===id)?.visualAttributes;if(!saved||saved.source!=="admin-approved"||saved.color!==attrs.color||saved.pattern!==attrs.pattern||saved.description!==attrs.description||JSON.stringify(saved.occasions)!==JSON.stringify(attrs.occasions))throw new Error("Saved visual attributes could not be verified. Reload the catalogue before retrying.");}
+      return verified.value;
+    };
+    catalogWriteQueue=catalogWriteQueue.then(write,write);products=await catalogWriteQueue;githubOriginalIds=new Set(products.map(p=>Number(p.id)));render();
+    return {ok:true,saved:byId.size};
+  }
   if(body.action==="deleteProduct"){
     const id=Number(body.id);
     if(!id) throw new Error("Invalid product.");
@@ -494,10 +522,15 @@ function updateStudioNav(activeView){
   });
 }
 
+let aiReviewSuggestions=[];
+let aiReviewCancelled=false;
 function showView(v){
   updateStudioNav(v);
   const b=$("#studioBody");
-  if(v==="products"){
+  if(v==="ai-review"){
+    b.innerHTML='<section class="admin-ai-review"><h3>AI Visual Review</h3><p>Scan product images in this browser. Suggestions stay private until you select them and save. First use downloads a large free model.</p><div class="admin-ai-actions"><button type="button" id="aiScanCatalog">SCAN CATALOGUE</button><button type="button" id="aiCancelScan" disabled>CANCEL SCAN</button><button type="button" id="aiSaveApproved" disabled>SAVE APPROVED</button></div><p id="aiScanStatus" role="status" aria-live="polite">Not scanned yet. Scan up to 100 products per run.</p><div id="aiReviewResults"></div></section>';
+    $("#aiScanCatalog").onclick=runAiCatalogScan;$("#aiCancelScan").onclick=()=>{aiReviewCancelled=true;$("#aiScanStatus").textContent="Cancelling after the current image…";};$("#aiSaveApproved").onclick=saveApprovedAiAttributes;
+  }else if(v==="products"){
     b.innerHTML=products.map(p=>'<div class="admin-item"><div class="admin-product-main"><img class="admin-product-thumb" src="'+esc(productImageSrc(p.image))+'" alt="" loading="lazy" onerror="this.classList.add(\'image-missing\')"><div class="admin-product-copy"><strong>'+esc(p.name)+'</strong><br><small>'+esc(p.category)+" · "+money(p.price)+(p.newArrival?" · NEW":"")+(p.bestSeller?" · BEST":"")+(p.availability===false?" · UNAVAILABLE":"")+'</small></div></div><button class="danger edit" data-id="'+Number(p.id)+'">EDIT</button></div>').join("");
   }else if(v==="add"){
     b.innerHTML=form();
@@ -550,6 +583,48 @@ function edit(id){
       showAdminToast("Could not delete product. "+(e?.message||"Please try again."),"error");
     }
   };
+}
+const AI_REVIEW_BATCH_LIMIT=100;
+function safeAiText(value){return esc(String(value??""));}
+function hasAiAttributes(a){return !!(a&&(a.color||a.pattern||a.description||(Array.isArray(a.occasions)&&a.occasions.length)));}
+async function runAiCatalogScan(){
+ const start=$("#aiScanCatalog"),cancel=$("#aiCancelScan"),save=$("#aiSaveApproved"),status=$("#aiScanStatus"),results=$("#aiReviewResults");if(!start||!status||!results)return;
+ const candidates=products.filter(p=>p&&p.image&&p.category);if(!candidates.length){status.textContent="No products with images are available to scan.";return;}
+ const batch=candidates.slice(0,AI_REVIEW_BATCH_LIMIT);aiReviewCancelled=false;aiReviewSuggestions=[];results.replaceChildren();start.disabled=true;cancel.disabled=false;save.disabled=true;
+ try{
+  status.textContent="Loading free browser AI. First use may download approximately 153 MB plus runtime files.";
+  const scanner=await import("./saree-occasion-ai.js").then(module=>module.createOccasionScanner());
+  for(let i=0;i<batch.length;i++){
+   if(aiReviewCancelled)break;const product=batch[i];status.textContent="Scanning "+(i+1)+" of "+batch.length+": "+String(product.name||"Product "+product.id);
+   try{const attributes=await scanner.classifyVisualAttributes(product.image,product.category);const item={id:Number(product.id),name:String(product.name||""),image:String(product.image||""),category:String(product.category||""),attributes,approved:hasAiAttributes(attributes)};aiReviewSuggestions.push(item);renderAiReviewSuggestions();}
+   catch(_){aiReviewSuggestions.push({id:Number(product.id),name:String(product.name||""),image:String(product.image||""),category:String(product.category||""),attributes:{occasions:[],color:"",pattern:"",description:""},approved:false,error:"Image/model unavailable"});renderAiReviewSuggestions();}
+  }
+  status.textContent=aiReviewCancelled?"Scan cancelled. "+aiReviewSuggestions.length+" products processed.":"Scan complete: "+aiReviewSuggestions.length+" of "+candidates.length+" products processed. "+Math.max(0,candidates.length-aiReviewSuggestions.length)+" remain for another batch.";
+  save.disabled=!aiReviewSuggestions.some(x=>x.approved&&hasAiAttributes(x.attributes));
+ }catch(error){status.textContent="AI scan could not start. Existing Finder is unaffected. "+(error?.message||"Check network access and retry.");}
+ finally{start.disabled=false;cancel.disabled=true;}
+}
+function renderAiReviewSuggestions(){
+ const results=$("#aiReviewResults");if(!results)return;
+ results.innerHTML=aiReviewSuggestions.map((item,index)=>{
+  const a=item.attributes||{},occ=Array.isArray(a.occasions)&&a.occasions.length?a.occasions.join(", "):"No confident occasion",color=a.color||"No confident colour",pattern=a.pattern||"No confident pattern",desc=a.description||"No description suggestion";
+  const image=String(item.image||"").replace(/^\.\//,""),url=/^https?:\/\//i.test(image)?image:"./"+image.replace(/^\//,"");
+  return '<article class="admin-ai-card"><label class="admin-ai-select"><input type="checkbox" data-ai-approve="'+index+'" '+(item.approved&&hasAiAttributes(a)?"checked":"")+' '+(!hasAiAttributes(a)?"disabled":"")+'> Approve suggestions</label><div class="admin-ai-product"><img src="'+safeAiText(url)+'" alt="" loading="lazy"><div><strong>'+safeAiText(item.name)+'</strong><small>'+safeAiText(item.category)+' · ID '+item.id+'</small><p><b>Occasion:</b> '+safeAiText(occ)+'</p><p><b>Colour:</b> '+safeAiText(color)+'</p><p><b>Pattern:</b> '+safeAiText(pattern)+'</p><p><b>Visual summary:</b> '+safeAiText(desc)+'</p>'+(item.error?'<small>'+safeAiText(item.error)+'</small>':"")+'</div></div></article>';
+ }).join("");
+ results.querySelectorAll("[data-ai-approve]").forEach(input=>input.addEventListener("change",()=>{const item=aiReviewSuggestions[Number(input.dataset.aiApprove)];if(item)item.approved=input.checked;const save=$("#aiSaveApproved");if(save)save.disabled=!aiReviewSuggestions.some(x=>x.approved&&hasAiAttributes(x.attributes));}));
+}
+async function saveApprovedAiAttributes(){
+ const button=$("#aiSaveApproved"),status=$("#aiScanStatus"),approved=aiReviewSuggestions.filter(x=>x.approved&&hasAiAttributes(x.attributes));
+ if(!approved.length){if(status)status.textContent="Select at least one suggestion to approve.";return;}
+ if(!confirm("Save the selected AI suggestions to the GitHub catalogue? Only checked suggestions will be saved."))return;
+ if(button){button.disabled=true;button.textContent="SAVING…";}
+ try{
+  const result=await api({action:"saveVisualAttributes",password:adminPassword,updates:approved.map(item=>({id:item.id,visualAttributes:item.attributes}))});
+  const latest=await githubReadJson("data/products.json");products=Array.isArray(latest.value)?latest.value:[];githubOriginalIds=new Set(products.map(p=>Number(p.id)));render();
+  status.textContent="Saved and verified "+Number(result.saved||approved.length)+" approved product records. Attributes remain internal to the Finder.";
+  showAdminToast("Approved visual attributes saved and verified.","success");aiReviewSuggestions=aiReviewSuggestions.filter(x=>!approved.some(saved=>saved.id===x.id));renderAiReviewSuggestions();
+ }catch(error){status.textContent="Save failed. "+(error?.message||"Refresh and retry.");showAdminToast("Could not save approved attributes. "+(error?.message||"Please retry."),"error");}
+ finally{if(button){button.disabled=false;button.textContent="SAVE APPROVED";}}
 }
 async function persistProduct(product,isNew){
   await api({action:"saveProduct",password:adminPassword,product,isNew});
