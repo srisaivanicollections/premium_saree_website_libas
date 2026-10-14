@@ -352,7 +352,7 @@ function validateProductInput(product){
   if(!product||!Number.isSafeInteger(Number(product.id))||Number(product.id)<=0) throw new Error("Invalid product ID.");
   const name=String(product.name||"").trim();
   if(!name||name.length>120) throw new Error("Product name must be 1-120 characters.");
-  if(!["Sarees","Dresses"].includes(String(product.category||""))) throw new Error("Invalid product category.");
+  if(!["Sarees","Dresses","Jewellery"].includes(String(product.category||""))) throw new Error("Invalid product category.");
   const price=Number(product.price);
   if(!Number.isFinite(price)||price<=0||price>10000000) throw new Error("Invalid product price.");
   if(product.originalPrice!==undefined){
@@ -393,7 +393,7 @@ function productImageSrc(value){
 function apply(){all(".brand b").forEach(x=>x.textContent=settings.name||"SRI SAI VANI");const n=waNumber();$("#waMain").href=n?"https://wa.me/"+n+"?text="+encodeURIComponent("Hi Sri Sai Vani, I would like to know about your collection."): "#";$("#instagram").href=settings.instagram}
 
 
-function renderTabs(){$("#tabs").innerHTML=["All","Sarees","Dresses","Best Seller"].map(c=>'<button class="'+(category===c?"active":"")+'" data-tab="'+c+'">'+c.toUpperCase()+"</button>").join("")}
+function renderTabs(){$("#tabs").innerHTML=["All","Sarees","Dresses","Jewellery","Best Seller"].map(c=>'<button class="'+(category===c?"active":"")+'" data-tab="'+c+'">'+c.toUpperCase()+"</button>").join("")}
 function render(){
   renderTabs();
   const grid=$("#products");
@@ -482,7 +482,7 @@ function form(p={}){
   const price=esc(p.price??"");
   const original=esc(p.originalPrice??"");
   const image=esc(p.image||"");
-  return '<div class="admin-row"><input id="fName" maxlength="120" placeholder="Product name" value="'+name+'"><select id="fCat"><option value="Sarees" '+(p.category==="Sarees"?"selected":"")+'>Sarees</option><option value="Dresses" '+(p.category==="Dresses"?"selected":"")+'>Dresses</option></select></div><div class="admin-row"><input id="fPrice" type="number" min="1" step="1" placeholder="Price" value="'+price+'"><input id="fOriginal" type="number" min="1" step="1" placeholder="Original price" value="'+original+'"></div><div class="upload-row"><input id="fImage" maxlength="1000" placeholder="Image path or URL" value="'+image+'"><input id="fFile" type="file" accept="image/jpeg,image/png,image/webp,image/gif"></div><div class="admin-image-preview-wrap"><img id="fImagePreview" class="admin-image-preview" src="'+(image?esc(productImageSrc(p.image)):'')+'" alt="Selected product preview" '+(image?'':'hidden')+'><span id="fImagePreviewEmpty" '+(image?'hidden':'')+'>IMAGE PREVIEW</span></div><label><input id="fNew" type="checkbox" '+(p.newArrival?"checked":"")+'> New arrival</label> <label><input id="fBest" type="checkbox" '+(p.bestSeller?"checked":"")+'> Best seller</label> <label><input id="fAvail" type="checkbox" '+(p.availability!==false?"checked":"")+'> Available</label><br><br><button type="button" class="btn dark" id="saveItem">'+(p.id?"SAVE CHANGES":"SAVE ITEM")+'</button>'+(p.id?' <button type="button" class="danger" id="deleteItem">DELETE ITEM</button>':"");
+  return '<div class="admin-row"><input id="fName" maxlength="120" placeholder="Product name" value="'+name+'"><select id="fCat"><option value="Sarees" '+(p.category==="Sarees"?"selected":"")+'>Sarees</option><option value="Dresses" '+(p.category==="Dresses"?"selected":"")+'>Dresses</option><option value="Jewellery">Jewellery</option></select></div><div class="admin-row"><input id="fPrice" type="number" min="1" step="1" placeholder="Price" value="'+price+'"><input id="fOriginal" type="number" min="1" step="1" placeholder="Original price" value="'+original+'"></div><div class="upload-row"><input id="fImage" maxlength="1000" placeholder="Image path or URL" value="'+image+'"><input id="fFile" type="file" accept="image/jpeg,image/png,image/webp,image/gif"></div><div class="admin-image-preview-wrap"><img id="fImagePreview" class="admin-image-preview" src="'+(image?esc(productImageSrc(p.image)):'')+'" alt="Selected product preview" '+(image?'':'hidden')+'><span id="fImagePreviewEmpty" '+(image?'hidden':'')+'>IMAGE PREVIEW</span></div><label><input id="fNew" type="checkbox" '+(p.newArrival?"checked":"")+'> New arrival</label> <label><input id="fBest" type="checkbox" '+(p.bestSeller?"checked":"")+'> Best seller</label> <label><input id="fAvail" type="checkbox" '+(p.availability!==false?"checked":"")+'> Available</label><br><br><button type="button" class="btn dark" id="saveItem">'+(p.id?"SAVE CHANGES":"SAVE ITEM")+'</button>'+(p.id?' <button type="button" class="danger" id="deleteItem">DELETE ITEM</button>':"");
 }
 function updateStudioNav(activeView){
   all("[data-view]").forEach(btn=>{
