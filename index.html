@@ -10683,10 +10683,10 @@ async function ssvEnrichFinderCatalogue({allMissing=false,productId=null}={}){
       catch(e){if(attempt===2||!/(409|422|conflict|sha)/i.test(String(e?.message||e)))throw e;await new Promise(resolve=>setTimeout(resolve,300*(attempt+1)));}
      }
     }catch(e){failed++;console.warn("Finder enrichment failed for product "+candidate.id,e);}
-    if(status)status.textContent="Enrich Finder: "+(i+1)+" of "+queue.length+" checked · "+processed+" saved · "+skipped+" skipped/uncertain · "+failed+" failed";
+    if(status)status.textContent="Enrich Finder: "+(i+1)+" of "+queue.length+" items processed · "+processed+" updated · "+skipped+" skipped/uncertain · "+failed+" failed";
    }
    const refreshed=await githubReadJson("data/products.json");products=refreshed.value;githubOriginalIds=new Set(products.map(p=>Number(p.id)));
-   if(status)status.textContent="Enrich Finder complete: "+processed+" products updated · "+skipped+" skipped/uncertain · "+failed+" failed. Reopen Product Catalogue to refresh.";
+   if(status)status.textContent="Enrich Finder complete: "+queue.length+" of "+queue.length+" items processed · "+processed+" updated · "+skipped+" skipped/uncertain · "+failed+" failed. Reopen Product Catalogue to refresh.";
    return {processed,skipped,failed};
   }finally{ssvFinderEnrichmentPromise=null;}
  })();return ssvFinderEnrichmentPromise;

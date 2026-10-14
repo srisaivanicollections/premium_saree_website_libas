@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 const source = readFileSync(new URL("../saree-finder.js", import.meta.url), "utf8");
+const aiSource = readFileSync(new URL("../saree-occasion-ai.js", import.meta.url), "utf8");
 const start = source.indexOf("  const OCCASION_VALUES=new Set(");
 const end = source.indexOf("  // Customer-side image inference is intentionally disabled.", start);
 assert.ok(start >= 0 && end > start, "Finder occasion helpers must be present");
@@ -40,4 +41,12 @@ test("empty metadata has no inferred occasion, while Any occasion always matches
 
 test("normalizes and deduplicates explicit tags", () => {
   assert.deepEqual(inferOccasions({ occasions: [" Wedding ", "wedding", "", null] }), ["wedding"]);
+});
+
+
+test("browser image inference uses the WASM-compatible uint8 model artifact", () => {
+  assert.match(aiSource, /device:\s*"wasm"/, "Image inference must retain browser WASM execution");
+  assert.match(aiSource, /dtype:\s*"uint8"/, "Avoid the q8 artifact that fails on ConvInteger during WASM session creation");
+  assert.doesNotMatch(aiSource, /dtype:\s*"q8"/, "Do not select the incompatible q8 artifact");
+  assert.match(aiSource, /pipeline\("zero-shot-image-classification",\s*MODEL_ID/, "Keep the existing free zero-shot image classification pipeline");
 });
