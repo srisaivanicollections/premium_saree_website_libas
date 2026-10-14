@@ -64,7 +64,7 @@ jobs:
           assert.match(aiScanner, /device:\s*"wasm"/, "AI scanner must run in the browser rather than a hosted inference service");
           assert.doesNotMatch(finder, /import\("\.\/saree-occasion-ai\.js"\)|AI_OCCASION_SCAN_LIMIT|addAiOccasionMatches/, "Customer Finder must not download or run the AI model");
           assert.match(page, /function ssvEnrichFinderCatalogue\(/, "Admin Studio must provide persisted Finder enrichment");
-          assert.match(page, /id="adminEnrichFinder"[^>]*>Enrich Finder/, "Admin Studio must expose the Enrich Finder action");
+          assert.match(page, /id="adminEnrichFinder"[^>]*>ANALYSE MISSING METADATA/, "Admin Studio must expose the Enrich Finder action");
           assert.match(page, /#admin \.admin-products-heading-actions\s*\{[\s\S]*?display:flex!important;[\s\S]*?flex-wrap:wrap!important;/, "Admin catalogue actions must have a wrapping flex layout");
           assert.match(page, /#admin \.admin-products-heading-actions > #adminEnrichFinder/, "Enrich Finder must have a scoped style override");
           assert.match(page, /@media\(max-width:600px\)[\s\S]*?#admin \.admin-products-heading-actions\s*\{[\s\S]*?width:100%!important;[\s\S]*?justify-content:flex-start!important;/, "Enrich Finder and Add Product must remain visible in the mobile action row");
