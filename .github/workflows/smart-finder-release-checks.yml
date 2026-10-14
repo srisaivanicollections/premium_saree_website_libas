@@ -106,8 +106,9 @@ jobs:
           node-version: 20
       - name: Install Chromium browser tooling
         run: |
-          npm install --no-save --no-package-lock playwright@1.56.1
-          npx playwright install --with-deps chromium
+          npm install --no-save --no-package-lock @playwright/test@1.56.1 playwright@1.56.1
+          node -e "if (require('playwright/package.json').version !== '1.56.1') throw new Error('Playwright runtime version mismatch')"
+          node node_modules/playwright/cli.js install --with-deps chromium
       - name: Start local storefront
         run: |
           python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/ssv-http.log 2>&1 &
