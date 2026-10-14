@@ -10723,10 +10723,11 @@ async function ssvEnrichFinderCatalogue({allMissing=false,productId=null}={}){
       }
       if(!changed){skipped++;stop=true;break;}
       latest.value[index]=next;
-      let writeAttempted=false;
+      let writeAttempted=false,writeCompleted=false;
       try{
        writeAttempted=true;
        await githubWriteJson("data/products.json",latest.value,latest.sha,"Enrich Smart Saree Finder metadata for product "+current.id);
+       writeCompleted=true;
        const verify=await githubReadJsonFresh("data/products.json");
        const savedProduct=Array.isArray(verify.value)?verify.value.find(p=>Number(p.id)===Number(current.id)):null;
        const occasionVerified=!addOccasion||(Array.isArray(savedProduct?.occasions)&&savedProduct.occasions.includes(label)&&savedProduct?.occasionMetadata?.image===String(current.image));
@@ -10747,6 +10748,7 @@ async function ssvEnrichFinderCatalogue({allMissing=false,productId=null}={}){
          throw new Error("Save outcome unknown: the write was attempted but expected metadata could not be confirmed. Refresh the catalogue before retrying.");
         }catch(recoveryError){
          if(/Save outcome unknown/.test(String(recoveryError?.message||"")))throw recoveryError;
+         if(!writeCompleted&&[401,403,404,422].includes(Number(e?.status)))throw e;
          throw new Error("Save outcome unknown: write was attempted, but GitHub could not verify the latest catalogue. Refresh before retrying.");
         }
        }
