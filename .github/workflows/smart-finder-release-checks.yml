@@ -28,8 +28,8 @@ jobs:
           const scripts = [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi)];
           let checked = 0;
           for (const [, attrs, source] of scripts) {
-            if (/\\bsrc\\s*=/i.test(attrs)) continue;
-            const type = attrs.match(/\\btype\\s*=\\s*["']([^"']+)["']/i)?.[1]?.toLowerCase();
+            if (/\bsrc\s*=/i.test(attrs)) continue;
+            const type = attrs.match(/\btype\s*=\s*["']([^"']+)["']/i)?.[1]?.toLowerCase();
             if (type && !["text/javascript", "application/javascript", "module"].includes(type)) continue;
             if (!source.trim()) continue;
             try { new Function(source); }
