@@ -97,24 +97,23 @@
   }
   function readPreferences(){const form=$("#ssv-finder-form");const category=form.elements.category.value;preferences={category,budget:form.elements.budget.value,color:["jewellery","jewelry"].includes(category.trim().toLowerCase())?"":form.elements.color.value};}
   function isAvailable(p){if(p.availability===false||p.inStock===false||p.outOfStock===true)return false;return p.availability===true||p.inStock===true;}
-  function navigateToProduct(product,addToBag=false){
+  function isCategoryEnabled(category){
+    const key=({Sarees:"categorySareesEnabled",Dresses:"categoryDressesEnabled",Jewellery:"categoryJewelryEnabled"})[String(category||"").trim()];
+    const value=key?shopSettings[key]:undefined;
+    return value!==false&&value!=="false"&&value!==0&&value!=="0";
+  }
+  function navigateToProduct(product){
     const category=String(product.category||preferences.category||"Sarees");
-    const targetName=String(product.name||"");
     closePanel();
     const grid=$("#products");
-    if(!grid||!targetName)return;
+    if(!grid||product.id==null)return;
     const categoryTab=[...document.querySelectorAll("[data-tab]")].find(tab=>String(tab.dataset.tab||"").toLowerCase()===category.toLowerCase()||(["jewellery","jewelry"].includes(String(tab.dataset.tab||"").toLowerCase())&&["jewellery","jewelry"].includes(category.toLowerCase())));
-    if(categoryTab)categoryTab.click();
+    if(!categoryTab){if($("#shop"))$("#shop").scrollIntoView({behavior:"auto",block:"start"});return;}
+    categoryTab.click();
     const search=$("#search")||$("#shop .lux-search input");
     if(search&&search.value){search.value="";search.dispatchEvent(new Event("input",{bubbles:true}));}
-    const findTarget=()=>[...grid.querySelectorAll("img[alt]")].find(img=>img.alt===targetName);
-    let image=findTarget();
-    if(!image){if($("#shop"))$("#shop").scrollIntoView({behavior:"auto",block:"start"});return;}
-    const item=image.closest(".lux-item-card,.product-card,article")||image;
-    if(addToBag){
-      const addButton=item.querySelector("[data-add-cart],.ssv-add-cart");
-      if(addButton){addButton.click();return;}
-    }
+    const item=[...grid.querySelectorAll("[data-product-id]")].find(card=>String(card.dataset.productId)===String(product.id));
+    if(!item){if($("#shop"))$("#shop").scrollIntoView({behavior:"auto",block:"start"});return;}
     item.scrollIntoView({behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",block:"center"});
     item.setAttribute("tabindex","-1");item.focus({preventScroll:true});
   }
@@ -157,22 +156,19 @@
       if(product.bestSeller===true)badges.push("Best Seller");
       if(product.newArrival===true)badges.push("New Arrival");
       const details=[product.color?"Recorded colour: "+String(product.color).trim():"","In stock"].filter(Boolean).join(" · ");
-      const card=document.createElement("article");card.className="ssv-finder-result";
+      const card=document.createElement("article");card.className="ssv-finder-result";card.dataset.productId=String(product.id??"");
       card.innerHTML='<img loading="lazy" src="'+esc(imageUrl)+'" alt="'+esc(product.name||categoryLabel)+'"><div class="ssv-finder-result-copy">'+'<h3>'+esc(product.name||categoryLabel)+'</h3><p class="ssv-finder-price">'+money(product.price)+(hasOriginalPrice?' <del class="ssv-finder-original">'+money(originalPrice)+'</del>':"")+'</p>'+(badges.length?'<p class="ssv-finder-badges">'+badges.map(badge=>'<span>'+esc(badge)+'</span>').join("")+'</p>':"")+'<p class="ssv-finder-meta">'+esc(details)+'</p><div class="ssv-finder-product-actions"><button type="button" class="ssv-finder-view">View Product</button><button type="button" class="ssv-finder-add">Add to Bag</button></div></div>';
       $(".ssv-finder-view",card).addEventListener("click",()=>navigateToProduct(product,false));
       $(".ssv-finder-add",card).addEventListener("click",()=>{
-        const targetName=String(product.name||"");
-        const grid=$("#products");
-        const targetCategory=String(product.category||preferences.category);
-        const categoryTab=[...document.querySelectorAll("[data-tab]")].find(tab=>String(tab.dataset.tab||"").toLowerCase()===targetCategory.toLowerCase()||(["jewellery","jewelry"].includes(String(tab.dataset.tab||"").toLowerCase())&&["jewellery","jewelry"].includes(targetCategory.toLowerCase())));
-        if(categoryTab)categoryTab.click();
-        const search=$("#search")||$("#shop .lux-search input");
-        if(search&&search.value){search.value="";search.dispatchEvent(new Event("input",{bubbles:true}));}
-        const image=grid&&[...grid.querySelectorAll("img[alt]")].find(img=>img.alt===targetName);
-        const item=image&&(image.closest(".lux-item-card,.product-card,article")||image);
-        const addButton=item&&item.querySelector("[data-add-cart],.ssv-add-cart");
-        if(addButton){closePanel();addButton.click();return;}
-        $("#ssv-finder-message").textContent="We couldn’t add this item directly. Choose View Product to find it in the collection.";
+        const cartApi=window.SSVCart;
+        if(!cartApi||typeof cartApi.addProduct!=="function"){
+          $("#ssv-finder-message").textContent="The bag is still loading. Please try again in a moment.";
+          return;
+        }
+        const result=cartApi.addProduct(product.id);
+        if(result.ok){$("#ssv-finder-message").textContent="Added to your bag: "+String(product.name||"item")+". Quantity in bag: "+result.quantity+".";return;}
+        const messages={"unavailable":"This item is no longer available.","out-of-stock":"This item is sold out.","max-quantity":"You can add up to 10 of this item.","storage":"We couldn’t save your bag. Please check your browser storage and try again."};
+        $("#ssv-finder-message").textContent=messages[result.reason]||"We couldn’t add this item. Please try again.";
       });
       const productHelp=helpUrl(product);
       if(productHelp){const link=document.createElement("a");link.className="ssv-finder-help ssv-finder-product-help";link.href=productHelp;link.target="_blank";link.rel="noopener noreferrer";link.textContent="Ask about this item";$(".ssv-finder-result-copy",card).append(link);}
@@ -197,7 +193,7 @@
   function recommend(){
     const message=$("#ssv-finder-message");
     const category=preferences.category||"Sarees";
-    allMatches=catalogue.filter(p=>String(p.category||"").trim().toLowerCase()===category.toLowerCase()).filter(p=>isAvailable(p));
+    allMatches=catalogue.filter(p=>String(p.category||"").trim().toLowerCase()===category.toLowerCase()).filter(p=>isCategoryEnabled(p.category)).filter(p=>isAvailable(p));
     if(quickFilter==="newArrival")allMatches=allMatches.filter(p=>p.newArrival===true);
     if(quickFilter==="bestSeller")allMatches=allMatches.filter(p=>p.bestSeller===true);
     if(preferences.budget!==""){
