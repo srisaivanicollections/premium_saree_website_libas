@@ -44,14 +44,24 @@ test("normalizes and deduplicates explicit tags", () => {
   assert.deepEqual(inferOccasions({ occasions: [" Wedding ", "wedding", "", null] }), ["wedding"]);
 });
 
-
 test("browser image inference uses the WASM-compatible uint8 model artifact", () => {
-  assert.match(aiSource, /device:\s*"wasm"/, "Image inference must retain browser WASM execution");
-  assert.match(aiSource, /dtype:\s*"uint8"/, "Avoid the q8 artifact that fails on ConvInteger during WASM session creation");
-  assert.doesNotMatch(aiSource, /dtype:\s*"q8"/, "Do not select the incompatible q8 artifact");
-  assert.match(aiSource, /pipeline\("zero-shot-image-classification",\s*MODEL_ID/, "Keep the existing free zero-shot image classification pipeline");
+  assert.match(aiSource, /device:\s*"wasm"/);
+  assert.match(aiSource, /dtype:\s*"uint8"/);
+  assert.doesNotMatch(aiSource, /dtype:\s*"q8"/);
+  assert.match(aiSource, /pipeline\("zero-shot-image-classification",\s*MODEL_ID/);
 });
 
+test("model and image inference errors propagate to the Admin failure handler", () => {
+  assert.match(aiSource, /const predictions = await classifier\(url,/);
+  assert.match(aiSource, /const colourPredictions = await classifier\(url,/);
+  assert.doesNotMatch(aiSource, /catch\s*\(error\)\s*\{\s*console\.warn\("Finder (occasion|colour) inference was inconclusive:/);
+  assert.match(aiSource, /Runtime\/image\/model errors deliberately propagate/);
+});
+
+test("uncertain predictions are not cached and an explicit retry bypasses cached results", () => {
+  assert.match(aiSource, /if \(!options\.retry && resultCache\.has\(cacheKey\)\)/);
+  assert.match(aiSource, /if \(occasion\.confident && colour\.confident\) resultCache\.set\(cacheKey, combined\)/);
+});
 
 test("Admin enrichment exposes actionable safe failure diagnostics", () => {
   assert.match(adminSource, /function ssvFinderFailureReason\(error\)/);
