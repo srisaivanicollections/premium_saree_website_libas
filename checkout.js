@@ -53,7 +53,8 @@
     grid.querySelectorAll(".lux-item-media").forEach(media=>{
       if(media.querySelector(".ssv-add-cart"))return;
       const img=$("img",media);if(!img)return;
-      const product=currentProducts().find(p=>String(p.name||"")===String(img.alt||"")||(typeof cleanProductName==="function"&&String(cleanProductName(p.name))===String(img.alt||"")));
+      const card=media.closest("[data-product-id]");
+      const product=card?getProduct(card.dataset.productId):currentProducts().find(p=>String(p.name||"")===String(img.alt||"")||(typeof cleanProductName==="function"&&String(cleanProductName(p.name))===String(img.alt||"")));
       if(!product||product.availability===false||product.inStock===false||product.outOfStock===true)return;
       const button=document.createElement("button");button.type="button";button.className="ssv-add-cart";button.dataset.addCart=String(product.id);button.setAttribute("aria-label","Add "+product.name+" to cart");button.title="Add to cart";
       button.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>';
