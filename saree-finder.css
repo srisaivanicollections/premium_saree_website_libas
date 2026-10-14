@@ -36,7 +36,7 @@
 .ssv-finder-message{margin:0;padding:0 18px 14px;color:#78716C;font-size:12px}
 .ssv-finder-results{display:grid;gap:10px;padding:0 18px 18px;overflow:auto}
 .ssv-finder-result{display:grid;grid-template-columns:76px minmax(0,1fr);gap:12px;padding:10px;border:1px solid #E7E0D8;border-radius:10px;background:#fff}
-.ssv-finder-result img{display:block;width:76px;height:100px;object-fit:cover;border-radius:5px;background:#F4EFEA}
+.ssv-finder-result img{display:block;width:76px;height:100px;object-fit:contain;border-radius:5px;background:#F4EFEA}
 .ssv-finder-result h3{margin:2px 0 5px;font:500 18px/1.15 "Cormorant Garamond",Georgia,serif}
 .ssv-finder-price{margin:0;color:#6E2735;font-size:13px;font-weight:600}
 .ssv-finder-meta{margin:4px 0 8px;color:#78716C;font-size:10px}
@@ -101,3 +101,6 @@
     max-height:calc(100dvh - 82px - env(safe-area-inset-bottom,0px));
   }
 }
+
+/* Loading state remains clear without changing the finder layout. */
+.ssv-finder-submit:disabled{opacity:.65;cursor:wait}
