@@ -10262,7 +10262,7 @@ function ssvRenderEnrichFinderSummary(result){
   const status=$("#adminEnrichFinderStatus"),occasion=$("#adminEnrichOccasionCount"),colour=$("#adminEnrichColourCount"),details=$("#adminEnrichFinderFailures"),button=$("#adminEnrichFinder");
   if(occasion){occasion.textContent=result.occasionsSaved+" / "+result.occasionMissingCount;occasion.dataset.hasResult="true";}
   if(colour){colour.textContent=result.coloursSaved+" / "+result.colourMissingCount;colour.dataset.hasResult="true";}
-  if(status){status.textContent="Complete: "+result.imageProcessed+" images analysed · "+result.occasionsSaved+"/"+result.occasionMissingCount+" missing occasions saved · "+result.coloursSaved+"/"+result.colourMissingCount+" missing colours saved · "+result.skipped+" skipped/uncertain · "+result.failed+" failed.";status.setAttribute("data-state",result.failed?"error":"success");}
+  if(status){status.textContent="Complete: "+result.imageProcessed+" images analysed · "+result.occasionsSaved+"/"+result.occasionMissingCount+" missing occasions saved · "+result.coloursSaved+"/"+result.colourMissingCount+" missing colours saved · "+result.occasionUncertain+" occasion uncertain · "+result.colourUncertain+" colour uncertain · "+result.skipped+" skipped/uncertain · "+result.failed+" failed.";status.setAttribute("data-state",result.failed?"error":"success");}
   if(details){const lines=[];if(result.uncertainProductIds?.length)lines.push("Uncertain predictions: product IDs "+result.uncertainProductIds.join(", ")+".");if(result.failures?.length)lines.push("Failed products: "+result.failures.map(item=>"ID "+item.id+": "+item.reason).join(" | "));details.textContent=lines.join(" ");}
   if(button){button.disabled=false;button.textContent="ANALYSE MISSING METADATA";}
 }
@@ -10783,7 +10783,7 @@ async function ssvEnrichFinderCatalogue({allMissing=false,productId=null}={}){
      failed++;const reason=ssvFinderFailureReason(e);failures.push({id:candidate.id,reason});
      console.error("Finder enrichment failed for product "+candidate.id,{status:e?.status||null,reason,error:e});
     }
-    paint("Enrich Finder: "+(i+1)+" of "+queue.length+" products checked · "+imageProcessed+" images processed · "+occasionsSaved+" occasions saved · "+processed+" products updated · "+skipped+" skipped/uncertain · "+failed+" failed");
+    paint("Enrich Finder: "+(i+1)+" of "+queue.length+" products checked · "+imageProcessed+" images processed · "+occasionsSaved+" occasions saved · "+coloursSaved+" colours saved · "+occasionUncertain+" occasion uncertain · "+colourUncertain+" colour uncertain · "+processed+" products updated · "+skipped+" skipped/uncertain · "+failed+" failed");
    }
    const refreshed=await githubReadJsonFresh("data/products.json");products=refreshed.value;githubOriginalIds=new Set(products.map(p=>Number(p.id)));
    const summary="Enrich Finder complete: "+imageProcessed+" of "+queue.length+" images processed · "+occasionsSaved+"/"+occasionMissingCount+" missing occasions saved · "+coloursSaved+"/"+colourMissingCount+" missing colours saved · "+processed+" products updated · "+skipped+" skipped/uncertain · "+failed+" failed.";
