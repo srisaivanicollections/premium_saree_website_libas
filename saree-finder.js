@@ -64,9 +64,9 @@
         catalogue=data.filter(p=>{
           if(!p||typeof p!=="object")return false;
           const id=Number(p.id),name=String(p.name||"").trim(),category=String(p.category||"").trim().toLowerCase();
-          const price=Number(p.price),image=String(p.image||"").trim();
+          const rawPrice=p.price,price=Number(rawPrice),image=String(p.image||"").trim();
           if(!Number.isSafeInteger(id)||id<=0||seenIds.has(id)||!name||!image)return false;
-          if(!["sarees","dresses","jewelry","jewellery"].includes(category)||!Number.isFinite(price)||price<0)return false;
+          if(rawPrice===null||rawPrice===undefined||String(rawPrice).trim()===""||!["sarees","dresses","jewelry","jewellery"].includes(category)||!Number.isFinite(price)||price<=0)return false;
           seenIds.add(id);
           return true;
         });
@@ -148,7 +148,7 @@
       recovery.querySelector('[data-recovery="budget"]').addEventListener("click",()=>{$("#ssv-finder-budget").focus();$("#ssv-finder-budget").scrollIntoView({block:"center",behavior:"smooth"});});
       const colorAction=recovery.querySelector('[data-recovery="color"]');
       if(colorAction)colorAction.addEventListener("click",()=>{$("#ssv-finder-color").value="";readPreferences();preferences.color="";$("#ssv-finder-color").value="";recommend();});
-      recovery.querySelector('[data-recovery="all"]').addEventListener("click",()=>{closePanel();const allTab=[...document.querySelectorAll("[data-tab]")].find(tab=>tab.dataset.tab==="All");if(allTab)allTab.click();const search=$("#search")||$("#shop .lux-search input");if(search&&search.value){search.value="";search.dispatchEvent(new Event("input",{bubbles:true}));}if($("#shop"))$("#shop").scrollIntoView({behavior:"auto",block:"start"});});
+      recovery.querySelector('[data-recovery="all"]').addEventListener("click",()=>{closePanel();const search=$("#search")||$("#shop .lux-search input");if(search)search.value="";const storefront=window.SSVStorefront;if(storefront&&typeof storefront.showAllProducts==="function")storefront.showAllProducts();if($("#shop"))$("#shop").scrollIntoView({behavior:"auto",block:"start"});});
       resultBox.append(recovery);
       const help=helpUrl();
       if(help){const link=document.createElement("a");link.className="ssv-finder-help";link.href=help;link.target="_blank";link.rel="noopener noreferrer";link.textContent="Need help choosing? Chat with us on WhatsApp";resultBox.append(link);}
