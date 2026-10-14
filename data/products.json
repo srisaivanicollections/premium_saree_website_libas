@@ -10,7 +10,8 @@
     "dateAdded": "2026-10-13T17:31:24.577Z",
     "newArrival": true,
     "bestSeller": true,
-    "availability": true
+    "availability": true,
+    "occasions": []
   },
   {
     "id": 1791811630242,
@@ -23,7 +24,8 @@
     "dateAdded": "2026-10-12T13:27:10.242Z",
     "newArrival": true,
     "bestSeller": true,
-    "availability": true
+    "availability": true,
+    "occasions": []
   },
   {
     "id": 1791810958129,
@@ -36,7 +38,8 @@
     "dateAdded": "2026-10-12T13:15:58.129Z",
     "newArrival": true,
     "bestSeller": true,
-    "availability": true
+    "availability": true,
+    "occasions": []
   },
   {
     "id": 1791751897314,
@@ -49,7 +52,8 @@
     "dateAdded": "2026-10-11T20:51:37.314Z",
     "newArrival": true,
     "bestSeller": false,
-    "availability": true
+    "availability": true,
+    "occasions": []
   },
   {
     "id": 1791751843478,
@@ -62,7 +66,8 @@
     "dateAdded": "2026-10-11T20:50:43.479Z",
     "newArrival": true,
     "bestSeller": true,
-    "availability": true
+    "availability": true,
+    "occasions": []
   },
   {
     "id": 1791744300158,
@@ -75,6 +80,7 @@
     "newArrival": true,
     "bestSeller": true,
     "availability": true,
-    "dateAdded": "2026-10-11T18:45:00.158Z"
+    "dateAdded": "2026-10-11T18:45:00.158Z",
+    "occasions": []
   }
 ]
