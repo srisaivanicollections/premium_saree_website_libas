@@ -111,9 +111,21 @@
   z-index:2;
 }
 @media(max-width:600px){
+  /* Keep the Finder below the storefront header and above the browser's bottom safe area. */
   .ssv-finder-panel{
-    max-height:calc(100vh - 82px - env(safe-area-inset-bottom,0px));
-    max-height:calc(100dvh - 82px - env(safe-area-inset-bottom,0px));
+    top:112px;
+    bottom:calc(12px + env(safe-area-inset-bottom,0px));
+    max-height:none;
+    width:calc(100vw - 16px);
+    overflow-x:hidden;
+    overflow-y:auto;
+    overscroll-behavior:contain;
+    -webkit-overflow-scrolling:touch;
+  }
+  .ssv-finder-head{
+    position:sticky;
+    top:0;
+    z-index:3;
   }
 }
 
