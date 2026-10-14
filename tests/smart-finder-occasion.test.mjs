@@ -80,5 +80,17 @@ test("Admin enrichment verifies persisted metadata before counting a product upd
 
 test("Enrich Finder button resets after the catalogue view is rerendered", () => {
   assert.match(adminSource, /const currentButton=\$\("#adminEnrichFinder"\)/);
-  assert.match(adminSource, /currentButton\.disabled=false;currentButton\.textContent="Enrich Finder"/);
+  assert.match(adminSource, /currentButton\.disabled=false;currentButton\.textContent="ANALYSE MISSING METADATA"/);
+});
+
+test("Enrich Finder has its own Admin tab and status area, separate from Product Catalogue", () => {
+  assert.match(adminSource, /data-view="enrich">ENRICH FINDER/);
+  assert.match(adminSource, /id="adminEnrichFinderStatus"/);
+  assert.doesNotMatch(adminSource, /admin-products-heading-actions[^<]*<button[^>]*id="adminEnrichFinder"/);
+});
+
+test("ambiguous catalogue writes are re-read before reporting an unknown outcome", () => {
+  assert.match(adminSource, /Save outcome unknown/);
+  assert.match(adminSource, /const recovery=await githubReadJsonFresh\("data\/products\.json"\)/);
+  assert.match(adminSource, /persisted\.image===current\.image/);
 });
