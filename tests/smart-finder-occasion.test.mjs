@@ -90,7 +90,7 @@ test("Enrich Finder is a Products-page text link that opens a closable popup, no
 test("closing and reopening the enrichment popup does not cancel or duplicate a running save", () => {
   assert.match(adminSource, /if\(button\.disabled\|\|ssvFinderEnrichmentPromise\)return/);
   assert.match(adminSource, /if\(ssvFinderEnrichmentPromise&&button\)\{button\.disabled=true/);
-  assert.match(adminSource, /const close=\(\)=>\{popup\.hidden=true;\}/);
+  assert.match(adminSource, /const close=\(\)=>\{if\(popup\.hidden\)return;popup\.hidden=true;const opener=popup\._opener/);
   assert.match(adminSource, /function ssvRenderEnrichFinderSummary\(result\)/);
 });
 
