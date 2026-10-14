@@ -226,15 +226,15 @@
     const text=[product.name,product.description,product.material,product.fabric,product.style,product.type,product.subcategory,product.tags]
       .flatMap(value=>Array.isArray(value)?value:[value])
       .filter(value=>typeof value==="string"&&value.trim())
-      .join(" ").toLowerCase().replace(/[_-]+/g," ").replace(/\\s+/g," ");
+      .join(" ").toLowerCase().replace(/[_-]+/g," ").replace(/\s+/g," ");
     if(!text)return [];
     const inferred=[];
     const has=pattern=>pattern.test(text);
-    if(has(/\\b(daily wear|everyday|every day|casual wear|office wear|workwear|cotton|linen|lightweight|printed|basic wear)\\b/))inferred.push("daily wear");
-    if(has(/\\b(wedding|bridal|bride|bridalwear|weddingwear|kanjivaram|kanchipuram|banarasi|benarasi|pattu|bridal silk|wedding guest|heavy work)\\b/))inferred.push("wedding");
-    if(has(/\\b(festive|festival|diwali|sankranti|dasara|navratri|celebration|brocade|zari|festive wear)\\b/))inferred.push("festive");
-    if(has(/\\b(party wear|partywear|party|sequins?|shimmer|glitter|cocktail wear|evening wear|gown)\\b/))inferred.push("party wear");
-    if(has(/\\b(traditional|ethnic|temple|heritage|kanjivaram|kanchipuram|banarasi|benarasi|pattu|zari|ikat|kalamkari|handloom)\\b/))inferred.push("traditional");
+    if(has(/\b(daily wear|everyday|every day|casual wear|office wear|workwear|cotton|linen|lightweight|printed|basic wear)\b/))inferred.push("daily wear");
+    if(has(/\b(wedding|bridal|bride|bridalwear|weddingwear|kanjivaram|kanchipuram|banarasi|benarasi|pattu|bridal silk|wedding guest|heavy work)\b/))inferred.push("wedding");
+    if(has(/\b(festive|festival|diwali|sankranti|dasara|navratri|celebration|brocade|zari|festive wear)\b/))inferred.push("festive");
+    if(has(/\b(party wear|partywear|party|sequins?|shimmer|glitter|cocktail wear|evening wear|gown)\b/))inferred.push("party wear");
+    if(has(/\b(traditional|ethnic|temple|heritage|kanjivaram|kanchipuram|banarasi|benarasi|pattu|zari|ikat|kalamkari|handloom)\b/))inferred.push("traditional");
     return [...new Set(inferred)];
   }
   function matchesOccasion(product,occasion){
