@@ -4,7 +4,7 @@
   window.__SSV_SMART_FINDER_INIT__=true;
   const $=(selector,root=document)=>root.querySelector(selector);
   const esc=value=>String(value??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
-  let catalogue=[],loaded=false,loadPromise=null,lastFocus=null,backgroundState=[],preferences={category:"Sarees",budget:"",color:""};
+  let catalogue=[],loaded=false,loadPromise=null,lastFocus=null,backgroundState=[],preferences={category:"Sarees",budget:"",color:""},allMatches=[],shownCount=0,shopSettings={};
   const money=value=>new Intl.NumberFormat("en-IN",{style:"currency",currency:"INR",maximumFractionDigits:0}).format(Number(value));
   function shell(){
     if($("#ssv-smart-finder-trigger"))return;
@@ -62,6 +62,7 @@
         if(!response.ok)throw new Error("Catalogue request failed ("+response.status+").");
         const data=await response.json();if(!Array.isArray(data))throw new Error("Catalogue format is not valid.");
         catalogue=data.filter(p=>p&&["sarees","dresses","jewelry","jewellery"].includes(String(p.category||"").trim().toLowerCase())&&Number.isFinite(Number(p.price))&&Number(p.price)>=0);
+        try{const settingsResponse=await fetch("./data/settings.json?finder="+Date.now(),{cache:"no-store",headers:{Accept:"application/json"}});if(settingsResponse.ok){const settings=await settingsResponse.json();if(settings&&typeof settings==="object")shopSettings=settings;}}catch(_){shopSettings={};}
         loaded=true;populateColors();
         message.textContent=catalogue.length?"Choose your category and preferences, then find matching products.":"No supported products are currently available in the catalogue.";
         return true;
@@ -96,24 +97,58 @@
   }
   function readPreferences(){const form=$("#ssv-finder-form");const category=form.elements.category.value;preferences={category,budget:form.elements.budget.value,color:["jewellery","jewelry"].includes(category.trim().toLowerCase())?"":form.elements.color.value};}
   function isAvailable(p){if(p.availability===false||p.inStock===false||p.outOfStock===true)return false;return p.availability===true||p.inStock===true;}
-  function recommend(){
-    const resultBox=$("#ssv-finder-results"),message=$("#ssv-finder-message");resultBox.replaceChildren();
+  function navigateToProduct(product,addToBag=false){
+    const category=String(product.category||preferences.category||"Sarees");
+    const targetName=String(product.name||"");
+    closePanel();
+    const grid=$("#products");
+    if(!grid||!targetName)return;
+    const categoryTab=[...document.querySelectorAll("[data-tab]")].find(tab=>tab.dataset.tab===category);
+    if(categoryTab)categoryTab.click();
+    const search=$("#search")||$("#shop .lux-search input");
+    if(search&&search.value){search.value="";search.dispatchEvent(new Event("input",{bubbles:true}));}
+    const findTarget=()=>[...grid.querySelectorAll("img[alt]")].find(img=>img.alt===targetName);
+    let image=findTarget();
+    if(!image){if($("#shop"))$("#shop").scrollIntoView({behavior:"auto",block:"start"});return;}
+    const item=image.closest(".lux-item-card,.product-card,article")||image;
+    if(addToBag){
+      const addButton=item.querySelector("[data-add-cart],.ssv-add-cart");
+      if(addButton){addButton.click();return;}
+    }
+    item.scrollIntoView({behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",block:"center"});
+    item.setAttribute("tabindex","-1");item.focus({preventScroll:true});
+  }
+  function helpUrl(product){
+    const phone=String(shopSettings.whatsapp||"").replace(/\D/g,"");
+    if(!phone)return "";
+    const message=product
+      ?"Hi Sri Sai Vani Collections! I’m interested in "+String(product.name||"this product")+" priced at "+money(product.price)+". Could you please help me with the details?"
+      :"Hi Sri Sai Vani Collections! I need help choosing a style. Could you please suggest some options?";
+    return "https://wa.me/"+phone+"?text="+encodeURIComponent(message);
+  }
+  function renderMatches(){
+    const resultBox=$("#ssv-finder-results"),message=$("#ssv-finder-message");
+    resultBox.replaceChildren();
     const category=preferences.category||"Sarees";
-    let matches=catalogue.filter(p=>String(p.category||"").trim().toLowerCase()===category.toLowerCase()||false).filter(p=>isAvailable(p));
-    if(preferences.budget!=="")matches=matches.filter(p=>Number(p.price)<=Number(preferences.budget));
-    if(preferences.color&&!["jewellery","jewelry"].includes(category.trim().toLowerCase()))matches=matches.filter(p=>String(p.color||"").trim().toLowerCase()===preferences.color.toLowerCase());
-    matches.sort((a,b)=>{
-      const best=Number(Boolean(b.bestSeller))-Number(Boolean(a.bestSeller));
-      if(best)return best;
-      const fresh=Number(Boolean(b.newArrival))-Number(Boolean(a.newArrival));
-      if(fresh)return fresh;
-      return Number(a.price)-Number(b.price);
-    });
-    const results=matches.slice(0,3);
-    if(!results.length){const jewellery=["jewellery","jewelry"].includes(category.trim().toLowerCase());message.textContent="No verified in-stock "+(jewellery?"jewellery":category.toLowerCase())+" match those choices. "+(jewellery?"Try a higher budget.":"Try a higher budget or choose Any colour.")+" Your stated budget will never be exceeded.";return;}
-    const categoryLabel=category==="Jewellery"?"jewellery":category.toLowerCase();
-    message.textContent="Found "+matches.length+" matching "+categoryLabel+(matches.length===1?" item":" items")+". Showing "+results.length+".";
-    results.forEach(product=>{
+    const categoryLabel=["jewellery","jewelry"].includes(category.toLowerCase())?"jewellery":category.toLowerCase();
+    const results=allMatches.slice(0,shownCount);
+    if(!results.length){
+      const jewellery=["jewellery","jewelry"].includes(category.toLowerCase());
+      message.textContent="We couldn’t find an exact match for your preferences. "+(jewellery?"Try adjusting your budget or browse the jewellery collection.":"Try changing your budget or colour, or browse the full collection.") ;
+      const recovery=document.createElement("div");recovery.className="ssv-finder-recovery";
+      recovery.innerHTML='<button type="button" class="ssv-finder-recovery-action" data-recovery="budget">Edit Budget</button>'+(!jewellery?'<button type="button" class="ssv-finder-recovery-action" data-recovery="color">Change Colour</button>':"")+'<button type="button" class="ssv-finder-recovery-action" data-recovery="all">Browse All</button>';
+      recovery.querySelector('[data-recovery="budget"]').addEventListener("click",()=>{$("#ssv-finder-budget").focus();$("#ssv-finder-budget").scrollIntoView({block:"center",behavior:"smooth"});});
+      const colorAction=recovery.querySelector('[data-recovery="color"]');
+      if(colorAction)colorAction.addEventListener("click",()=>{$("#ssv-finder-color").value="";readPreferences();preferences.color="";$("#ssv-finder-color").value="";recommend();});
+      recovery.querySelector('[data-recovery="all"]').addEventListener("click",()=>{preferences.budget="";preferences.color="";$("#ssv-finder-budget").value="";$("#ssv-finder-color").value="";recommend();});
+      resultBox.append(recovery);
+      const help=helpUrl();
+      if(help){const link=document.createElement("a");link.className="ssv-finder-help";link.href=help;link.target="_blank";link.rel="noopener noreferrer";link.textContent="Need help choosing? Chat with us on WhatsApp";resultBox.append(link);}
+      return;
+    }
+    message.textContent="We found "+allMatches.length+" matching "+categoryLabel+(allMatches.length===1?" option.":" options.")+" Showing "+Math.min(shownCount,allMatches.length)+" of "+allMatches.length+".";
+    const heading=document.createElement("p");heading.className="ssv-finder-recommendation-heading";heading.textContent="Recommended for You";resultBox.append(heading);
+    results.forEach((product,index)=>{
       const image=String(product.image||"").replace(/^\.\//,"");
       const imageUrl=/^https?:\/\//i.test(image)?image:"./"+image.replace(/^\//,"");
       const originalPrice=Number(product.originalPrice);
@@ -123,26 +158,59 @@
       if(product.newArrival===true)badges.push("New Arrival");
       const details=[product.color?"Recorded colour: "+String(product.color).trim():"","In stock"].filter(Boolean).join(" · ");
       const card=document.createElement("article");card.className="ssv-finder-result";
-      card.innerHTML='<img loading="lazy" src="'+esc(imageUrl)+'" alt="'+esc(product.name||categoryLabel)+'"><div><h3>'+esc(product.name||categoryLabel)+'</h3><p class="ssv-finder-price">'+money(product.price)+(hasOriginalPrice?' <del class="ssv-finder-original">'+money(originalPrice)+'</del>':"")+'</p>'+(badges.length?'<p class="ssv-finder-badges">'+badges.map(badge=>'<span>'+esc(badge)+'</span>').join("")+'</p>':"")+'<p class="ssv-finder-meta">'+esc(details)+'</p><button type="button" class="ssv-finder-view">Browse collection</button></div>';
-      $(".ssv-finder-view",card).addEventListener("click",()=>{
+      card.innerHTML='<img loading="lazy" src="'+esc(imageUrl)+'" alt="'+esc(product.name||categoryLabel)+'"><div class="ssv-finder-result-copy">'+(index===0?'<span class="ssv-finder-match-label">Best Match</span>':"")+'<h3>'+esc(product.name||categoryLabel)+'</h3><p class="ssv-finder-price">'+money(product.price)+(hasOriginalPrice?' <del class="ssv-finder-original">'+money(originalPrice)+'</del>':"")+'</p>'+(badges.length?'<p class="ssv-finder-badges">'+badges.map(badge=>'<span>'+esc(badge)+'</span>').join("")+'</p>':"")+'<p class="ssv-finder-meta">'+esc(details)+'</p><div class="ssv-finder-product-actions"><button type="button" class="ssv-finder-view">View Product</button><button type="button" class="ssv-finder-add">Add to Bag</button></div></div>';
+      $(".ssv-finder-view",card).addEventListener("click",()=>navigateToProduct(product,false));
+      $(".ssv-finder-add",card).addEventListener("click",()=>{
         const targetName=String(product.name||"");
-        closePanel();
         const grid=$("#products");
-        if(!grid||!targetName)return;
-        const categoryTab=[...document.querySelectorAll("[data-tab]")].find(tab=>tab.dataset.tab===category);
+        const categoryTab=[...document.querySelectorAll("[data-tab]")].find(tab=>tab.dataset.tab===String(product.category||preferences.category));
         if(categoryTab)categoryTab.click();
-        const search=$("#search");
+        const search=$("#search")||$("#shop .lux-search input");
         if(search&&search.value){search.value="";search.dispatchEvent(new Event("input",{bubbles:true}));}
-        const target=[...grid.querySelectorAll("img[alt]")].find(img=>img.alt===targetName);
-        if(target){
-          const item=target.closest(".lux-item-card,.product-card,article")||target;
-          item.scrollIntoView({behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",block:"center"});
-          item.setAttribute("tabindex","-1");item.focus({preventScroll:true});
-        }else if($("#shop"))$("#shop").scrollIntoView({behavior:"auto",block:"start"});
+        const image=grid&&[...grid.querySelectorAll("img[alt]")].find(img=>img.alt===targetName);
+        const item=image&&(image.closest(".lux-item-card,.product-card,article")||image);
+        const addButton=item&&item.querySelector("[data-add-cart],.ssv-add-cart");
+        if(addButton){closePanel();addButton.click();return;}
+        $("#ssv-finder-message").textContent="We couldn’t add this item directly. Choose View Product to find it in the collection.";
       });
+      const productHelp=helpUrl(product);
+      if(productHelp){const link=document.createElement("a");link.className="ssv-finder-help ssv-finder-product-help";link.href=productHelp;link.target="_blank";link.rel="noopener noreferrer";link.textContent="Ask about this item";$(".ssv-finder-result-copy",card).append(link);}
       const img=$("img",card);img.addEventListener("error",()=>{img.hidden=true;},{once:true});
       resultBox.append(card);
     });
+    if(shownCount<allMatches.length){
+      const more=document.createElement("button");more.type="button";more.className="ssv-finder-more";more.textContent="Show More Matches";
+      more.addEventListener("click",()=>{shownCount=Math.min(shownCount+3,allMatches.length);renderMatches();});
+      resultBox.append(more);
+    }
+    const controls=document.createElement("div");controls.className="ssv-finder-result-footer";
+    const change=document.createElement("button");change.type="button";change.className="ssv-finder-recovery-action";change.textContent="Change Preferences";
+    change.addEventListener("click",()=>{$("#ssv-finder-budget").focus();$("#ssv-finder-form").scrollIntoView({block:"start",behavior:"smooth"});});
+    controls.append(change);
+    const genericHelp=helpUrl();
+    if(genericHelp){const link=document.createElement("a");link.className="ssv-finder-help";link.href=genericHelp;link.target="_blank";link.rel="noopener noreferrer";link.textContent="Need Help Choosing? WhatsApp Us";controls.append(link);}
+    resultBox.append(controls);
+  }
+  function recommend(){
+    const message=$("#ssv-finder-message");
+    const category=preferences.category||"Sarees";
+    allMatches=catalogue.filter(p=>String(p.category||"").trim().toLowerCase()===category.toLowerCase()).filter(p=>isAvailable(p));
+    if(preferences.budget!==""){
+      const budget=Number(preferences.budget);
+      if(!Number.isFinite(budget)||budget<0){allMatches=[];shownCount=3;renderMatches();return;}
+      allMatches=allMatches.filter(p=>Number(p.price)<=budget);
+    }
+    if(preferences.color&& !["jewellery","jewelry"].includes(category.trim().toLowerCase()))allMatches=allMatches.filter(p=>String(p.color||"").trim().toLowerCase()===preferences.color.toLowerCase());
+    allMatches.sort((a,b)=>{
+      const best=Number(Boolean(b.bestSeller))-Number(Boolean(a.bestSeller));
+      if(best)return best;
+      const fresh=Number(Boolean(b.newArrival))-Number(Boolean(a.newArrival));
+      if(fresh)return fresh;
+      return Number(a.price)-Number(b.price);
+    });
+    shownCount=Math.min(3,allMatches.length);
+    if(!allMatches.length)message.textContent="";
+    renderMatches();
   }
   function start(){try{shell();}catch(error){console.error("Smart Saree Finder could not initialize.",error);}}
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",start,{once:true});else start();
