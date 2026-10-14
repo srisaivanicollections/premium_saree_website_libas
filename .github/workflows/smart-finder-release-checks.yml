@@ -147,9 +147,9 @@ jobs:
                 await route.fulfill({ status: 200, headers: { "Access-Control-Allow-Origin": "*" }, contentType: "application/json", body: JSON.stringify({ success: true, accepted: true, reference: "E2E-TEST-ORDER" }) });
               } else if (body.action === "send" || body.action === "verify") {
                 // OTP UI and verification code path only. Never send a real email or OTP.
-                await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ success: true, message: "Mock OTP accepted" }) });
+                await route.fulfill({ status: 200, headers: { "Access-Control-Allow-Origin": "*" }, contentType: "application/json", body: JSON.stringify({ success: true, message: "Mock OTP accepted" }) });
               } else {
-                await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ success: true, products: state.products }) });
+                await route.fulfill({ status: 200, headers: { "Access-Control-Allow-Origin": "*" }, contentType: "application/json", body: JSON.stringify({ success: true, products: state.products }) });
               }
             });
             await page.route(githubPattern, async route => {
@@ -203,6 +203,8 @@ jobs:
               assert.equal(await page.locator("#products [data-product-id]").count(), 1, label + ": Jewellery category filter");
 
               await page.locator("#ssv-smart-finder-trigger").click();
+              const finderPanelBox = await page.locator("#ssv-smart-finder-panel").boundingBox();
+              if (mobile) assert.ok(finderPanelBox && finderPanelBox.width <= viewport.width, label + ": visible finder panel must fit mobile viewport");
               await page.locator("#ssv-finder-category").selectOption("Dresses");
               await page.locator("#ssv-finder-budget").fill("0");
               await page.locator("#ssv-finder-form button[type='submit']").click();
@@ -244,7 +246,7 @@ jobs:
               await page.locator(".ssv-order-success").waitFor();
               assert.equal((await page.locator(".ssv-order-ref").innerText()).trim(), "E2E-TEST-ORDER", label + ": checkout success state");
               assert.ok(state.workerActions.includes("submitOrder"), label + ": checkout worker contract called");
-              await page.locator("[data-cart-close]").click();
+              await page.locator(".ssv-order-continue").click();
 
               await page.locator("#adminOpen").click();
               await page.locator("#adminEmail").fill("vinith.paithari@gmail.com");
@@ -277,9 +279,27 @@ jobs:
               await page.locator("#adminProductSearch").waitFor();
               await page.locator("#adminProductSearch").fill("E2E Jewellery Regression Item");
               await page.locator("#adminProductsScroll").getByText("E2E Jewellery Regression Item").waitFor();
-              const panel = await page.locator("#ssv-smart-finder-panel").boundingBox().catch(() => null);
-              if (mobile && panel) assert.ok(panel.width <= viewport.width, label + ": finder panel must fit mobile viewport");
-              console.log("PASS " + label + ": catalogue, finder, budget/colour, Browse All, bag limit, checkout, OTP UI, Admin create and reload.");
+              await page.locator("#adminProductsScroll .edit").first().click();
+              await page.locator("#fPrice").fill("1350");
+              await page.locator("#saveItem").click();
+              const editDeadline = Date.now() + 15000;
+              while (Date.now() < editDeadline && !state.products.some(p => p.name === "E2E Jewellery Regression Item" && p.category === "Jewellery" && Number(p.price) === 1350)) {
+                await page.waitForTimeout(100);
+              }
+              assert.ok(state.products.some(p => p.name === "E2E Jewellery Regression Item" && p.category === "Jewellery" && Number(p.price) === 1350), label + ": Admin edit and verified save");
+
+              await page.reload();
+              await page.locator("#adminOpen").click();
+              await page.locator("#adminEmail").fill("vinith.paithari@gmail.com");
+              await page.locator("#sendOtpBtn").click();
+              await page.locator("#adminOtp").waitFor({ state: "visible" });
+              await page.locator("#adminOtp").fill("123456");
+              await page.locator("#verifyOtpBtn").click();
+              await page.locator("#adminProductSearch").waitFor();
+              await page.locator("#adminProductSearch").fill("E2E Jewellery Regression Item");
+              await page.locator("#adminProductsScroll").getByText("E2E Jewellery Regression Item").waitFor();
+              assert.ok(state.products.some(p => p.name === "E2E Jewellery Regression Item" && Number(p.price) === 1350), label + ": edited Admin data survives reload");
+              console.log("PASS " + label + ": catalogue filters, finder recovery, budget/colour, bag limit, checkout, mocked OTP, Admin create/edit/save/reload.");
             } finally {
               await context.close();
               await browser.close();
