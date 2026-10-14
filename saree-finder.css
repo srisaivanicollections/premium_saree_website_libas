@@ -104,3 +104,29 @@
 
 /* Loading state remains clear without changing the finder layout. */
 .ssv-finder-submit:disabled{opacity:.65;cursor:wait}
+
+
+/* Customer interaction controls, scoped exclusively to the Smart Finder. */
+.ssv-finder-recommendation-heading{margin:0 0 2px;color:#6E2735;font:500 20px/1.1 "Cormorant Garamond",Georgia,serif}
+.ssv-finder-result-copy{min-width:0}
+.ssv-finder-match-label{display:inline-block;margin:0 0 5px;padding:4px 6px;background:#F4EFEA;color:#6E2735;font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.ssv-finder-product-actions{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 5px}
+.ssv-finder-product-actions button,.ssv-finder-recovery-action,.ssv-finder-more{
+  min-height:34px;padding:7px 10px;border:1px solid #6E2735;border-radius:6px;
+  background:#fff;color:#6E2735;font-size:10px;font-weight:600;cursor:pointer
+}
+.ssv-finder-product-actions .ssv-finder-add,.ssv-finder-more{background:#6E2735;color:#FAF7F2}
+.ssv-finder-product-actions button:hover,.ssv-finder-recovery-action:hover{background:#F4EFEA}
+.ssv-finder-product-actions .ssv-finder-add:hover,.ssv-finder-more:hover{background:#5d202d;color:#fff}
+.ssv-finder-help{display:inline-block;margin:4px 0;color:#6E2735;font-size:10px;font-weight:600;text-underline-offset:3px}
+.ssv-finder-product-help{margin-top:3px}
+.ssv-finder-more{width:100%;min-height:40px;margin:2px 0 4px}
+.ssv-finder-result-footer,.ssv-finder-recovery{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:2px 0 4px}
+.ssv-finder-recovery-action{background:transparent}
+@media(max-width:600px){
+  .ssv-finder-result{grid-template-columns:70px minmax(0,1fr);gap:10px;padding:8px}
+  .ssv-finder-result img{width:70px;height:92px}
+  .ssv-finder-product-actions{gap:5px}
+  .ssv-finder-product-actions button{flex:1 1 auto;padding-inline:7px}
+  .ssv-finder-result-footer>*{flex:1 1 auto}
+}
