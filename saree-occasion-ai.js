@@ -45,6 +45,19 @@ function imageUrl(path) {
   return url.href;
 }
 
+
+const VISUAL_COLORS=["Black","Blue","Brown","Gold","Green","Grey","Multicolor","Orange","Pink","Purple","Red","Silver","White","Yellow","Beige","Cream","Maroon","Peach","Teal"];
+const VISUAL_PATTERNS=["Plain","Floral","Geometric","Striped","Checked","Paisley","Traditional Motif","Embroidered","Woven","Printed","Sequin/Stone Work","Unknown"];
+async function bestLabel(classifier,url,itemType,descriptions){
+  const prompts=descriptions.map(description=>"a "+itemType+" "+description.toLowerCase());
+  const predictions=await classifier(url,prompts);
+  const sorted=(Array.isArray(predictions)?predictions:[]).filter(item=>item&&typeof item.label==="string"&&Number.isFinite(Number(item.score))).sort((a,b)=>Number(b.score)-Number(a.score));
+  if(!sorted.length)return null;
+  const best=sorted[0],margin=Number(best.score)-Number(sorted[1]?.score||0);
+  if(Number(best.score)<0.19||margin<0.025)return null;
+  const index=prompts.indexOf(best.label);return index>=0?{index,score:Number(best.score),margin}:null;
+}
+
 export async function createOccasionScanner() {
   const classifier = await getPipeline();
   return {
@@ -74,6 +87,24 @@ export async function createOccasionScanner() {
       };
       resultCache.set(cacheKey, result);
       return result;
+    },
+    async classifyVisualAttributes(path, category = "Sarees") {
+      const url=imageUrl(path),normalizedCategory=String(category||"Sarees").trim().toLowerCase();
+      const itemType=["jewellery","jewelry"].includes(normalizedCategory)?"piece of jewellery":normalizedCategory==="dresses"?"dress":"saree";
+      const classifier=await getPipeline();
+      const occasionPrompts=["intended for everyday daily wear, simple and comfortable","intended for wedding wear, bridal wear or a wedding guest","intended for festive celebrations or festival wear","intended for party wear, evening events or cocktail occasions","intended for traditional cultural or religious occasions"];
+      const [occasion,color,pattern]=await Promise.all([
+        bestLabel(classifier,url,itemType,occasionPrompts),
+        bestLabel(classifier,url,itemType,VISUAL_COLORS.map(value=>"predominantly "+value+" in colour")),
+        bestLabel(classifier,url,itemType,VISUAL_PATTERNS.map(value=>value==="Unknown"?"with no clearly identifiable pattern":"with a "+value+" pattern or surface treatment"))
+      ]);
+      const occasionValues=["Daily Wear","Wedding","Festive","Party Wear","Traditional"];
+      const mappedOccasion=occasion&&occasion.index>=0?[occasionValues[occasion.index]]:[];
+      const colorValue=color&&color.index>=0?VISUAL_COLORS[color.index]:"";
+      const patternValue=pattern&&pattern.index>=0?VISUAL_PATTERNS[pattern.index]:"";
+      const confidenceParts=[occasion?.score,color?.score,pattern?.score].filter(Number.isFinite);
+      const description=[colorValue?colorValue+"-toned":"",itemType,patternValue&&patternValue!=="Unknown"?"with "+patternValue.toLowerCase()+" detailing":""].filter(Boolean).join(" ").slice(0,180);
+      return {occasions:mappedOccasion,color:colorValue,pattern:patternValue,description:description||"",confidence:confidenceParts.length?Number((confidenceParts.reduce((a,b)=>a+b,0)/confidenceParts.length).toFixed(3)):0};
     }
   };
 }
