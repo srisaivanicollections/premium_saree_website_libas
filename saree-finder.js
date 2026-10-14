@@ -54,14 +54,22 @@
     if(loaded){populateColors();return Promise.resolve(true);}
     if(loadPromise)return loadPromise;
     const message=$("#ssv-finder-message");
-    const submit=$("#ssv-finder-form .ssv-finder-submit");
     message.textContent="Loading current collection…";
     loadPromise=(async()=>{
       try{
         const response=await fetch("./data/products.json?finder="+Date.now(),{cache:"no-store",headers:{Accept:"application/json"}});
         if(!response.ok)throw new Error("Catalogue request failed ("+response.status+").");
         const data=await response.json();if(!Array.isArray(data))throw new Error("Catalogue format is not valid.");
-        catalogue=data.filter(p=>p&&["sarees","dresses","jewelry","jewellery"].includes(String(p.category||"").trim().toLowerCase())&&Number.isFinite(Number(p.price))&&Number(p.price)>=0);
+        const seenIds=new Set();
+        catalogue=data.filter(p=>{
+          if(!p||typeof p!=="object")return false;
+          const id=Number(p.id),name=String(p.name||"").trim(),category=String(p.category||"").trim().toLowerCase();
+          const price=Number(p.price),image=String(p.image||"").trim();
+          if(!Number.isSafeInteger(id)||id<=0||seenIds.has(id)||!name||!image)return false;
+          if(!["sarees","dresses","jewelry","jewellery"].includes(category)||!Number.isFinite(price)||price<0)return false;
+          seenIds.add(id);
+          return true;
+        });
         try{const settingsResponse=await fetch("./data/settings.json?finder="+Date.now(),{cache:"no-store",headers:{Accept:"application/json"}});if(settingsResponse.ok){const settings=await settingsResponse.json();if(settings&&typeof settings==="object")shopSettings=settings;}}catch(_){shopSettings={};}
         loaded=true;populateColors();
         message.textContent=catalogue.length?"Choose your category and preferences, then find matching products.":"No supported products are currently available in the catalogue.";
@@ -70,8 +78,6 @@
         loadPromise=null;
         message.textContent="The finder could not load the catalogue. Please try again.";
         return false;
-      }finally{
-        if(submit)submit.disabled=false;
       }
     })();
     return loadPromise;
@@ -96,7 +102,9 @@
     if(jewellery)select.value="";
   }
   function readPreferences(){const form=$("#ssv-finder-form");const category=form.elements.category.value;preferences={category,budget:form.elements.budget.value,color:["jewellery","jewelry"].includes(category.trim().toLowerCase())?"":form.elements.color.value};}
-  function isAvailable(p){if(p.availability===false||p.inStock===false||p.outOfStock===true)return false;return p.availability===true||p.inStock===true;}
+  // Match checkout.js: reject explicit sold-out signals, but do not hide legacy
+  // products merely because an optional stock field is absent.
+  function isAvailable(p){return p.availability!==false&&p.inStock!==false&&p.outOfStock!==true;}
   function isCategoryEnabled(category){
     const key=({Sarees:"categorySareesEnabled",Dresses:"categoryDressesEnabled",Jewellery:"categoryJewelryEnabled"})[String(category||"").trim()];
     const value=key?shopSettings[key]:undefined;
@@ -109,9 +117,11 @@
     if(!grid||product.id==null)return;
     const categoryTab=[...document.querySelectorAll("[data-tab]")].find(tab=>String(tab.dataset.tab||"").toLowerCase()===category.toLowerCase()||(["jewellery","jewelry"].includes(String(tab.dataset.tab||"").toLowerCase())&&["jewellery","jewelry"].includes(category.toLowerCase())));
     if(!categoryTab){if($("#shop"))$("#shop").scrollIntoView({behavior:"auto",block:"start"});return;}
-    categoryTab.click();
+    // Clear search before switching category so the target is rendered in the
+    // same synchronous catalogue render, regardless of the previous filters.
     const search=$("#search")||$("#shop .lux-search input");
     if(search&&search.value){search.value="";search.dispatchEvent(new Event("input",{bubbles:true}));}
+    categoryTab.click();
     const item=[...grid.querySelectorAll("[data-product-id]")].find(card=>String(card.dataset.productId)===String(product.id));
     if(!item){if($("#shop"))$("#shop").scrollIntoView({behavior:"auto",block:"start"});return;}
     item.scrollIntoView({behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",block:"center"});
@@ -155,7 +165,8 @@
       const badges=[];
       if(product.bestSeller===true)badges.push("Best Seller");
       if(product.newArrival===true)badges.push("New Arrival");
-      const details=[product.color?"Recorded colour: "+String(product.color).trim():"","In stock"].filter(Boolean).join(" · ");
+      const availabilityLabel=(product.availability===true||product.inStock===true)?"In stock":"Availability not specified";
+      const details=[product.color?"Recorded colour: "+String(product.color).trim():"",availabilityLabel].filter(Boolean).join(" · ");
       const card=document.createElement("article");card.className="ssv-finder-result";card.dataset.productId=String(product.id??"");
       card.innerHTML='<img loading="lazy" src="'+esc(imageUrl)+'" alt="'+esc(product.name||categoryLabel)+'"><div class="ssv-finder-result-copy">'+'<h3>'+esc(product.name||categoryLabel)+'</h3><p class="ssv-finder-price">'+money(product.price)+(hasOriginalPrice?' <del class="ssv-finder-original">'+money(originalPrice)+'</del>':"")+'</p>'+(badges.length?'<p class="ssv-finder-badges">'+badges.map(badge=>'<span>'+esc(badge)+'</span>').join("")+'</p>':"")+'<p class="ssv-finder-meta">'+esc(details)+'</p><div class="ssv-finder-product-actions"><button type="button" class="ssv-finder-view">View Product</button><button type="button" class="ssv-finder-add">Add to Bag</button></div></div>';
       $(".ssv-finder-view",card).addEventListener("click",()=>navigateToProduct(product,false));
@@ -202,13 +213,11 @@
       allMatches=allMatches.filter(p=>Number(p.price)<=budget);
     }
     if(preferences.color&& !["jewellery","jewelry"].includes(category.trim().toLowerCase()))allMatches=allMatches.filter(p=>String(p.color||"").trim().toLowerCase()===preferences.color.toLowerCase());
-    allMatches.sort((a,b)=>{
-      const best=Number(Boolean(b.bestSeller))-Number(Boolean(a.bestSeller));
-      if(best)return best;
-      const fresh=Number(Boolean(b.newArrival))-Number(Boolean(a.newArrival));
-      if(fresh)return fresh;
-      return Number(a.price)-Number(b.price);
-    });
+    // Deterministic recommendation score: products matching both merchandising
+    // signals lead, followed by one signal, then price. Ties preserve catalogue order.
+    allMatches=allMatches.map((product,index)=>({product,index,score:(product.bestSeller===true?2:0)+(product.newArrival===true?1:0)}))
+      .sort((a,b)=>b.score-a.score||Number(a.product.price)-Number(b.product.price)||a.index-b.index)
+      .map(entry=>entry.product);
     shownCount=Math.min(3,allMatches.length);
     if(!allMatches.length)message.textContent="";
     renderMatches();
