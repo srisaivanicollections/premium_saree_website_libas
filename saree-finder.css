@@ -144,3 +144,6 @@
   .ssv-finder-product-actions button{flex:1 1 auto;padding-inline:7px}
   .ssv-finder-result-footer>*{flex:1 1 auto}
 }
+
+/* Occasion control scoped to the Smart Finder only. */
+#ssv-finder-occasion{width:100%;min-height:42px;padding:0 11px;border:1px solid #E7E0D8;border-radius:8px;background:#fff;color:#1C1917;font:400 12px Inter,Arial,sans-serif}
