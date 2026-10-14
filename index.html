@@ -10794,6 +10794,15 @@ async function saveProduct(id){
       bestSeller:$("#fBest").checked,
       availability:$("#fAvail").checked
     };
+    // AI-derived occasion labels belong to the exact image that was scanned.
+    // If that image changes, clear only AI-generated metadata so it can be
+    // reclassified. Manual Admin-selected occasions are never removed.
+    const imageChanged=!!existing&&String(existing.image||"")!==String(image||"");
+    if(imageChanged&&existing?.occasionMetadata?.source==="ai"&&
+       String(existing.occasionMetadata.image||"")===String(existing.image||"")){
+      p.occasions=[];
+      delete p.occasionMetadata;
+    }
     productToSave=p;
 
     // Serialize catalog writes. Two rapid Admin operations must never race
@@ -10816,6 +10825,12 @@ async function saveProduct(id){
     if(uploadedImagePath && previousImagePath && previousImagePath!==uploadedImagePath){const cleanup=await cleanupReplacedImage(previousImagePath,uploadedImagePath);if(!cleanup.moved)cleanupMessage=" Previous image retained: "+cleanup.reason+".";}
     showView("products");
     showAdminToast((id?"Product updated successfully.":"Product added successfully.")+(cleanupMessage?" "+cleanupMessage.replace(/^ Previous image retained: /,"The previous image was retained safely: "):""),"success");
+    // Queue enrichment only after the product and its image have been verified.
+    // This does not hold up the CRUD success path.
+    const persistedProduct=products.find(item=>Number(item.id)===Number(productToSave.id));
+    if(persistedProduct&&ssvHasNoOccasionMetadata(persistedProduct)&&!ssvHasOccasionDecision(persistedProduct)){
+      ssvEnrichOccasionCatalogue({productId:persistedProduct.id}).catch(error=>console.warn("Background occasion enrichment deferred:",error));
+    }
   }catch(e){
     let latestProducts=null;
     let exactMatch=false;
@@ -10855,12 +10870,10 @@ async function saveProduct(id){
       render();
       showView("products");
       showAdminToast(id?"Product updated successfully.":"Product added successfully.","success");
-    // Enrich a new or image-updated untagged product after CRUD has completed.
-    // This is fire-and-forget: product save success never waits for model inference.
-    const savedProduct=products.find(item=>Number(item.id)===Number(p.id));
-    if(savedProduct&&ssvHasNoOccasionMetadata(savedProduct)&&!ssvHasOccasionDecision(savedProduct)){
-      ssvEnrichOccasionCatalogue({productId:savedProduct.id}).catch(error=>console.warn("Background occasion enrichment deferred:",error));
-    }
+      const recoveredProduct=products.find(item=>Number(item.id)===Number(productToSave.id));
+      if(recoveredProduct&&ssvHasNoOccasionMetadata(recoveredProduct)&&!ssvHasOccasionDecision(recoveredProduct)){
+        ssvEnrichOccasionCatalogue({productId:recoveredProduct.id}).catch(error=>console.warn("Background occasion enrichment deferred:",error));
+      }
     }else if(recordMatches&&imageVerificationFailed){
       products=latestProducts;
       githubOriginalIds=new Set(products.map(x=>Number(x.id)));
