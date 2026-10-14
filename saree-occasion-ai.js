@@ -22,11 +22,7 @@ async function getPipeline() {
       .then(({ pipeline, env }) => {
         env.allowRemoteModels = true;
         env.allowLocalModels = false;
-        // Transformers.js uses browser-managed caching for model assets where available.
-        // The model's q8 artifact contains ConvInteger nodes that fail to
-        // initialize in the browser WASM execution provider on some devices.
-        // The model repository's uint8 artifact avoids that unsupported path
-        // while keeping the download substantially smaller than the fp32 model.
+        // uint8 avoids the ConvInteger path that fails in some browser WASM runtimes.
         return pipeline("zero-shot-image-classification", MODEL_ID, {
           device: "wasm",
           dtype: "uint8"
@@ -53,36 +49,30 @@ function imageUrl(path) {
 export async function createOccasionScanner() {
   const classifier = await getPipeline();
   return {
-    async classify(path, category = "Sarees") {
+    async classify(path, category = "Sarees", options = {}) {
       const url = imageUrl(path);
       const normalizedCategory = String(category || "Sarees").trim().toLowerCase();
       const itemType = ["jewellery", "jewelry"].includes(normalizedCategory)
         ? "piece of jewellery"
         : normalizedCategory === "dresses" ? "dress" : "saree";
       const cacheKey = url + "|" + itemType;
-      if (resultCache.has(cacheKey)) return resultCache.get(cacheKey);
-      let result = { label: "", score: 0, margin: 0, confident: false };
-      let colour = { label: "", score: 0, margin: 0, confident: false };
-      try {
-        const predictions = await classifier(url, LABELS.map(item => "a " + itemType + " " + item.description));
-        const inferred = selectOccasionPrediction(predictions, itemType);
-        inferred.confident = isConfidentOccasionPrediction(inferred);
-        result = inferred;
-      } catch (error) {
-        console.warn("Finder occasion inference was inconclusive:", error);
-      }
-      try {
-        const colourPredictions = await classifier(url, COLOURS.map(value =>
-          "a product photo of a " + itemType + " whose main visible fabric or material colour is " + value.toLowerCase()
-        ));
-        const inferredColour = selectColourPrediction(colourPredictions);
-        inferredColour.confident = isConfidentColourPrediction(inferredColour);
-        colour = inferredColour;
-      } catch (error) {
-        console.warn("Finder colour inference was inconclusive:", error);
-      }
-      const combined = { occasion: result, colour };
-      resultCache.set(cacheKey, combined);
+      if (!options.retry && resultCache.has(cacheKey)) return resultCache.get(cacheKey);
+
+      // Runtime/image/model errors deliberately propagate to Admin diagnostics.
+      // Only valid predictions below the confidence threshold are "uncertain".
+      const predictions = await classifier(url, LABELS.map(item => "a " + itemType + " " + item.description));
+      const occasion = selectOccasionPrediction(predictions, itemType);
+      occasion.confident = isConfidentOccasionPrediction(occasion);
+
+      const colourPredictions = await classifier(url, COLOURS.map(value =>
+        "a product photo of a " + itemType + " whose main visible fabric or material colour is " + value.toLowerCase()
+      ));
+      const colour = selectColourPrediction(colourPredictions);
+      colour.confident = isConfidentColourPrediction(colour);
+
+      const combined = { occasion, colour };
+      // Do not poison retries with transient failures or uncertain predictions.
+      if (occasion.confident && colour.confident) resultCache.set(cacheKey, combined);
       return combined;
     }
   };
