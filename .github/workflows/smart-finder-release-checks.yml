@@ -211,6 +211,8 @@ jobs:
             try {
               await page.goto("http://127.0.0.1:4173/");
               await page.locator("#products [data-product-id]").first().waitFor();
+              await page.locator("#ssv-finder-hint").waitFor({ state: "visible" });
+              assert.ok(await page.locator("#ssv-smart-finder-trigger").isVisible(), label + ": Finder trigger remains visible with first-load hint");
               assert.equal(await page.locator("#products [data-product-id]").count(), 3, label + ": initial Sarees category");
 
               await page.locator('[data-tab="Dresses"]').click();

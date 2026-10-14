@@ -1,0 +1,36 @@
+name: Smart Finder Occasion Tests
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [feature/finder-occasion-support]
+
+jobs:
+  occasion-unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Validate Finder and Admin JavaScript syntax
+        run: |
+          node --check saree-finder.js
+          node --check app.js
+      - name: Test occasion inference and precedence
+        run: node --test tests/smart-finder-occasion.test.mjs
+      - name: Check occasion filtering is wired into recommendations and reset
+        run: |
+          node --input-type=module <<'NODE'
+          import { readFileSync } from "node:fs";
+          import assert from "node:assert/strict";
+          const finder = readFileSync("saree-finder.js", "utf8");
+          assert.match(finder, /if\(preferences\.occasion\)allMatches=allMatches\.filter\(p=>matchesOccasion\(p,preferences\.occasion\)\)/);
+          assert.match(finder, /occasion:form\.elements\.occasion\.value/);
+          assert.match(finder, /occasion:""\}\;quickFilter=""/);
+          assert.match(finder, /ssv-finder-occasion/);
+          console.log("Occasion recommendation wiring checks passed.");
+          NODE
