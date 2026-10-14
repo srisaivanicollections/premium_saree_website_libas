@@ -29,6 +29,8 @@ jobs:
           const app = readFileSync("app.js", "utf8");
           const finder = readFileSync("saree-finder.js", "utf8");
           const catalogue = JSON.parse(readFileSync("data/products.json", "utf8"));
+          const page = readFileSync("index.html", "utf8");
+          const checkout = readFileSync("checkout.js", "utf8");
 
           assert.match(app, /\["Sarees","Dresses","Jewellery"\]/, "Admin validation must allow Jewellery");
           assert.match(app, /value="Jewellery".*Jewellery<\/option>/, "Admin editor must render a Jewellery option");
