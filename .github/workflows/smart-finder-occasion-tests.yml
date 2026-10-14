@@ -28,7 +28,7 @@ jobs:
           import { readFileSync } from "node:fs";
           import assert from "node:assert/strict";
           const finder = readFileSync("saree-finder.js", "utf8");
-          assert.match(finder, /if\(preferences\.occasion\)allMatches=allMatches\.filter\(p=>matchesOccasion\(p,preferences\.occasion\)\)/);
+          assert.match(finder, /allMatches=allMatches\.filter\(product=>matchesOccasion\(product,requested\)\)/, "Occasion preferences must filter recommendations");
           assert.match(finder, /occasion:form\.elements\.occasion\.value/);
           assert.match(finder, /occasion:""\}\;quickFilter=""/);
           assert.match(finder, /ssv-finder-occasion/);
