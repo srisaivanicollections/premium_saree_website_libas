@@ -10309,7 +10309,7 @@ function showView(v){
     [categoryFilter,colorFilter,statusFilter,sortFilter].forEach(control=>control.addEventListener("change",resetAdminProductPage));
     $("#clearAdminProductFilters").onclick=()=>{searchInput.value="";categoryFilter.value="";colorFilter.value="";statusFilter.value="";sortFilter.value="recommended";adminProductPage=1;renderAdminProductList();};
     $("#adminAddProduct").onclick=()=>showView("add");
-    $("#adminEnrichFinder").onclick=async()=>{const button=$("#adminEnrichFinder");button.disabled=true;button.textContent="ENRICHING...";try{const result=await ssvEnrichFinderCatalogue({allMissing:true});showAdminToast("Finder enrichment finished: "+result.processed+" products updated, "+result.skipped+" skipped/uncertain, "+result.failed+" failed.","success");await load();showView("products");}catch(error){showAdminToast("Finder enrichment could not start. "+(error?.message||"Please try again."),"error");}finally{button.disabled=false;button.textContent="Enrich Finder";}};
+    $("#adminEnrichFinder").onclick=async()=>{const button=$("#adminEnrichFinder");button.disabled=true;button.textContent="ENRICHING...";try{const result=await ssvEnrichFinderCatalogue({allMissing:true});const summary="Finder enrichment: "+result.imageProcessed+" images processed, "+result.occasionsIdentified+" occasions saved, "+result.processed+" products updated, "+result.skipped+" skipped/uncertain, "+result.failed+" failed.";showAdminToast(summary,result.failed?"error":"success");await load();showView("products");}catch(error){console.error("Finder enrichment could not start",error);showAdminToast("Finder enrichment could not start. "+ssvFinderFailureReason(error),"error");}finally{button.disabled=false;button.textContent="Enrich Finder";}};
     renderAdminProductList();
   }else if(v==="add"){
     b.innerHTML=form();
@@ -10651,43 +10651,77 @@ function ssvHasOccasionDecision(p){return Array.isArray(p?.occasions)&&p.occasio
 function ssvOccasionLabel(v){const n=String(v||"").trim().toLowerCase();return [...SSV_OCCASION_LABELS].find(x=>x.toLowerCase()===n)||"";}
 function ssvHasNoOccasionMetadata(p){return p&&(p.occasions===undefined||p.occasions===null||(Array.isArray(p.occasions)&&p.occasions.length===0));}
 function ssvHasNoColour(p){return !String(p?.color||"").trim();}
+function ssvFinderFailureReason(error){
+ const status=Number(error?.status||0),message=String(error?.message||"").replace(/(?:gh[pousr]_[A-Za-z0-9_]+|github_pat_[A-Za-z0-9_]+)/g,"[redacted]").slice(0,180);
+ if(status===401)return "GitHub authentication failed (401). Reconnect Admin GitHub access.";
+ if(status===403)return "GitHub denied access (403). Check token contents-write permission and repository access.";
+ if(status===404)return "GitHub resource not found (404). Check the product catalogue or image path.";
+ if(isGithubShaConflict(error))return "GitHub catalogue changed during save; retry limit reached ("+status+").";
+ if(/failed to fetch|networkerror|load failed/i.test(message))return "Network/CDN request failed. Check connection and model/image access.";
+ if(/onnx|wasm|model|pipeline|convinteger/i.test(message))return "Image model/runtime failed: "+message;
+ if(/image/i.test(message)&&/load|fetch|url|missing|unsupported/i.test(message))return "Product image could not be loaded: "+message;
+ return (status?"GitHub/API "+status+": ":"")+message||"Unknown error. Check browser console.";
+}
 async function ssvEnrichFinderCatalogue({allMissing=false,productId=null}={}){
  if(ssvFinderEnrichmentPromise)return ssvFinderEnrichmentPromise;
  ssvFinderEnrichmentPromise=(async()=>{
-  const status=$("#adminProductResults");let processed=0,skipped=0,failed=0;
+  const status=$("#adminProductResults");let processed=0,skipped=0,failed=0;const failures=[];
+  const paint=(message)=>{if(status)status.textContent=message;};
   try{
    const module=await import("./saree-occasion-ai.js"),scanner=await module.createOccasionScanner(),initial=await githubReadJson("data/products.json");
    if(!Array.isArray(initial.value))throw new Error("Product catalogue is invalid.");
    const candidates=initial.value.filter(p=>(!productId||Number(p.id)===Number(productId))&&(!ssvHasOccasionDecision(p)||ssvHasNoColour(p))&&p.image&&["Sarees","Dresses","Jewellery","Jewelry"].includes(String(p.category||"")));
    const queue=allMissing?candidates:candidates.slice(0,1);
+   let imageProcessed=0,occasionsIdentified=0;
    for(let i=0;i<queue.length;i++){
     const candidate=queue[i];
     try{
      await new Promise(resolve=>setTimeout(resolve,0));
-     const result=await scanner.classify(candidate.image,candidate.category),occasion=result?.occasion||result,colour=result?.colour||null,label=ssvOccasionLabel(occasion?.label);
+     const result=await scanner.classify(candidate.image,candidate.category);imageProcessed++;
+     const occasion=result?.occasion||result,colour=result?.colour||null,label=ssvOccasionLabel(occasion?.label);
      const addOccasion=ssvHasNoOccasionMetadata(candidate)&&!ssvHasOccasionDecision(candidate)&&!!occasion?.confident&&!!label;
      const addColour=ssvHasNoColour(candidate)&&!!colour?.confident&&SSV_FINDER_COLOURS.has(colour.label);
      if(!addOccasion&&!addColour){skipped++;continue;}
      let saved=false,stop=false;
      for(let attempt=0;attempt<3&&!saved&&!stop;attempt++){
-      const latest=await githubReadJson("data/products.json");
+      const latest=await githubReadJsonFresh("data/products.json");
       if(!Array.isArray(latest.value))throw new Error("Product catalogue is invalid.");
       const index=latest.value.findIndex(p=>Number(p.id)===Number(candidate.id));
       if(index<0){skipped++;stop=true;break;}
-      const current=latest.value[index];if(current.image!==candidate.image){skipped++;stop=true;break;}
+      const current=latest.value[index];
+      if(current.image!==candidate.image){skipped++;stop=true;break;}
       const next={...current};let changed=false;
-      if(addOccasion&&ssvHasNoOccasionMetadata(current)&&!ssvHasOccasionDecision(current)){next.occasions=[label];next.occasionMetadata={source:"ai",model:"CLIP-ViT-B-32",score:Number(occasion.score.toFixed(4)),margin:Number(occasion.margin.toFixed(4)),image:String(current.image),version:1};changed=true;}
-      if(addColour&&ssvHasNoColour(current)){next.color=colour.label;next.colourMetadata={source:"ai",model:"CLIP-ViT-B-32",score:Number(colour.score.toFixed(4)),margin:Number(colour.margin.toFixed(4)),image:String(current.image),version:1};changed=true;}
-      if(!changed){skipped++;stop=true;break;}latest.value[index]=next;
-      try{await githubWriteJson("data/products.json",latest.value,latest.sha,"Enrich Smart Saree Finder metadata for product "+current.id);processed++;saved=true;}
-      catch(e){if(attempt===2||!/(409|422|conflict|sha)/i.test(String(e?.message||e)))throw e;await new Promise(resolve=>setTimeout(resolve,300*(attempt+1)));}
+      if(addOccasion&&ssvHasNoOccasionMetadata(current)&&!ssvHasOccasionDecision(current)){
+       next.occasions=[label];next.occasionMetadata={source:"ai",model:"CLIP-ViT-B-32",score:Number(occasion.score.toFixed(4)),margin:Number(occasion.margin.toFixed(4)),image:String(current.image),version:1};changed=true;
+      }
+      if(addColour&&ssvHasNoColour(current)){
+       next.color=colour.label;next.colourMetadata={source:"ai",model:"CLIP-ViT-B-32",score:Number(colour.score.toFixed(4)),margin:Number(colour.margin.toFixed(4)),image:String(current.image),version:1};changed=true;
+      }
+      if(!changed){skipped++;stop=true;break;}
+      latest.value[index]=next;
+      try{
+       await githubWriteJson("data/products.json",latest.value,latest.sha,"Enrich Smart Saree Finder metadata for product "+current.id);
+       const verify=await githubReadJsonFresh("data/products.json");
+       const savedProduct=Array.isArray(verify.value)?verify.value.find(p=>Number(p.id)===Number(current.id)):null;
+       const occasionVerified=!addOccasion||(Array.isArray(savedProduct?.occasions)&&savedProduct.occasions.includes(label)&&savedProduct?.occasionMetadata?.image===String(current.image));
+       const colourVerified=!addColour||(savedProduct?.color===colour.label&&savedProduct?.colourMetadata?.image===String(current.image));
+       if(!savedProduct||!occasionVerified||!colourVerified)throw new Error("Save verification failed: GitHub did not return the expected metadata for this product.");
+       processed++;if(addOccasion)occasionsIdentified++;saved=true;
+      }catch(e){
+       if(isGithubShaConflict(e)&&attempt<2){await new Promise(resolve=>setTimeout(resolve,300*(attempt+1)));continue;}
+       throw e;
+      }
      }
-    }catch(e){failed++;console.warn("Finder enrichment failed for product "+candidate.id,e);}
-    if(status)status.textContent="Enrich Finder: "+(i+1)+" of "+queue.length+" items processed · "+processed+" updated · "+skipped+" skipped/uncertain · "+failed+" failed";
+    }catch(e){
+     failed++;const reason=ssvFinderFailureReason(e);failures.push({id:candidate.id,reason});
+     console.error("Finder enrichment failed for product "+candidate.id,{status:e?.status||null,reason,error:e});
+    }
+    paint("Enrich Finder: "+(i+1)+" of "+queue.length+" products checked · "+imageProcessed+" images processed · "+occasionsIdentified+" occasions saved · "+processed+" products updated · "+skipped+" skipped/uncertain · "+failed+" failed");
    }
-   const refreshed=await githubReadJson("data/products.json");products=refreshed.value;githubOriginalIds=new Set(products.map(p=>Number(p.id)));
-   if(status)status.textContent="Enrich Finder complete: "+queue.length+" of "+queue.length+" items processed · "+processed+" updated · "+skipped+" skipped/uncertain · "+failed+" failed. Reopen Product Catalogue to refresh.";
-   return {processed,skipped,failed};
+   const refreshed=await githubReadJsonFresh("data/products.json");products=refreshed.value;githubOriginalIds=new Set(products.map(p=>Number(p.id)));
+   const summary="Enrich Finder complete: "+imageProcessed+" of "+queue.length+" images processed · "+occasionsIdentified+" occasions saved · "+processed+" products updated · "+skipped+" skipped/uncertain · "+failed+" failed.";
+   paint(summary+(failures.length?" Details: "+failures.map(item=>"Product "+item.id+": "+item.reason).join(" | "):""));
+   return {processed,skipped,failed,imageProcessed,occasionsIdentified,failures};
   }finally{ssvFinderEnrichmentPromise=null;}
  })();return ssvFinderEnrichmentPromise;
 }
