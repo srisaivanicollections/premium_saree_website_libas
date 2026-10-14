@@ -75,10 +75,13 @@ jobs:
           assert.match(finder, /textContent="Best Sellers"/, "Finder must offer a Best Sellers shortcut");
           assert.match(finder, /function isCategoryEnabled\(category\)/, "Finder must respect storefront category visibility settings");
           assert.match(finder, /filter\(p=>isCategoryEnabled\(p.category\)\)/, "Disabled storefront categories must not be recommended");
+          assert.match(finder, /const seenIds=new Set\(\)/, "Finder must reject duplicate and malformed product records");
+          assert.match(finder, /!Number\.isSafeInteger\(id\)[\s\S]*?seenIds\.has\(id\)[\s\S]*?!name\|\|!image/, "Finder must validate stable ID, name, image, and duplicate IDs");
+          assert.match(finder, /function isAvailable\(p\)\{return p\.availability!==false&&p\.inStock!==false&&p\.outOfStock!==true;\}/, "Finder availability must match the existing cart eligibility rule");
           assert.match(finder, /card.dataset.productId=String\(product.id/, "Finder results must retain stable product IDs");
           assert.match(finder, /window\.SSVCart/, "Finder must use the shared cart API, not a DOM timing race");
           assert.match(finder, /cartApi.addProduct\(product.id\)/, "Add to Bag must call the cart API with the stable product ID");
-          assert.match(page, /class="lux-item-card" data-product-id=/, "Storefront product cards must expose stable product IDs");
+          assert.match(app, /class="lux-item-card" data-product-id=/, "Storefront product cards must expose stable product IDs in the render template");
           assert.match(checkout, /function addProductToCart\(id\)/, "Cart must expose one validated add operation");
           assert.match(checkout, /if\(!saveCart\(nextCart\)\)return \{ok:false,reason:"storage"\}/, "Cart must not report success when persistence fails");
           assert.match(checkout, /window\.SSVCart=Object\.freeze\(\{addProduct:addProductToCart\}\)/, "Finder and storefront must share the same cart operation");
