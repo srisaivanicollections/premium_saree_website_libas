@@ -111,7 +111,7 @@
     const category=$("#ssv-finder-category")?.value||"Sarees";
     const jewellery=["jewellery","jewelry"].includes(category.trim().toLowerCase());
     syncColorField();
-    const colors=jewellery?[]:[...new Map(catalogue.filter(p=>String(p.category||"").trim().toLowerCase()===category.toLowerCase()).map(p=>String(p.color||"").trim()).filter(Boolean).map(color=>[color.toLocaleLowerCase(),color])).values()].sort((a,b)=>a.localeCompare(b));
+    const colors=jewellery?[]:[...new Map(catalogue.filter(p=>String(p.category||"").trim().toLowerCase()===category.toLowerCase()).map(p=>String(p.color||((p.visualAttributes&&p.visualAttributes.source==="admin-approved")?p.visualAttributes.color:"")||"").trim()).filter(Boolean).map(color=>[color.toLocaleLowerCase(),color])).values()].sort((a,b)=>a.localeCompare(b));
     select.innerHTML='<option value="">'+(colors.length?"Any colour":"Any colour (no recorded colours)")+'</option>'+colors.map(color=>'<option value="'+esc(color)+'">'+esc(color)+'</option>').join("");
     if(!jewellery&&colors.some(color=>color.toLowerCase()===current.toLowerCase()))select.value=colors.find(color=>color.toLowerCase()===current.toLowerCase())||"";
     if(jewellery)select.value="";
@@ -180,7 +180,9 @@
       if(product.bestSeller===true)badges.push("Best Seller");
       if(product.newArrival===true)badges.push("New Arrival");
       const availabilityLabel=(product.availability===true||product.inStock===true)?"In stock":"Availability not specified";
-      const details=[product.color?"Recorded colour: "+String(product.color).trim():"",availabilityLabel].filter(Boolean).join(" · ");
+      const savedVisual=product.visualAttributes&&product.visualAttributes.source==="admin-approved"?product.visualAttributes:{};
+      const displayColor=product.color||savedVisual.color||"";
+      const details=[displayColor?(product.color?"Recorded colour: ":"Visual colour: ")+String(displayColor).trim():"",savedVisual.pattern?"Pattern: "+String(savedVisual.pattern):"",availabilityLabel].filter(Boolean).join(" · ");
       const card=document.createElement("article");card.className="ssv-finder-result";card.dataset.productId=String(product.id??"");
       card.innerHTML='<img loading="lazy" src="'+esc(imageUrl)+'" alt="'+esc(product.name||categoryLabel)+'"><div class="ssv-finder-result-copy">'+'<h3>'+esc(product.name||categoryLabel)+'</h3><p class="ssv-finder-price">'+money(product.price)+(hasOriginalPrice?' <del class="ssv-finder-original">'+money(originalPrice)+'</del>':"")+'</p>'+(badges.length?'<p class="ssv-finder-badges">'+badges.map(badge=>'<span>'+esc(badge)+'</span>').join("")+'</p>':"")+'<p class="ssv-finder-meta">'+esc(details)+'</p><div class="ssv-finder-product-actions"><button type="button" class="ssv-finder-view">View Product</button><button type="button" class="ssv-finder-add">Add to Bag</button></div></div>';
       $(".ssv-finder-view",card).addEventListener("click",()=>navigateToProduct(product,false));
@@ -245,7 +247,13 @@
     if(has(/\b(festive wear|festival wear|for festivals|diwali collection|sankranti collection|dasara collection|navratri collection|festive collection)\b/))inferred.push("festive");
     if(has(/\b(party wear|partywear|cocktail wear|evening wear|party collection|for parties)\b/))inferred.push("party wear");
     if(has(/\b(traditional wear|traditional collection|ethnic occasion wear|heritage collection|temple wear)\b/))inferred.push("traditional");
-    return [...new Set(inferred)];
+    if(inferred.length)return [...new Set(inferred)];
+    const approved=product.visualAttributes;
+    if(approved&&approved.source==="admin-approved"&&Array.isArray(approved.occasions)){
+      const saved=approved.occasions.filter(value=>typeof value==="string").map(value=>value.trim().toLowerCase()).filter(value=>OCCASION_VALUES.has(value));
+      if(saved.length)return [...new Set(saved)];
+    }
+    return [];
   }
   function hasExplicitOccasionDecision(product){
     const raw=product&&product.occasions;
@@ -313,7 +321,7 @@
       if(!Number.isFinite(budget)||budget<0){allMatches=[];shownCount=3;renderMatches();return;}
       allMatches=allMatches.filter(p=>Number(p.price)<=budget);
     }
-    if(preferences.color&& !["jewellery","jewelry"].includes(category.trim().toLowerCase()))allMatches=allMatches.filter(p=>String(p.color||"").trim().toLowerCase()===preferences.color.toLowerCase());
+    if(preferences.color&& !["jewellery","jewelry"].includes(category.trim().toLowerCase()))allMatches=allMatches.filter(p=>String(p.color||((p.visualAttributes&&p.visualAttributes.source==="admin-approved")?p.visualAttributes.color:"")||"").trim().toLowerCase()===preferences.color.toLowerCase());
     // Explicit Admin tags are authoritative. For untagged products, run the free
     // browser-side image model lazily, then retain conservative keyword inference
     // for products outside the scan window or if the model is unavailable.
