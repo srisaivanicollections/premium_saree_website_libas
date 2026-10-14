@@ -32,6 +32,8 @@ jobs:
 
           assert.match(app, /\["Sarees","Dresses","Jewellery"\]/, "Admin validation must allow Jewellery");
           assert.match(app, /value="Jewellery".*Jewellery<\/option>/, "Admin editor must render a Jewellery option");
+          assert.match(app, /Product category verification failed/, "Saved product category must be verified after persistence");
+          assert.match(app, /Product price verification failed/, "Saved product price must be verified after persistence");
           assert.match(app, /\["All","Sarees","Dresses","Jewellery","Best Seller"\]/, "Storefront must expose Jewellery");
           assert.match(finder, /id="ssv-finder-color-field"/, "Colour preference must have a hideable wrapper");
           assert.match(finder, /function syncColorField\(\)/, "Category changes must synchronize the colour field");
