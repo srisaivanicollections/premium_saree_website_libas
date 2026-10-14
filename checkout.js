@@ -62,6 +62,23 @@
     });
     return added;
   }
+  function addProductToCart(id){
+    const product=getProduct(id);
+    if(!product)return {ok:false,reason:"unavailable"};
+    if(product.availability===false||product.inStock===false||product.outOfStock===true)return {ok:false,reason:"out-of-stock"};
+    const existing=cart.find(row=>row.id===Number(id));
+    if(existing&&existing.quantity>=MAX_QUANTITY)return {ok:false,reason:"max-quantity"};
+    const nextCart=cart.map(row=>({...row}));
+    const nextRow=nextCart.find(row=>row.id===Number(id));
+    if(nextRow)nextRow.quantity++;else nextCart.push({id:Number(id),quantity:1});
+    if(!saveCart(nextCart))return {ok:false,reason:"storage"};
+    cart=nextCart;
+    updateCount();
+    showToast("Added to bag");
+    if($("#ssv-cart-layer")?.classList.contains("is-open"))renderCart();
+    return {ok:true,quantity:cart.find(row=>row.id===Number(id))?.quantity||1};
+  }
+  window.SSVCart=Object.freeze({addProduct:addProductToCart});
   function updateCount(){
     const badge=$("#ssv-cart-count");
     if(badge){badge.textContent=String(count());badge.hidden=count()===0}
@@ -316,7 +333,7 @@
   }
   document.addEventListener("click",event=>{
     const add=event.target.closest("[data-add-cart]");
-    if(add){const id=Number(add.dataset.addCart),p=getProduct(id);if(!p)return;const row=cart.find(x=>x.id===id);if(row){if(row.quantity>=MAX_QUANTITY){showToast("Maximum quantity reached (10)");return}row.quantity++}else cart.push({id,quantity:1});saveCart();updateCount();showToast("Added to cart");if($("#ssv-cart-layer")?.classList.contains("is-open"))renderCart();return}
+    if(add){const result=addProductToCart(Number(add.dataset.addCart));if(!result.ok){showToast(result.reason==="max-quantity"?"Maximum quantity reached (10)":result.reason==="out-of-stock"?"This item is sold out":result.reason==="storage"?"Your bag could not be saved. Please try again.":"This item is no longer available");}return}
         if(event.target.closest("[data-download-order]")){const button=event.target.closest("[data-download-order]");button.disabled=true;button.textContent="Preparing PDF…";downloadOrderDetails().finally(()=>{if(button.isConnected){button.disabled=false;button.textContent="Download order details"}});return}
     if(event.target.closest("#ssv-cart-trigger")){openCart();return}
     if(event.target.closest("[data-clear-cancel]")){closeClearBagDialog();return}
