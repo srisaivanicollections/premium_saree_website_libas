@@ -524,6 +524,7 @@ function updateStudioNav(activeView){
 
 let aiReviewSuggestions=[];
 let aiReviewCancelled=false;
+let aiReviewOffset=0;
 function showView(v){
   updateStudioNav(v);
   const b=$("#studioBody");
@@ -590,7 +591,9 @@ function hasAiAttributes(a){return !!(a&&(a.color||a.pattern||a.description||(Ar
 async function runAiCatalogScan(){
  const start=$("#aiScanCatalog"),cancel=$("#aiCancelScan"),save=$("#aiSaveApproved"),status=$("#aiScanStatus"),results=$("#aiReviewResults");if(!start||!status||!results)return;
  const candidates=products.filter(p=>p&&p.image&&p.category);if(!candidates.length){status.textContent="No products with images are available to scan.";return;}
- const batch=candidates.slice(0,AI_REVIEW_BATCH_LIMIT);aiReviewCancelled=false;aiReviewSuggestions=[];results.replaceChildren();start.disabled=true;cancel.disabled=false;save.disabled=true;
+ if(aiReviewOffset>=candidates.length)aiReviewOffset=0;
+ const batch=candidates.slice(aiReviewOffset,aiReviewOffset+AI_REVIEW_BATCH_LIMIT);const batchStart=aiReviewOffset;
+ aiReviewCancelled=false;aiReviewSuggestions=[];results.replaceChildren();start.disabled=true;cancel.disabled=false;save.disabled=true;start.textContent="SCANNING…";
  try{
   status.textContent="Loading free browser AI. First use may download approximately 153 MB plus runtime files.";
   const scanner=await import("./saree-occasion-ai.js").then(module=>module.createOccasionScanner());
@@ -599,10 +602,11 @@ async function runAiCatalogScan(){
    try{const attributes=await scanner.classifyVisualAttributes(product.image,product.category);const item={id:Number(product.id),name:String(product.name||""),image:String(product.image||""),category:String(product.category||""),attributes,approved:hasAiAttributes(attributes)};aiReviewSuggestions.push(item);renderAiReviewSuggestions();}
    catch(_){aiReviewSuggestions.push({id:Number(product.id),name:String(product.name||""),image:String(product.image||""),category:String(product.category||""),attributes:{occasions:[],color:"",pattern:"",description:""},approved:false,error:"Image/model unavailable"});renderAiReviewSuggestions();}
   }
-  status.textContent=aiReviewCancelled?"Scan cancelled. "+aiReviewSuggestions.length+" products processed.":"Scan complete: "+aiReviewSuggestions.length+" of "+candidates.length+" products processed. "+Math.max(0,candidates.length-aiReviewSuggestions.length)+" remain for another batch.";
+  aiReviewOffset=batchStart+aiReviewSuggestions.length;if(aiReviewOffset>=candidates.length)aiReviewOffset=0;
+   status.textContent=aiReviewCancelled?"Scan cancelled. "+aiReviewSuggestions.length+" products processed.":"Scan complete: "+aiReviewSuggestions.length+" of "+candidates.length+" products processed. "+Math.max(0,candidates.length-aiReviewSuggestions.length)+" remain for another batch.";
   save.disabled=!aiReviewSuggestions.some(x=>x.approved&&hasAiAttributes(x.attributes));
  }catch(error){status.textContent="AI scan could not start. Existing Finder is unaffected. "+(error?.message||"Check network access and retry.");}
- finally{start.disabled=false;cancel.disabled=true;}
+ finally{start.disabled=false;start.textContent="SCAN "+(aiReviewOffset===0?"CATALOGUE":"NEXT BATCH");cancel.disabled=true;}
 }
 function renderAiReviewSuggestions(){
  const results=$("#aiReviewResults");if(!results)return;
