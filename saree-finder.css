@@ -109,7 +109,6 @@
 /* Customer interaction controls, scoped exclusively to the Smart Finder. */
 .ssv-finder-recommendation-heading{margin:0 0 2px;color:#6E2735;font:500 20px/1.1 "Cormorant Garamond",Georgia,serif}
 .ssv-finder-result-copy{min-width:0}
-.ssv-finder-match-label{display:inline-block;margin:0 0 5px;padding:4px 6px;background:#F4EFEA;color:#6E2735;font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
 .ssv-finder-product-actions{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 5px}
 .ssv-finder-product-actions button,.ssv-finder-recovery-action,.ssv-finder-more{
   min-height:34px;padding:7px 10px;border:1px solid #6E2735;border-radius:6px;
