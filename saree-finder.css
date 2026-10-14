@@ -67,3 +67,37 @@
   letter-spacing:.04em;font-weight:600
 }
 .ssv-finder-field input:focus-visible{outline:2px solid #B38E5D;outline-offset:3px}
+
+/* Mobile scroll fix: keep the whole panel scrollable when results are added. */
+.ssv-finder-panel{
+  display:block;
+  max-height:calc(100vh - 86px);
+  max-height:calc(100dvh - 86px);
+  overflow-x:hidden;
+  overflow-y:auto;
+  overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-gutter:stable;
+}
+.ssv-finder-head{
+  position:sticky;
+  top:0;
+  z-index:2;
+  background:#FAF7F2;
+}
+.ssv-finder-fields,
+.ssv-finder-results{
+  min-height:0;
+  overflow:visible;
+}
+.ssv-finder-actions{
+  position:sticky;
+  bottom:0;
+  z-index:2;
+}
+@media(max-width:600px){
+  .ssv-finder-panel{
+    max-height:calc(100vh - 82px - env(safe-area-inset-bottom,0px));
+    max-height:calc(100dvh - 82px - env(safe-area-inset-bottom,0px));
+  }
+}
