@@ -10223,16 +10223,31 @@ async function renderImageDangerZone(){
   };
   await refreshCount();
 }
+function ssvEnrichFieldNeeds(product){
+  const eligible=!!(product&&product.image&&["Sarees","Dresses","Jewellery","Jewelry"].includes(String(product.category||"")));
+  return {eligible,occasion:eligible&&ssvHasNoOccasionMetadata(product)&&!ssvHasOccasionDecision(product),colour:eligible&&ssvHasNoColour(product)};
+}
 function ssvEnrichMissingCounts(items){
-  const eligible=(Array.isArray(items)?items:products).filter(p=>p&&p.image&&["Sarees","Dresses","Jewellery","Jewelry"].includes(String(p.category||"")));
-  return {occasions:eligible.filter(p=>ssvHasNoOccasionMetadata(p)).length,colours:eligible.filter(p=>ssvHasNoColour(p)).length,products:eligible.filter(p=>ssvHasNoOccasionMetadata(p)||ssvHasNoColour(p)).length};
+  const needs=(Array.isArray(items)?items:products).map(ssvEnrichFieldNeeds);
+  return {occasions:needs.filter(item=>item.occasion).length,colours:needs.filter(item=>item.colour).length,products:needs.filter(item=>item.occasion||item.colour).length};
 }
 function ssvEnsureEnrichFinderPopup(){
   let popup=$("#adminEnrichFinderPopup");if(popup)return popup;
   popup=document.createElement("div");popup.id="adminEnrichFinderPopup";popup.className="ssv-enrich-popup-backdrop";popup.hidden=true;
   popup.innerHTML='<section class="ssv-enrich-popup" role="dialog" aria-modal="true" aria-labelledby="adminEnrichTitle" aria-describedby="adminEnrichIntro"><button type="button" class="ssv-enrich-popup-close" id="adminEnrichFinderClose" aria-label="Close Enrich Finder">×</button><p class="eyebrow">SMART SAREE FINDER</p><h3 id="adminEnrichTitle">Enrich Finder</h3><p id="adminEnrichIntro">Analyse product images to suggest missing occasion and colour metadata. Existing occasion tags, colour values, product images and unrelated product fields are preserved.</p><div class="ssv-enrich-count-grid"><div><strong id="adminEnrichCandidateCount">0</strong><span>PRODUCTS TO CHECK</span></div><div><strong id="adminEnrichOccasionCount">0 / 0</strong><span>OCCASIONS SAVED</span></div><div><strong id="adminEnrichColourCount">0 / 0</strong><span>COLOURS SAVED</span></div></div><p class="ssv-enrich-safety-note">Only confident predictions for fields that are still missing are saved.</p><button type="button" class="btn dark" id="adminEnrichFinder">ANALYSE MISSING METADATA</button><p id="adminEnrichFinderStatus" role="status" aria-live="polite" style="margin-top:16px;overflow-wrap:anywhere">Ready. Start enrichment to process products with missing occasion or colour metadata.</p><div id="adminEnrichFinderFailures" aria-live="polite"></div></section>';
   document.body.appendChild(popup);
-  const close=()=>{popup.hidden=true;};popup.querySelector("#adminEnrichFinderClose").onclick=close;
+  const focusableSelector='a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
+  const close=()=>{if(popup.hidden)return;popup.hidden=true;const opener=popup._opener;if(opener&&opener.isConnected)opener.focus();};
+  popup.querySelector("#adminEnrichFinderClose").onclick=close;
+  popup.addEventListener("keydown",event=>{
+    if(event.key!=="Tab")return;
+    const items=[...popup.querySelectorAll(focusableSelector)].filter(el=>!el.hidden&&el.getClientRects().length);
+    if(!items.length){event.preventDefault();return;}
+    const first=items[0],last=items[items.length-1];
+    if(event.shiftKey&&(document.activeElement===first||!popup.contains(document.activeElement))){event.preventDefault();last.focus();}
+    else if(!event.shiftKey&&(document.activeElement===last||!popup.contains(document.activeElement))){event.preventDefault();first.focus();}
+  });
+  popup.addEventListener("focusout",()=>{queueMicrotask(()=>{if(!popup.hidden&&!popup.contains(document.activeElement))popup.querySelector("#adminEnrichFinderClose")?.focus();});});
   popup.addEventListener("click",event=>{if(event.target===popup)close();});
   popup.querySelector(".ssv-enrich-popup").addEventListener("click",event=>event.stopPropagation());
   popup.querySelector("#adminEnrichFinder").onclick=async()=>{
@@ -10254,7 +10269,9 @@ function ssvRefreshEnrichFinderCounts(){
   if(colour&&!colour.dataset.hasResult)colour.textContent="0 / "+counts.colours;
 }
 function ssvOpenEnrichFinderPopup(){
-  const popup=ssvEnsureEnrichFinderPopup();ssvRefreshEnrichFinderCounts();popup.hidden=false;
+  const popup=ssvEnsureEnrichFinderPopup();
+  if(popup.hidden)popup._opener=document.activeElement;
+  ssvRefreshEnrichFinderCounts();popup.hidden=false;
   const close=popup.querySelector("#adminEnrichFinderClose");if(close)close.focus();
   const button=popup.querySelector("#adminEnrichFinder");if(ssvFinderEnrichmentPromise&&button){button.disabled=true;button.textContent="ENRICHMENT RUNNING…";}
 }
@@ -10713,9 +10730,9 @@ async function ssvEnrichFinderCatalogue({allMissing=false,productId=null}={}){
   try{
    const module=await import("./saree-occasion-ai.js"),scanner=await module.createOccasionScanner(),initial=await githubReadJson("data/products.json");
    if(!Array.isArray(initial.value))throw new Error("Product catalogue is invalid.");
-   const candidates=initial.value.filter(p=>(!productId||Number(p.id)===Number(productId))&&(!ssvHasOccasionDecision(p)||ssvHasNoColour(p))&&p.image&&["Sarees","Dresses","Jewellery","Jewelry"].includes(String(p.category||"")));
+   const candidates=initial.value.filter(p=>(!productId||Number(p.id)===Number(productId))&&(ssvEnrichFieldNeeds(p).occasion||ssvEnrichFieldNeeds(p).colour));
    const queue=allMissing?candidates:candidates.slice(0,1);
-   const occasionMissingCount=queue.filter(p=>ssvHasNoOccasionMetadata(p)).length,colourMissingCount=queue.filter(p=>ssvHasNoColour(p)).length;
+   const occasionMissingCount=queue.filter(p=>ssvEnrichFieldNeeds(p).occasion).length,colourMissingCount=queue.filter(p=>ssvEnrichFieldNeeds(p).colour).length;
    let imageProcessed=0;
    for(let i=0;i<queue.length;i++){
     const candidate=queue[i];
@@ -10723,7 +10740,8 @@ async function ssvEnrichFinderCatalogue({allMissing=false,productId=null}={}){
      await new Promise(resolve=>setTimeout(resolve,0));
      const result=await scanner.classify(candidate.image,candidate.category);imageProcessed++;
      const occasion=result?.occasion||result,colour=result?.colour||null,label=ssvOccasionLabel(occasion?.label);
-     const needsOccasion=ssvHasNoOccasionMetadata(candidate)&&!ssvHasOccasionDecision(candidate),needsColour=ssvHasNoColour(candidate);
+     const candidateNeeds=ssvEnrichFieldNeeds(candidate);
+     const needsOccasion=candidateNeeds.occasion,needsColour=candidateNeeds.colour;
      const addOccasion=needsOccasion&&!!occasion?.confident&&!!label;
      const addColour=needsColour&&!!colour?.confident&&SSV_FINDER_COLOURS.has(colour.label);
      if(needsOccasion&&!addOccasion)occasionUncertain++;
@@ -10785,10 +10803,20 @@ async function ssvEnrichFinderCatalogue({allMissing=false,productId=null}={}){
     }
     paint("Enrich Finder: "+(i+1)+" of "+queue.length+" products checked · "+imageProcessed+" images processed · "+occasionsSaved+" occasions saved · "+coloursSaved+" colours saved · "+occasionUncertain+" occasion uncertain · "+colourUncertain+" colour uncertain · "+processed+" products updated · "+skipped+" skipped/uncertain · "+failed+" failed");
    }
-   const refreshed=await githubReadJsonFresh("data/products.json");products=refreshed.value;githubOriginalIds=new Set(products.map(p=>Number(p.id)));
-   const summary="Enrich Finder complete: "+imageProcessed+" of "+queue.length+" images processed · "+occasionsSaved+"/"+occasionMissingCount+" missing occasions saved · "+coloursSaved+"/"+colourMissingCount+" missing colours saved · "+processed+" products updated · "+skipped+" skipped/uncertain · "+failed+" failed.";
-   paint(summary+(failures.length?" Details: "+failures.map(item=>"Product "+item.id+": "+item.reason).join(" | "):""));
-   return {processed,skipped,failed,imageProcessed,occasionsSaved,coloursSaved,occasionMissingCount,colourMissingCount,occasionUncertain,colourUncertain,uncertainProductIds,failures};
+   const summary="Enrich Finder results: "+imageProcessed+" of "+queue.length+" images processed · "+occasionsSaved+"/"+occasionMissingCount+" missing occasions saved · "+coloursSaved+"/"+colourMissingCount+" missing colours saved · "+processed+" products updated · "+skipped+" skipped/uncertain · "+failed+" failed.";
+   let refreshFailed=false;
+   try{
+    const refreshed=await githubReadJsonFresh("data/products.json");
+    if(!Array.isArray(refreshed.value))throw new Error("Product catalogue is invalid.");
+    products=refreshed.value;githubOriginalIds=new Set(products.map(p=>Number(p.id)));
+    paint(summary+(failures.length?" Details: "+failures.map(item=>"Product "+item.id+": "+item.reason).join(" | "):""));
+   }catch(refreshError){
+    refreshFailed=true;
+    const refreshMessage="Final catalogue refresh failed. Some saves may already be complete. Refresh the catalogue before retrying. "+ssvFinderFailureReason(refreshError);
+    failures.push({id:"catalogue refresh",reason:refreshMessage});
+    paint(summary+" WARNING: "+refreshMessage);
+   }
+   return {processed,skipped,failed,imageProcessed,occasionsSaved,coloursSaved,occasionMissingCount,colourMissingCount,occasionUncertain,colourUncertain,uncertainProductIds,failures,refreshFailed};
   }finally{ssvFinderEnrichmentPromise=null;}
  })();return ssvFinderEnrichmentPromise;
 }
