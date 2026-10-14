@@ -62,6 +62,7 @@ export async function createOccasionScanner() {
         throw new Error("The image model returned no predictions.");
       }
       const result = selectOccasionPrediction(predictions, itemType);
+      result.confident = isConfidentOccasionPrediction(result);
       resultCache.set(cacheKey, result);
       return result;
     }
