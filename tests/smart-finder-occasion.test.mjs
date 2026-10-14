@@ -3,8 +3,8 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 const source = readFileSync(new URL("../saree-finder.js", import.meta.url), "utf8");
-const start = source.indexOf("  // Occasion inference is a fallback only when Admin has not supplied occasion tags.");
-const end = source.indexOf("  function recommend(){", start);
+const start = source.indexOf("  const OCCASION_VALUES=new Set(");
+const end = source.indexOf("  // Customer-side image inference is intentionally disabled.", start);
 assert.ok(start >= 0 && end > start, "Finder occasion helpers must be present");
 const helpers = new Function(source.slice(start, end) + "\nreturn { inferOccasions, matchesOccasion };")();
 const { inferOccasions, matchesOccasion } = helpers;
