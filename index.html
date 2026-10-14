@@ -10038,7 +10038,7 @@ function render(){
         (isBestSeller?'<span class="ssv-badge-pill pill-best">BEST SELLER</span>':"")+
       '</div>';
     }
-    return '<article class="lux-item-card">'+
+    return '<article class="lux-item-card" data-product-id="'+esc(p.id)+'">'+
       '<div class="lux-item-media'+(outOfStock?' is-out-of-stock':'')+'">'+
         '<img src="'+esc(productImageSrc(p.image))+'" alt="'+esc(cleanProductName(p.name))+'" loading="lazy" decoding="async" onerror="this.onerror=null;this.closest(".lux-item-media").classList.add("image-missing");this.classList.add("image-failed");">'+
         (badgeDock?badgeDock.replace('class="ssv-badge-dock"','class="ssv-badge-dock"'):"")+
