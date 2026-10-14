@@ -10649,6 +10649,14 @@ const SSV_OCCASION_LABELS=new Set(["Daily Wear","Wedding","Festive","Party Wear"
 function ssvHasOccasionDecision(product){
   return Array.isArray(product?.occasions)&&product.occasions.some(value=>SSV_OCCASION_LABELS.has(value));
 }
+function ssvOccasionLabel(value){
+  const normalized=String(value||"").trim().toLowerCase();
+  return [...SSV_OCCASION_LABELS].find(label=>label.toLowerCase()===normalized)||"";
+}
+function ssvHasNoOccasionMetadata(product){
+  return product&&(product.occasions===undefined||product.occasions===null||
+    (Array.isArray(product.occasions)&&product.occasions.length===0));
+}
 async function ssvEnrichOccasionCatalogue({allMissing=false,productId=null}={}){
   if(ssvOccasionEnrichmentPromise)return ssvOccasionEnrichmentPromise;
   ssvOccasionEnrichmentPromise=(async()=>{
@@ -10663,7 +10671,7 @@ async function ssvEnrichOccasionCatalogue({allMissing=false,productId=null}={}){
       const candidates=initial.value.filter(p=>
         (!productId||Number(p.id)===Number(productId))&&
         !ssvHasOccasionDecision(p)&&
-        Array.isArray(p.occasions)&&p.occasions.length===0&&
+        ssvHasNoOccasionMetadata(p)&&
         p.image&&["Sarees","Dresses","Jewellery"].includes(String(p.category||""))
       );
       const queue=allMissing?candidates:candidates.slice(0,1);
@@ -10671,7 +10679,8 @@ async function ssvEnrichOccasionCatalogue({allMissing=false,productId=null}={}){
         const candidate=queue[i];
         try{
           const prediction=await scanner.classify(candidate.image,candidate.category);
-          if(!prediction?.confident||!SSV_OCCASION_LABELS.has(prediction.label)){
+          const normalizedLabel=ssvOccasionLabel(prediction?.label);
+          if(!prediction?.confident||!normalizedLabel){
             skipped++;
             continue;
           }
@@ -10682,8 +10691,8 @@ async function ssvEnrichOccasionCatalogue({allMissing=false,productId=null}={}){
           if(index<0){skipped++;continue;}
           const current=latest.value[index];
           if(current.image!==candidate.image||ssvHasOccasionDecision(current)||
-             !Array.isArray(current.occasions)||current.occasions.length!==0){skipped++;continue;}
-          latest.value[index]={...current,occasions:[prediction.label],occasionMetadata:{
+             !ssvHasNoOccasionMetadata(current)){skipped++;continue;}
+          latest.value[index]={...current,occasions:[normalizedLabel],occasionMetadata:{
             source:"ai",model:"CLIP-ViT-B-32",score:Number(prediction.score.toFixed(4)),
             margin:Number(prediction.margin.toFixed(4)),image:String(current.image),version:1
           }};
@@ -10837,7 +10846,7 @@ async function saveProduct(id){
     // Enrich a new or image-updated untagged product after CRUD has completed.
     // This is fire-and-forget: product save success never waits for model inference.
     const savedProduct=products.find(item=>Number(item.id)===Number(p.id));
-    if(savedProduct&&Array.isArray(savedProduct.occasions)&&savedProduct.occasions.length===0){
+    if(savedProduct&&ssvHasNoOccasionMetadata(savedProduct)&&!ssvHasOccasionDecision(savedProduct)){
       ssvEnrichOccasionCatalogue({productId:savedProduct.id}).catch(error=>console.warn("Background occasion enrichment deferred:",error));
     }
     }else if(recordMatches&&imageVerificationFailed){
