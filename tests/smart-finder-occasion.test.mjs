@@ -170,3 +170,21 @@ test("manual occasion review shows product image and identity with mobile-safe r
   assert.match(adminSource, /ssv-enrich-review-card button\{min-height:44px/);
   assert.match(adminSource, /overflow-wrap:anywhere/);
 });
+
+
+test("Enrich Finder keeps ranked occasion suggestions for a single uncertain product image", () => {
+  assert.match(aiSource, /const predictions = await classifier\(url,/);
+  assert.match(aiSource, /rankings: ranked/);
+  assert.match(adminSource, /if\(needsOccasion&&!addOccasion\)\{[\s\S]*?rankings:[\s\S]*?reviewSuggestions\.push/);
+  assert.match(adminSource, /Occasion prediction is uncertain\. Review the ranked suggestions/);
+  assert.match(adminSource, /SAVE SELECTED OCCASIONS/);
+});
+
+test("final TOP PICK sizing and popup animation rules override legacy CSS, while respecting reduced motion", () => {
+  assert.match(adminSource, /id="ssv-enrich-finder-final-polish-20261015"/);
+  assert.match(adminSource, /\.badge\.best\{[\s\S]*?font-size:8px!important/);
+  assert.match(adminSource, /@media\(max-width:600px\)\{[\s\S]*?font-size:8px!important/);
+  assert.match(adminSource, /\.ssv-enrich-popup-backdrop:not\(\[hidden\]\).*animation:ssvEnrichBackdropIn/);
+  assert.match(adminSource, /\.ssv-enrich-popup-backdrop:not\(\[hidden\]\) \.ssv-enrich-popup\{animation:ssvEnrichPanelIn/);
+  assert.match(adminSource, /@media\(prefers-reduced-motion:reduce\)/);
+});
