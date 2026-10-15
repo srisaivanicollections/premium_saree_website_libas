@@ -117,6 +117,8 @@ export function selectColourPrediction(predictions) {
 }
 
 export function isConfidentColourPrediction(result) {
+  // CLIP colour scores can be confidently wrong on printed/multicolour garments.
+  // Use a conservative auto-save gate: ambiguous predictions remain for manual review.
   return Boolean(result && COLOURS.includes(result.label) && Number.isFinite(result.score) &&
-    result.score >= 0.20 && Number.isFinite(result.margin) && result.margin >= 0.045);
+    result.score >= 0.40 && Number.isFinite(result.margin) && result.margin >= 0.30);
 }
