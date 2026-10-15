@@ -165,8 +165,9 @@ test("automatic multi-occasion save preserves product fields and verifies all ti
 });
 
 
-test("uncertain occasion results stay in the review count without creating ranking cards", () => {
-  assert.match(adminSource, /if\(needsOccasion&&!addOccasion\)occasionUncertain\+\+/);
+test("low-confidence occasions are counted while their top matches are saved without ranking cards", () => {
+  assert.match(adminSource, /if\(needsOccasion&&!occasion\?\.confident\)occasionUncertain\+\+/);
+  assert.match(adminSource, /const addOccasion=needsOccasion&&occasionLabels\.length>0/);
   assert.match(adminSource, /low-confidence occasion predictions/);
   assert.doesNotMatch(adminSource, /SAVE SELECTED OCCASIONS/);
   assert.doesNotMatch(adminSource, /reviewSuggestions\.push\(\{id:candidate\.id,name:/);
