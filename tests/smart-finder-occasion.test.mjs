@@ -155,10 +155,10 @@ test("Enrich Finder popup traps keyboard focus and restores focus to its opener"
 
 test("A failed final catalogue refresh preserves partial-save results and warns before retry", () => {
   assert.match(adminSource, /let refreshFailed=false/);
-  assert.match(adminSource, /Final catalogue refresh failed\. Some saves may already be complete\. Refresh the catalogue before retrying\./);
-  assert.match(adminSource, /refreshFailed\};/);
-  assert.match(adminSource, /result\.refreshFailed\?"Partial results":"Complete"/);
-  assert.match(adminSource, /result\.failed\|\|result\.refreshFailed\?"error":"success"/);
+  assert.match(adminSource, /Final catalogue refresh failed\\. Some saves may already be complete\\. Refresh the catalogue before retrying\\./);
+  assert.match(adminSource, /refreshFailed\\};/);
+  assert.match(adminSource, /result\\.refreshFailed\\?"Partial results":"Complete"/);
+  assert.match(adminSource, /result\\.failed\\|\\|result\\.refreshFailed\\|\\|failures\\.length\?"error":"success"/);
 });
 
 
@@ -211,13 +211,12 @@ test("Enrich Finder close animation and final badge sizing overrides exist", () 
 });
 
 
-test("Enrich Finder returns occasion rankings internally without exposing them for uncertain results", () => {
-  assert.match(aiSource, /const predictions = await classifier\(url,/);
-  assert.match(aiSource, /rankings: ranked/);
+test("Enrich Finder keeps occasion rankings internal and saves valid top labels automatically", () => {
+  assert.match(aiSource, /const predictions = await classifier\\(url,/);
+  assert.match(aiSource, /rankings:/);
   assert.match(aiSource, /const top = chooseTop\\(ranked\\)/);
-  assert.match(adminSource, /low-confidence occasion predictions/);
+  assert.doesNotMatch(adminSource, /low-confidence occasion predictions|Occasion prediction is uncertain\\. Review the ranked suggestions/);
   assert.doesNotMatch(adminSource, /SAVE SELECTED OCCASIONS/);
-  assert.doesNotMatch(adminSource, /Occasion prediction is uncertain\. Review the ranked suggestions/);
 });
 
 test("TOP PICK sizing targets the rendered Smart Finder badge without adding popup entrance animation", () => {
