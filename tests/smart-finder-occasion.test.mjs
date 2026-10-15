@@ -111,17 +111,17 @@ test("closing and reopening the enrichment popup does not cancel or duplicate a 
   assert.match(adminSource, /function ssvRenderEnrichFinderSummary\(result\)/);
 });
 
-test("Enrich Finder popup keeps model rankings and product IDs internal", () => {
+test("Enrich Finder summary keeps diagnostics concise and removes manual colour review", () => {
   const start = adminSource.indexOf("function ssvRenderEnrichFinderSummary(result)");
   const end = adminSource.indexOf("function showView(v)", start);
   assert.ok(start >= 0 && end > start, "summary renderer must be present");
   const popupSummary = adminSource.slice(start, end);
-  assert.doesNotMatch(popupSummary, /model score|Product "\+suggestion\.id|Product "\+item\.id/);
-  assert.match(popupSummary, /option\.textContent=value/);
-  assert.match(popupSummary, /Colour review/);
+  assert.doesNotMatch(popupSummary, /model score|Product "\\+suggestion\\.id|Product "\\+item\\.id/);
+  assert.doesNotMatch(popupSummary, /option\\.textContent=value|Colour review|rankings/);
+  assert.doesNotMatch(adminSource, /colourReviewSuggestions|ssvSaveReviewedColour|SAVE REVIEWED COLOUR/);
 });
 
-test("Enrich Finder reports saved counts, a deduplicated review count, and actionable diagnostics", () => {
+test("Enrich Finder reports saved counts, actual failures, and actionable diagnostics", () => {
   assert.match(adminSource, /occasionMissingCount=queue\.filter/);
   assert.match(adminSource, /colourMissingCount=queue\.filter/);
   assert.match(adminSource, /occasion\.textContent=String\(result\.occasionsSaved\)/);
@@ -195,9 +195,10 @@ test("low-confidence occasions are counted while their top matches are saved wit
 });
 
  
-test("uncertain occasion feedback is compact and review cards remain for uncertain colours", () => {
-  assert.match(adminSource, /ssv-enrich-occasion-review-note/);
-  assert.match(adminSource, /Choose the product's actual visible colour/);
+test("uncertain predictions are handled in code without manual colour review UI", () => {
+  assert.doesNotMatch(adminSource, /ssv-enrich-occasion-review-note/);
+  assert.doesNotMatch(adminSource, /Choose the product's actual visible colour/);
+  assert.doesNotMatch(adminSource, /ssv-enrich-colour-review-card|SAVE REVIEWED COLOUR/);
   assert.match(adminSource, /max-width:100vw/);
   assert.match(adminSource, /overflow-wrap:anywhere/);
 });
@@ -216,7 +217,7 @@ test("Enrich Finder close animation and final badge sizing overrides exist", () 
 test("Enrich Finder returns occasion rankings internally without exposing them for uncertain results", () => {
   assert.match(aiSource, /const predictions = await classifier\(url,/);
   assert.match(aiSource, /rankings: ranked/);
-  assert.match(aiSource, /const labels = ranked/);
+  assert.match(aiSource, /const top = chooseTop\\(ranked\\)/);
   assert.match(adminSource, /low-confidence occasion predictions/);
   assert.doesNotMatch(adminSource, /SAVE SELECTED OCCASIONS/);
   assert.doesNotMatch(adminSource, /Occasion prediction is uncertain\. Review the ranked suggestions/);
