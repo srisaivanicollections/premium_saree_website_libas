@@ -349,3 +349,9 @@ test("small result sets remain unchanged and do not invent a budget-friendly opt
   assert.deepEqual(ensureBudgetFriendlyInTopThree(ranked), ranked);
   assert.deepEqual(ensureBudgetFriendlyInTopThree([]), []);
 });
+
+test("Enrich Finder progress and failure details never expose product IDs", () => {
+  assert.match(adminSource, /paint\(summary\+\(failures\.length\?\" Details: \"\+failures\.map\(item=>item\.reason\)/);
+  assert.doesNotMatch(adminSource, /failures\.map\(item=>\"Product \"\+item\.id/);
+  assert.match(adminSource, /console\.error\(\"Finder enrichment failed for product \"\+candidate\.id/);
+});
