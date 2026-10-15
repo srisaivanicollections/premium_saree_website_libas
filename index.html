@@ -9451,7 +9451,7 @@ function getSavedGithubToken(){
 /* Keep the token accessor available to every Admin handler.
    This also protects older cached page instances from a missing global binding. */
 window.getSavedGithubToken=getSavedGithubToken;
-let products=[],settings={},category="All",adminPassword="",githubOriginalIds=new Set(),categorySettingsReady=false;
+let products=[],settings={},category="Sarees",adminPassword="",githubOriginalIds=new Set(),categorySettingsReady=false;
 // Settings may only be edited after a successful authoritative GitHub read.
 let settingsAuthoritativeLoaded=false;
 let settingsFormBaseline={};
@@ -9791,7 +9791,7 @@ async function load(){
   delete settings.githubToken;
   // Never broadcast fallback settings as if category availability were verified.
   // Finder and cart remain fail-closed until a successful settings read or Admin refresh.
-  if(categorySettingsReady){if(category==="All"||!isCategoryEnabled(category))category=ssvDefaultStorefrontCategory(products);window.dispatchEvent(new CustomEvent("ssv:settings-updated",{detail:{settings:{...settings}}}));}
+  if(categorySettingsReady){if(category==="__browse_all__"||!isCategoryEnabled(category))category=ssvDefaultStorefrontCategory(products);window.dispatchEvent(new CustomEvent("ssv:settings-updated",{detail:{settings:{...settings}}}));}
 
   try{
     apply();
@@ -9970,9 +9970,9 @@ function apply(){
 }
 function normalizeCategoryName(name){const value=String(name||"").trim().toLowerCase();if(value==="jewellery"||value==="jewelry")return "Jewellery";if(value==="sarees")return "Sarees";if(value==="dresses")return "Dresses";return "";}
 function isCategoryEnabled(name){if(!categorySettingsReady)return false;const normalized=normalizeCategoryName(name);const key=({Sarees:"categorySareesEnabled",Dresses:"categoryDressesEnabled",Jewellery:"categoryJewelryEnabled"})[normalized];return !!key&&!(settings[key]===false||settings[key]==="false"||settings[key]===0||settings[key]==="0")}
-window.addEventListener("ssv:settings-updated",event=>{if(event.detail?.settings&&typeof event.detail.settings==="object"){categorySettingsReady=true;if(category!=="All"&&!isCategoryEnabled(category))category=ssvDefaultStorefrontCategory(products);}});
+window.addEventListener("ssv:settings-updated",event=>{if(event.detail?.settings&&typeof event.detail.settings==="object"){categorySettingsReady=true;if(category!=="__browse_all__"&&!isCategoryEnabled(category))category=ssvDefaultStorefrontCategory(products);}});
 function ssvDefaultStorefrontCategory(items=products){const list=Array.isArray(items)?items:[];const enabled=["Sarees","Dresses","Jewellery"].filter(isCategoryEnabled);for(const name of enabled){if(list.some(p=>normalizeCategoryName(p?.category).toLowerCase()===name.toLowerCase()))return name;}return enabled[0]||"Sarees";}
-function renderTabs(){const enabled=["Sarees","Dresses","Jewellery"].filter(isCategoryEnabled);if(categorySettingsReady&&category!=="All"&&(!enabled.includes(category)||!products.some(p=>normalizeCategoryName(p?.category).toLowerCase()===normalizeCategoryName(category).toLowerCase())))category=ssvDefaultStorefrontCategory(products);$("#tabs").innerHTML=enabled.map(c=>'<button class="'+(category===c?"active":"")+'" data-tab="'+c+'">'+(c==="Jewellery"?"JEWELLERY":c.toUpperCase())+"</button>").join("")}
+function renderTabs(){const enabled=["Sarees","Dresses","Jewellery"].filter(isCategoryEnabled);if(categorySettingsReady&&category!=="__browse_all__"&&(!enabled.includes(category)||!products.some(p=>normalizeCategoryName(p?.category).toLowerCase()===normalizeCategoryName(category).toLowerCase())))category=ssvDefaultStorefrontCategory(products);$("#tabs").innerHTML=enabled.map(c=>'<button class="'+(category===c?"active":"")+'" data-tab="'+c+'">'+(c==="Jewellery"?"JEWELLERY":c.toUpperCase())+"</button>").join("")}
 function render(){
   renderTabs();
   const grid=$("#products");
@@ -9984,8 +9984,8 @@ function render(){
   const q=$("#search").value.trim().toLowerCase(),pf=$("#price").value;
   let list=products.filter(p=>{
     const productCategory=normalizeCategoryName(p.category).toLowerCase();
-    const selectedCategory=String(category||"All").trim().toLowerCase()==="all"?"all":normalizeCategoryName(category).toLowerCase();
-    const matchesCollection=selectedCategory==="all"||productCategory===selectedCategory;
+    const selectedCategory=category==="__browse_all__"?"__browse_all__":normalizeCategoryName(category).toLowerCase();
+    const matchesCollection=selectedCategory==="__browse_all__"||productCategory===selectedCategory;
     const matchesSearch=
       !q ||
       String(p.name||"").toLowerCase().includes(q) ||
@@ -10037,7 +10037,7 @@ function render(){
   if(!list.length){
     grid.innerHTML='<div class="lux-empty"><strong>No styles found</strong><span>'+esc(settings.emptyCatalogText||"Try another search or browse the full collection.")+'</span><br><button type="button" class="btn dark" id="clearCatalogFilters">'+esc(settings.viewAllLabel||"VIEW ALL STYLES")+'</button></div>';
     const clear=$("#clearCatalogFilters");
-    if(clear)clear.onclick=()=>{category="All";$("#search").value="";$("#price").value="";render()};
+    if(clear)clear.onclick=()=>{category=ssvDefaultStorefrontCategory(products);$("#search").value="";$("#price").value="";render()};
     return;
   }
   grid.innerHTML=pageItems.map(p=>{
@@ -11522,7 +11522,7 @@ window.addEventListener("pageshow",()=>{
   }
 });
 
-window.SSVStorefront=Object.freeze({showAllProducts(){category="All";const search=$("#search");if(search)search.value="";catalogPage=0;syncCatalogClear?.();render();}});
+window.SSVStorefront=Object.freeze({showAllProducts(){category="__browse_all__";const search=$("#search");if(search)search.value="";catalogPage=0;syncCatalogClear?.();render();}});
 all("[data-view]").forEach(b=>b.onclick=()=>showView(b.dataset.view));
 document.addEventListener("click",async e=>{const t=e.target.closest("[data-tab]");if(t){const selected=String(t.dataset.tab||"").trim();if(!isCategoryEnabled(selected))return;category=normalizeCategoryName(selected);catalogPage=0;render()}const c=e.target.closest("[data-cat]");if(c){const selected=String(c.dataset.cat||"").trim(),special=selected.toLowerCase();if(special!=="all"&&!isCategoryEnabled(selected))return;category=special==="all"?"All":normalizeCategoryName(selected);catalogPage=0;$("#nav").classList.remove("open");render()}const eb=e.target.closest(".edit");if(eb)edit(Number(eb.dataset.id));if(e.target.id==="saveSettings"){
   e.preventDefault();
