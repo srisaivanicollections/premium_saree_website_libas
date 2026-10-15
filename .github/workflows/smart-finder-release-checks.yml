@@ -223,14 +223,14 @@ jobs:
             return state;
           }
 
-          async function runCategoryToggleJourney(label, context) {
+          async function runCategoryToggleJourney(label, context, category) {
             const togglePage = await context.newPage();
             const toggleState = await installMocks(togglePage);
             try {
               await togglePage.goto("http://127.0.0.1:4173/");
               await togglePage.locator("#products [data-product-id]").first().waitFor();
               await togglePage.locator("#ssv-smart-finder-trigger").click();
-              await togglePage.locator("#ssv-finder-category").selectOption("Dresses");
+              await togglePage.locator("#ssv-finder-category").selectOption(category);
               await togglePage.locator("#ssv-finder-budget").fill("");
               await togglePage.locator("#ssv-finder-form button[type='submit']").click();
               await togglePage.locator(".ssv-finder-result .ssv-finder-add").first().waitFor();
@@ -241,26 +241,27 @@ jobs:
               await togglePage.waitForFunction(() => JSON.parse(localStorage.getItem("ssv_guest_cart_v1") || "[]").length > 0);
               await togglePage.locator(".ssv-finder-close").click();
 
-              toggleState.settings.categoryDressesEnabled = false;
+              const categorySettingKey = ({ Sarees: "categorySareesEnabled", Dresses: "categoryDressesEnabled", Jewellery: "categoryJewelryEnabled" })[category];
+              toggleState.settings[categorySettingKey] = false;
               const beforeDisabledSettingsRead = toggleState.settingsReads;
               await togglePage.reload();
               await togglePage.locator("#products [data-product-id]").first().waitFor();
               const disabledSettingsDeadline = Date.now() + 5000;
               while (toggleState.settingsReads <= beforeDisabledSettingsRead && Date.now() < disabledSettingsDeadline) await togglePage.waitForTimeout(25);
               assert.ok(toggleState.settingsReads > beforeDisabledSettingsRead, label + ": disabled category settings reloaded");
-              assert.equal(await togglePage.locator('[data-tab="Dresses"]').count(), 0, label + ": disabled Dresses tab is hidden");
+              assert.equal(await togglePage.locator('[data-tab="' + category + '"]').count(), 0, label + ": disabled " + category + " tab is hidden");
               await togglePage.locator('[data-tab="All"]').click();
-              assert.equal(await togglePage.locator('#products [data-product-id]').count(), productsFixture.filter(p => p.category !== "Dresses").length, label + ": All Products excludes disabled category");
+              assert.equal(await togglePage.locator('#products [data-product-id]').count(), productsFixture.filter(p => p.category !== category).length, label + ": All Products excludes disabled " + category);
               await togglePage.locator('[data-tab="Best Seller"]').click();
-              assert.equal(await togglePage.locator('#products [data-product-id]').count(), productsFixture.filter(p => p.category !== "Dresses" && (p.bestSeller === true || p.bestSeller === "true" || p.bestSeller === 1 || p.bestSeller === "1")).length, label + ": Best Seller excludes disabled category");
+              assert.equal(await togglePage.locator('#products [data-product-id]').count(), productsFixture.filter(p => p.category !== category && (p.bestSeller === true || p.bestSeller === "true" || p.bestSeller === 1 || p.bestSeller === "1")).length, label + ": Best Seller excludes disabled " + category);
               await togglePage.locator("#ssv-smart-finder-trigger").click();
-              assert.equal(await togglePage.locator('#ssv-finder-category option[value="Dresses"]').count(), 0, label + ": Finder excludes disabled category");
+              assert.equal(await togglePage.locator('#ssv-finder-category option[value="' + category + '"]').count(), 0, label + ": Finder excludes disabled " + category);
               await togglePage.locator(".ssv-finder-close").click();
               await togglePage.locator("#ssv-cart-trigger").click();
               assert.equal(await togglePage.locator(".ssv-cart-item").count(), 0, label + ": disabled-category cart row is not visible");
               assert.equal(toggleState.workerActions.filter(action => action === "submitOrder").length, 0, label + ": disabled category cannot submit an order");
 
-              toggleState.settings.categoryDressesEnabled = true;
+              toggleState.settings[categorySettingKey] = true;
               const beforeEnabledSettingsRead = toggleState.settingsReads;
               await togglePage.reload();
               await togglePage.locator("#products [data-product-id]").first().waitFor();
@@ -269,7 +270,7 @@ jobs:
               assert.ok(toggleState.settingsReads > beforeEnabledSettingsRead, label + ": re-enabled category settings reloaded");
               await togglePage.locator("#ssv-cart-trigger").click();
               await togglePage.locator(".ssv-cart-item").first().waitFor({ state: "visible" });
-              assert.equal(await togglePage.locator(".ssv-cart-item").count(), 1, label + ": cart row returns when category is re-enabled");
+              assert.equal(await togglePage.locator(".ssv-cart-item").count(), 1, label + ": cart row returns when " + category + " is re-enabled);
               console.log("PASS " + label + ": category OFF/ON hides catalogue, Best Seller, Finder and cart rows without deleting saved cart data.");
             } finally {
               await togglePage.close();
@@ -293,7 +294,7 @@ jobs:
               assert.equal(await page.locator('#products [data-product-id]').count(), productsFixture.filter(p => p.bestSeller === true || p.bestSeller === "true" || p.bestSeller === 1 || p.bestSeller === "1").length, label + ": Best Seller collection");
               await page.locator('[data-tab="All"]').click();
 
-              await runCategoryToggleJourney(label, context);
+              for (const category of ["Sarees", "Dresses", "Jewellery"]) await runCategoryToggleJourney(label, context, category);
 
               await page.locator('[data-tab="Dresses"]').click();
               assert.equal(await page.locator("#products [data-product-id]").count(), 2, label + ": Dresses category filter");
@@ -321,7 +322,7 @@ jobs:
               await page.locator("#ssv-finder-budget").fill("800");
               await page.locator("#ssv-finder-color").selectOption("Pink");
               await page.locator("#ssv-finder-form button[type='submit']").click();
-              await page.locator(".ssv-finder-result").first().waitFor();
+              await page.getByRole("heading", { name: "Printed frock" }).waitFor({ state: "visible" });
               assert.equal((await page.locator(".ssv-finder-result h3").innerText()).trim(), "Printed frock", label + ": recorded colour filter");
               await page.locator("#ssv-finder-category").selectOption("Jewellery");
               assert.equal(await page.locator("#ssv-finder-color-field").isVisible(), false, label + ": Jewellery must hide colour");
