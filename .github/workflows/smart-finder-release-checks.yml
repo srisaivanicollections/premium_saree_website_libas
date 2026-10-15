@@ -23,6 +23,7 @@ jobs:
           node --check saree-finder.js
           node --check saree-occasion-ai.js
           node --test tests/saree-occasion-ai.test.mjs
+          node --test tests/storefront-default-category.test.mjs
           node --input-type=module <<'NODE'
           import { readFileSync } from "node:fs";
           import assert from "node:assert/strict";
@@ -371,6 +372,12 @@ jobs:
                   });
               const expectedBestSellerBadges = expectedBadgeProducts.filter(p => p.bestSeller === true || p.bestSeller === "true" || p.bestSeller === 1 || p.bestSeller === "1").length;
               assert.equal(await page.locator("#products .pill-best").count(), expectedBestSellerBadges, label + ": original Best Seller ribbons remain on the same products");
+
+              await page.locator('[data-tab="Dresses"]').click();
+              assert.equal(await page.locator("#products [data-product-id]").count(), 2, label + ": category changes before reset");
+              await page.locator("#resetCatalog").click();
+              await page.waitForFunction(() => document.querySelector("#tabs button.active")?.getAttribute("data-tab") === "Sarees");
+              assert.equal(await page.locator("#products [data-product-id]").count(), 3, label + ": Reset returns to the default category");
 
               for (const [index, category] of ["Sarees", "Dresses", "Jewellery"].entries()) {
                 const key = ({ Sarees: "categorySareesEnabled", Dresses: "categoryDressesEnabled", Jewellery: "categoryJewelryEnabled" })[category];
