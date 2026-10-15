@@ -10364,7 +10364,7 @@ function ssvRenderEnrichFinderSummary(result){
    const preview=document.createElement("img");preview.className="ssv-enrich-review-image";preview.src=String(suggestion.image||"");preview.alt=String(suggestion.name||"Product")+" image";preview.loading="lazy";preview.style.cssText="width:64px;height:82px;flex:0 0 64px;object-fit:contain;background:#FAF7F2;border:1px solid #E4D8C5";preview.onerror=()=>{preview.hidden=true;};identity.append(preview);
    const copy=document.createElement("div");copy.style.cssText="min-width:0;overflow-wrap:anywhere";
    const title=document.createElement("h4");title.textContent=suggestion.name;title.style.cssText="margin:0 0 4px;font-size:15px;font-weight:600;overflow-wrap:anywhere";
-   const meta=document.createElement("p");meta.textContent="Colour review · Product "+suggestion.id+(suggestion.category?" · "+suggestion.category:"");meta.style.cssText="margin:0;font-size:12px;color:#6f665b;overflow-wrap:anywhere";
+   const meta=document.createElement("p");meta.textContent="Colour review"+(suggestion.category?" · "+suggestion.category:"");meta.style.cssText="margin:0;font-size:12px;color:#6f665b;overflow-wrap:anywhere";
    copy.append(title,meta);identity.append(copy);card.append(identity);
    const note=document.createElement("p");note.textContent="Colour prediction is uncertain. Choose the product's actual visible colour. Model scores are ranking signals, not calibrated probabilities.";note.style.cssText="margin:0 0 10px;font-size:13px;line-height:1.5;color:#6f665b";card.append(note);
    const rankings=Array.isArray(suggestion.rankings)?suggestion.rankings:[];
@@ -10372,7 +10372,7 @@ function ssvRenderEnrichFinderSummary(result){
    const select=document.createElement("select");select.setAttribute("aria-label","Select reviewed colour for "+suggestion.name);select.style.cssText="width:100%;min-height:44px;padding:8px 10px;border:1px solid #D8CCB8;background:#fff;color:#1C1917;margin:0 0 10px";
    const placeholder=document.createElement("option");placeholder.value="";placeholder.textContent="Choose the correct colour";select.append(placeholder);
    const colourOptions=["Black","Blue","Brown","Gold","Green","Grey","Ivory","Maroon","Multi-colour","Orange","Pink","Purple","Red","Silver","White","Yellow"];
-   colourOptions.forEach(value=>{const option=document.createElement("option");option.value=value;const ranked=rankings.find(item=>item.label===value);option.textContent=ranked?value+" · model score "+Number(ranked.score).toFixed(3):value;select.append(option);});
+   colourOptions.forEach(value=>{const option=document.createElement("option");option.value=value;const ranked=rankings.find(item=>item.label===value);option.textContent=value;select.append(option);});
    const previous=(window.__ssvColourReviewSelections||{})[String(suggestion.id)];if(previous)select.value=previous;
    select.addEventListener("change",()=>{const selections=window.__ssvColourReviewSelections||(window.__ssvColourReviewSelections={});selections[String(suggestion.id)]=select.value;});
    card.append(select);
@@ -10394,7 +10394,7 @@ function ssvRenderEnrichFinderSummary(result){
    card.append(save);details.append(card);
   });
   const failures=Array.isArray(result.failures)?result.failures:[];
-  if(failures.length){const failure=document.createElement("p");failure.textContent="Processing failures: "+failures.slice(0,5).map(item=>"Product "+item.id+": "+item.reason).join(" | ")+(failures.length>5?" · "+(failures.length-5)+" more failure(s).":"");failure.style.cssText="margin-top:12px;overflow-wrap:anywhere";details.append(failure);}
+  if(failures.length){const failure=document.createElement("p");failure.textContent="Processing failures: "+failures.slice(0,5).map(item=>item.reason).join(" | ")+(failures.length>5?" · "+(failures.length-5)+" more failure(s).":"");failure.style.cssText="margin-top:12px;overflow-wrap:anywhere";details.append(failure);}
   if(result.refreshFailed){const warning=document.createElement("p");warning.textContent="Final catalogue refresh failed. Refresh before retrying.";details.append(warning);}
   details.hidden=!details.childElementCount;
  }
