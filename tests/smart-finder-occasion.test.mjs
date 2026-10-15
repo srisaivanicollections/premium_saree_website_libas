@@ -116,17 +116,17 @@ test("Enrich Finder summary keeps diagnostics concise and removes manual colour 
   const end = adminSource.indexOf("function showView(v)", start);
   assert.ok(start >= 0 && end > start, "summary renderer must be present");
   const popupSummary = adminSource.slice(start, end);
-  assert.doesNotMatch(popupSummary, /model score|Product "\\+suggestion\\.id|Product "\\+item\\.id/);
-  assert.doesNotMatch(popupSummary, /option\\.textContent=value|Colour review|rankings/);
+  assert.doesNotMatch(popupSummary, /model score|Product "\+suggestion\.id|Product "\+item\.id/);
+  assert.doesNotMatch(popupSummary, /option\.textContent=value|Colour review|rankings/);
   assert.doesNotMatch(adminSource, /colourReviewSuggestions|ssvSaveReviewedColour|SAVE REVIEWED COLOUR/);
 });
 
 test("Enrich Finder reports saved counts, actual failures, and actionable diagnostics", () => {
-  assert.match(adminSource, /occasionMissingCount=queue\\.filter/);
-  assert.match(adminSource, /colourMissingCount=queue\\.filter/);
-  assert.match(adminSource, /occasion\\.textContent=String\\(result\\.occasionsSaved\\)/);
-  assert.match(adminSource, /colour\\.textContent=String\\(result\\.coloursSaved\\)/);
-  assert.match(adminSource, /review\\.textContent=String\\(failures\\.length\\)/);
+  assert.match(adminSource, /occasionMissingCount=queue\.filter/);
+  assert.match(adminSource, /colourMissingCount=queue\.filter/);
+  assert.match(adminSource, /occasion\.textContent=String\(result\.occasionsSaved\)/);
+  assert.match(adminSource, /colour\.textContent=String\(result\.coloursSaved\)/);
+  assert.match(adminSource, /review\.textContent=String\(failures\.length\)/);
   assert.doesNotMatch(adminSource, /low-confidence occasion predictions|Their highest-scoring occasion/);
   assert.match(adminSource, /Processing failures:/);
 });
@@ -155,10 +155,10 @@ test("Enrich Finder popup traps keyboard focus and restores focus to its opener"
 
 test("A failed final catalogue refresh preserves partial-save results and warns before retry", () => {
   assert.match(adminSource, /let refreshFailed=false/);
-  assert.match(adminSource, /Final catalogue refresh failed\\. Some saves may already be complete\\. Refresh the catalogue before retrying\\./);
-  assert.match(adminSource, /refreshFailed\\};/);
-  assert.match(adminSource, /result\\.refreshFailed\\?"Partial results":"Complete"/);
-  assert.match(adminSource, /result\\.failed\\|\\|result\\.refreshFailed\\|\\|failures\\.length\?"error":"success"/);
+  assert.match(adminSource, /Final catalogue refresh failed\. Some saves may already be complete\. Refresh the catalogue before retrying\./);
+  assert.match(adminSource, /refreshFailed\};/);
+  assert.match(adminSource, /result\.refreshFailed\?"Partial results":"Complete"/);
+  assert.match(adminSource, /result\.failed\|\|result\.refreshFailed\|\|failures\.length\?"error":"success"/);
 });
 
 
@@ -186,10 +186,10 @@ test("automatic multi-occasion save preserves product fields and verifies all ti
 
 
 test("low-confidence occasions are saved automatically without review cards", () => {
-  assert.match(adminSource, /if\\(needsOccasion&&!occasion\\?\\.confident\\)occasionUncertain\\+\\+/);
-  assert.match(adminSource, /const addOccasion=needsOccasion&&occasionLabels\\.length>0/);
+  assert.match(adminSource, /if\(needsOccasion&&!occasion\?\.confident\)occasionUncertain\+\+/);
+  assert.match(adminSource, /const addOccasion=needsOccasion&&occasionLabels\.length>0/);
   assert.doesNotMatch(adminSource, /low-confidence occasion predictions|SAVE SELECTED OCCASIONS/);
-  assert.doesNotMatch(adminSource, /reviewSuggestions\\.push\\(\\{id:candidate\\.id,name:/);
+  assert.doesNotMatch(adminSource, /reviewSuggestions\.push\(\{id:candidate\.id,name:/);
 });
 
 test("uncertain predictions are handled in code without manual colour review UI", () => {
@@ -212,10 +212,10 @@ test("Enrich Finder close animation and final badge sizing overrides exist", () 
 
 
 test("Enrich Finder keeps occasion rankings internal and saves valid top labels automatically", () => {
-  assert.match(aiSource, /const predictions = await classifier\\(url,/);
+  assert.match(aiSource, /const predictions = await classifier\(url,/);
   assert.match(aiSource, /rankings:/);
-  assert.match(aiSource, /const top = chooseTop\\(ranked\\)/);
-  assert.doesNotMatch(adminSource, /low-confidence occasion predictions|Occasion prediction is uncertain\\. Review the ranked suggestions/);
+  assert.match(aiSource, /const top = chooseTop\(ranked\)/);
+  assert.doesNotMatch(adminSource, /low-confidence occasion predictions|Occasion prediction is uncertain\. Review the ranked suggestions/);
   assert.doesNotMatch(adminSource, /SAVE SELECTED OCCASIONS/);
 });
 
