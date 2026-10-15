@@ -1,0 +1,34 @@
+name: Admin Token Persistence Tests
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "index.html"
+      - "tests/admin-token-persistence.test.mjs"
+      - "package.json"
+      - ".github/workflows/admin-token-persistence-tests.yml"
+  push:
+    branches: ["fix/admin-github-token-persistence"]
+    paths:
+      - "index.html"
+      - "tests/admin-token-persistence.test.mjs"
+      - "package.json"
+      - ".github/workflows/admin-token-persistence-tests.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  admin-token-persistence:
+    name: Admin token persistence
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Run admin token persistence tests
+        run: npm run test:unit
