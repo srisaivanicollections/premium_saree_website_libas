@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { selectOccasionPrediction, isConfidentOccasionPrediction, selectColourPrediction, isConfidentColourPrediction } from "../saree-occasion-ai.js";
+import { selectOccasionPrediction, isConfidentOccasionPrediction, selectColourPrediction, isConfidentColourPrediction, __test } from "../saree-occasion-ai.js";
 
 const prompts = {
   wedding: "a saree intended for wedding wear, bridal wear or a wedding guest",
@@ -28,8 +28,8 @@ test("returns all tied top occasions and measures confidence against the next di
     { label: prompts.daily, score: 0.102 },
     { label: "a saree intended for party wear, evening events or cocktail occasions", score: 0.072 }
   ]);
-  assert.deepEqual(result.labels, ["festive", "wedding"]);
-  assert.equal(result.label, "festive");
+  assert.deepEqual(result.labels, ["wedding", "festive"]);
+  assert.equal(result.label, "wedding");
   assert.ok(Math.abs(result.margin - 0.29) < 1e-12);
   assert.equal(isConfidentOccasionPrediction(result), true);
 });
@@ -40,7 +40,7 @@ test("keeps tied but low-confidence occasions uncertain", () => {
     { label: prompts.wedding, score: 0.292 },
     { label: prompts.daily, score: 0.102 }
   ]);
-  assert.deepEqual(result.labels, ["festive", "wedding"]);
+  assert.deepEqual(result.labels, ["wedding", "festive"]);
   assert.equal(isConfidentOccasionPrediction(result), false);
 });
 
@@ -90,9 +90,10 @@ test("rejects uncertain or unknown colour predictions", () => {
   assert.equal(isConfidentColourPrediction({ label: "Turquoise", score: 0.99, margin: 0.5 }), false);
 });
 
-test("keeps a known risky printed-dress prediction for manual review", () => {
-  // The Blue frock was previously predicted as Gold at score 0.3783 / margin 0.27.
+test("low-confidence valid colour remains a valid deterministic selection, not a manual-review gate", () => {
+  // Confidence informs diagnostics only; a valid top colour can still be auto-saved.
   assert.equal(isConfidentColourPrediction({ label: "Gold", score: 0.3783, margin: 0.27 }), false);
+  assert.ok(__test.COLOURS.includes("Gold"));
 });
 
 test("rejects empty and malformed colour model outputs", () => {
@@ -114,7 +115,7 @@ test("blocks checkout submission when no cart products remain enabled", () => {
 });
 
 
-test("returns all known occasions ranked for manual review when top predictions are close", () => {
+test("returns deterministic occasion rankings and only the tied top labels", () => {
   const result = selectOccasionPrediction([
     { label: prompts.festive, score: 0.31 },
     { label: prompts.wedding, score: 0.29 },
@@ -123,29 +124,28 @@ test("returns all known occasions ranked for manual review when top predictions 
   ]);
   assert.deepEqual(result.rankings.map(item => item.label), ["festive", "wedding", "daily wear"]);
   assert.deepEqual(result.rankings.map(item => item.rank), [1, 2, 3]);
-  assert.ok(result.rankings[0].score >= result.rankings[1].score);
+  assert.deepEqual(result.labels, ["festive"]);
   assert.equal(result.label, "festive");
-  assert.equal(isConfidentOccasionPrediction(result), false, "close top scores should remain reviewable");
+  assert.equal(isConfidentOccasionPrediction(result), false);
 });
 
+test("limits deterministic inference to three passes and uses stable approved vocabularies", () => {
+  assert.equal(__test.MAX_PASSES, 3);
+  assert.equal(__test.OCCASION_TIE_TOLERANCE, 0.0005);
+  assert.deepEqual(__test.COLOURS, [...new Set(__test.COLOURS)]);
+  assert.deepEqual(__test.LABELS.map(item => item.label), ["daily wear", "wedding", "festive", "party wear", "traditional"]);
+});
 
-test("exposes ranked uncertain colours for safe Admin review", () => {
+test("auto-saves a single valid colour and has no manual colour-review workflow", () => {
   const scanner = readFileSync(new URL("../saree-occasion-ai.js", import.meta.url), "utf8");
   const admin = readFileSync(new URL("../index.html", import.meta.url), "utf8");
-  assert.match(scanner, /rankings: ranked/);
-  assert.match(admin, /colourReviewSuggestions/);
+  assert.match(scanner, /rankings:/);
+  assert.match(admin, /addColour=needsColour&&!!colourToSave&&SSV_FINDER_COLOURS\.has\(colourToSave\)/);
+  assert.match(admin, /savedProduct\?\.color===colourToSave/);
+  assert.doesNotMatch(admin, /colourReviewSuggestions/);
+  assert.doesNotMatch(admin, /async function ssvSaveReviewedColour/);
+  assert.doesNotMatch(admin, /SAVE REVIEWED COLOUR/);
+  assert.doesNotMatch(admin, /__ssvColourReviewSelections/);
   assert.match(admin, /occasionLabels\.every/);
-  const summary = admin.slice(admin.indexOf("function ssvRenderEnrichFinderSummary"), admin.indexOf("function ssvRenderEnrichFinderSummary") + 7000);
-  assert.doesNotMatch(summary, /SAVE SELECTED OCCASIONS/);
-  assert.match(summary, /low-confidence occasion predictions/);
-  assert.match(admin, /async function ssvSaveReviewedColour/);
-  assert.ok(admin.includes('saved.colourMetadata?.source!=="ai-reviewed"'));
-  assert.match(admin, /ssv-enrich-finder-ui-review-20261015/);
   assert.ok(admin.includes("max-height:calc(100dvh - env(safe-area-inset-top"));
-});
-
-test("preserves unsaved colour selections when another review is saved", () => {
-  const admin = readFileSync(new URL("../index.html", import.meta.url), "utf8");
-  assert.match(admin, /__ssvColourReviewSelections/);
-  assert.doesNotMatch(admin, /SAVE SELECTED OCCASIONS/);
 });
