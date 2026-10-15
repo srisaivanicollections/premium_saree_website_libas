@@ -9488,6 +9488,14 @@ async function githubRequest(path,options={}){
   if(!r.ok){
     const error=new Error(d.message||"GitHub request failed");
     error.status=r.status;
+    const message=String(d.message||"");
+    error.rateLimited=r.status===403&&(
+      /rate limit|secondary rate limit|abuse detection/i.test(message)||
+      r.headers.get("x-ratelimit-remaining")==="0"||
+      Boolean(r.headers.get("retry-after"))
+    );
+    error.retryAfter=r.headers.get("retry-after")||"";
+    error.rateLimitReset=r.headers.get("x-ratelimit-reset")||"";
     throw error;
   }
   return d;
@@ -11402,9 +11410,13 @@ async function verifyAdminOtp(){
       products=catalog.value;
       githubOriginalIds=new Set(products.map(p=>Number(p.id)));
     }catch(catalogError){
-      if(catalogError?.status===401||catalogError?.status===403){
+      if(catalogError?.status===401||(catalogError?.status===403&&!catalogError?.rateLimited)){
         setStorageStatus("The saved GitHub token is invalid or lacks repository access. Connect a valid token to continue.");
         showGithubStorageSetup();
+      }else if(catalogError?.rateLimited){
+        let waitSeconds=Number(catalogError.retryAfter)||0;
+        if(!waitSeconds&&Number(catalogError.rateLimitReset)>0)waitSeconds=Math.max(0,Number(catalogError.rateLimitReset)-Math.floor(Date.now()/1000));
+        setStorageStatus("GitHub API rate limit reached. Wait"+(waitSeconds>0?" about "+Math.ceil(waitSeconds/60)+" minute(s)":" a little")+" before retrying. Your saved token has not been changed.");
       }else{
         setStorageStatus(catalogError?.message||"The latest GitHub product catalogue could not be loaded on this device.");
       }
