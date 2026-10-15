@@ -2,7 +2,7 @@ name: Smart Finder Release Checks
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, fix/enrich-finder-popup-top-pick-ranking, feature/enrich-finder-auto-matching-progress, fix/top-pick-responsive-badge]
   push:
     branches: [feature/smart-finder-all-categories]
 

@@ -10257,7 +10257,7 @@ function ssvEnsureEnrichFinderPopup(){
   popup.innerHTML='<section class="ssv-enrich-popup" role="dialog" aria-modal="true" aria-labelledby="adminEnrichTitle" aria-describedby="adminEnrichIntro"><button type="button" class="ssv-enrich-popup-close" id="adminEnrichFinderClose" aria-label="Close Enrich Finder">×</button><p class="eyebrow">SMART SAREE FINDER</p><h3 id="adminEnrichTitle">Enrich Finder</h3><p id="adminEnrichIntro">Analyse product images to suggest missing occasion and colour metadata. Existing occasion tags, colour values, product images and unrelated product fields are preserved.</p><div class="ssv-enrich-count-grid"><div><strong id="adminEnrichOccasionCount">0</strong><span>OCCASIONS SAVED</span></div><div><strong id="adminEnrichColourCount">0</strong><span>COLOURS SAVED</span></div><div><strong id="adminEnrichReviewCount">0</strong><span>NEEDS REVIEW</span></div></div><div id="adminEnrichProcessing" class="ssv-enrich-processing" hidden aria-live="polite"><div class="ssv-enrich-processing-heading"><span class="ssv-enrich-scan-icon" aria-hidden="true">✦</span><strong id="adminEnrichProcessingLabel">Preparing image analysis…</strong></div><div class="ssv-enrich-progress-track" role="progressbar" aria-label="Products analysed" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="adminEnrichProgressTrack"><span id="adminEnrichProgressFill"></span></div><div class="ssv-enrich-progress-meta"><span id="adminEnrichProgressText">Preparing…</span><span id="adminEnrichProgressPercent">0%</span></div><div class="ssv-enrich-current-product" id="adminEnrichCurrentProduct" hidden><img id="adminEnrichCurrentImage" alt="" /><div><strong id="adminEnrichCurrentName">Preparing product…</strong><span id="adminEnrichCurrentStep">Waiting to analyse</span></div><span class="ssv-enrich-live-dots" aria-hidden="true"><i></i><i></i><i></i></span></div><p class="ssv-enrich-processing-note"><span aria-hidden="true">✦</span> Analysing products and saving only verified missing metadata.</p></div><p class="ssv-enrich-safety-note">Only confident predictions for fields that are still missing are saved.</p><button type="button" class="btn dark" id="adminEnrichFinder">ANALYSE MISSING METADATA</button><p id="adminEnrichFinderStatus" role="status" aria-live="polite" style="margin-top:16px;overflow-wrap:anywhere">Ready to analyse missing occasion and colour details.</p><div id="adminEnrichFinderFailures" aria-live="polite"></div></section>';
   document.body.appendChild(popup);
   const focusableSelector='a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
-  const close=()=>{if(popup.hidden)return;popup.hidden=true;const opener=popup._opener;if(opener&&opener.isConnected)opener.focus();};
+  const close=()=>{if(popup.hidden||popup.classList.contains("is-closing"))return;const finish=()=>{if(popup._closeHandler){popup.removeEventListener("animationend",popup._closeHandler);popup._closeHandler=null;}if(popup._closeTimer){clearTimeout(popup._closeTimer);popup._closeTimer=null;}popup.hidden=true;popup.classList.remove("is-closing");const opener=popup._opener;if(opener&&opener.isConnected)opener.focus();};if(window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches){finish();return;}popup.classList.add("is-closing");let finished=false;const onEnd=event=>{if(event.target!==popup||finished)return;finished=true;finish();};popup._closeHandler=onEnd;popup.addEventListener("animationend",onEnd);popup._closeTimer=setTimeout(()=>{if(finished)return;finished=true;popup._closeTimer=null;finish();},220);};
   popup.querySelector("#adminEnrichFinderClose").onclick=close;
   popup.addEventListener("keydown",event=>{
     if(event.key!=="Tab")return;
@@ -10291,7 +10291,7 @@ function ssvRefreshEnrichFinderCounts(){
 function ssvOpenEnrichFinderPopup(){
   const popup=ssvEnsureEnrichFinderPopup();
   if(popup.hidden)popup._opener=document.activeElement;
-  ssvRefreshEnrichFinderCounts();popup.hidden=false;
+  if(popup._closeTimer){clearTimeout(popup._closeTimer);popup._closeTimer=null;}if(popup._closeHandler){popup.removeEventListener("animationend",popup._closeHandler);popup._closeHandler=null;}popup.classList.remove("is-closing");ssvRefreshEnrichFinderCounts();popup.hidden=false;
   const close=popup.querySelector("#adminEnrichFinderClose");if(close)close.focus();
   const button=popup.querySelector("#adminEnrichFinder");if(ssvFinderEnrichmentPromise&&button){button.disabled=true;button.textContent="ENRICHMENT RUNNING…";}
 }
@@ -14710,6 +14710,28 @@ if ("serviceWorker" in navigator) {
 </style>
 <script src="./checkout.js?v=guest-cart-1" defer></script>
   <script src="./saree-finder.js?v=4" defer></script>
+
+
+<!-- Enrich Finder / product badge consistency fixes -->
+<style id="enrich-finder-and-badge-final-overrides">
+#admin .admin-products-heading-actions > #adminEnrichFinderLink,
+#admin .admin-products-heading-actions > .admin-enrich-finder-link {
+ display:inline-flex!important;align-items:center!important;justify-content:center!important;gap:8px!important;min-height:40px!important;padding:8px 0!important;
+ border:0!important;border-bottom:1px solid rgba(179,142,93,.75)!important;background:transparent!important;color:var(--ink,#1C1917)!important;
+ font-size:10px!important;line-height:1.3!important;letter-spacing:.12em!important;text-decoration:none!important;white-space:normal!important;cursor:pointer!important;
+}
+#admin .admin-products-heading-actions > #adminEnrichFinderLink:focus-visible{outline:2px solid var(--gold,#B38E5D)!important;outline-offset:4px!important}
+.ssv-enrich-popup-backdrop.is-closing{animation:ssvEnrichBackdropOut .18s ease both!important;pointer-events:none!important}
+.ssv-enrich-popup-backdrop.is-closing .ssv-enrich-popup{animation:ssvEnrichPanelOut .18s ease both!important}
+@keyframes ssvEnrichBackdropOut{from{opacity:1}to{opacity:0}}
+@keyframes ssvEnrichPanelOut{from{opacity:1;transform:translateY(0) scale(1)}to{opacity:0;transform:translateY(8px) scale(.99)}}
+/* Final sizing rule deliberately follows all legacy badge overrides. */
+#shop #products > article.product-card > .product-image > .badges > .badge,#shop .product-card .product-image > .badges > .badge,.lux-item-media .ssv-badge-pill,.ssv-finder-image-wrap>.ssv-finder-top-pick{
+ box-sizing:border-box!important;min-height:22px!important;padding:4px 7px!important;font-size:9px!important;line-height:1.2!important;letter-spacing:.12em!important;font-weight:600!important;white-space:nowrap!important
+}
+@media(max-width:600px){#shop #products > article.product-card > .product-image > .badges > .badge,#shop .product-card .product-image > .badges > .badge,.lux-item-media .ssv-badge-pill,.ssv-finder-image-wrap>.ssv-finder-top-pick{min-height:20px!important;padding:4px 6px!important;font-size:7.5px!important;line-height:1.2!important;letter-spacing:.1em!important}}
+@media(prefers-reduced-motion:reduce){.ssv-enrich-popup-backdrop,.ssv-enrich-popup-backdrop.is-closing,.ssv-enrich-popup-backdrop.is-closing .ssv-enrich-popup{animation:none!important}}
+</style>
 </body>
 
 <style id="sv-review-mobile-full-card-fix-20261013">
