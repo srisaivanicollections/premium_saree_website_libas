@@ -315,6 +315,7 @@ jobs:
               await page.locator("#ssv-finder-category").selectOption("Dresses");
               await page.locator("#ssv-finder-budget").fill("500");
               await page.locator("#ssv-finder-form button[type='submit']").click();
+              await page.locator(".ssv-finder-result").first().waitFor();
               assert.equal(await page.locator(".ssv-finder-result").count(), 1, label + ": budget ceiling filters results");
               assert.equal((await page.locator(".ssv-finder-result h3").innerText()).trim(), "Blue frock", label + ": budget result");
               await page.locator("#ssv-finder-budget").fill("800");
