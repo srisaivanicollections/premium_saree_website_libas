@@ -75,7 +75,7 @@ jobs:
           assert.match(page, /@media\(max-width:600px\)[\s\S]*?#admin \.admin-products-heading-actions\s*\{[\s\S]*?width:100%!important;[\s\S]*?justify-content:space-between!important;/, "Enrich Finder link and Add Product must remain visible in the mobile action row");
           assert.match(page, /occasionMetadata=\{source:"ai"/, "AI occasion results must record their provenance");
           assert.match(page, /colourMetadata=isJewellery\?\{source:"default",model:"jewellery-default"/, "Missing Jewellery colour must use the documented Gold default provenance");
-          assert.match(page, /colourMetadata=\{source:"ai"/, "Non-Jewellery AI colour results must record their provenance");
+          assert.match(page, /:\{source:"ai",model:"CLIP-ViT-B-32"/, "Non-Jewellery AI colour results must record their provenance");
           assert.match(page, /const tabs=\["All","Best Seller",\.\.\.enabled\]/, "All Products and Best Seller collections must remain available alongside enabled categories");
           assert.match(page, /if\(!categorySettingsReady\)return false/, "Storefront must fail closed until category settings are verified");
           assert.match(page, /window\.addEventListener\("ssv:settings-updated",event=>\{if\(event\.detail\?\.settings/, "Successful Admin settings refresh must restore storefront category visibility");
