@@ -91,12 +91,17 @@ export function selectOccasionPrediction(predictions, itemType = "saree") {
     .filter(item => item && typeof item.label === "string" && Number.isFinite(Number(item.score)))
     .sort((a, b) => Number(b.score) - Number(a.score));
   if (!sorted.length) throw new Error("The image model returned invalid predictions.");
-  const best = sorted[0];
-  return {
-    label: labelByPrompt.get(best.label) || "",
-    score: Number(best.score),
-    margin: Number(best.score) - Number(sorted[1]?.score || 0)
-  };
+  const ranked = sorted
+    .map((item, index) => ({
+      label: labelByPrompt.get(item.label) || "",
+      score: Number(item.score),
+      margin: Number(item.score) - Number(sorted[index + 1]?.score || 0),
+      rank: index + 1
+    }))
+    .filter(item => item.label);
+  if (!ranked.length) throw new Error("The image model returned no known occasion labels.");
+  const best = ranked[0];
+  return { label: best.label, score: best.score, margin: best.margin, rankings: ranked };
 }
 
 export function isConfidentOccasionPrediction(result) {
