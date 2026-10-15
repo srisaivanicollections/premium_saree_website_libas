@@ -104,3 +104,21 @@ test("returns all known occasions ranked for manual review when top predictions 
   assert.equal(result.label, "festive");
   assert.equal(isConfidentOccasionPrediction(result), false, "close top scores should remain reviewable");
 });
+
+
+test("exposes ranked uncertain colours for safe Admin review", () => {
+  const scanner = readFileSync(new URL("../saree-occasion-ai.js", import.meta.url), "utf8");
+  const admin = readFileSync(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(scanner, /rankings: ranked/);
+  assert.match(admin, /colourReviewSuggestions/);
+  assert.match(admin, /async function ssvSaveReviewedColour/);
+  assert.match(admin, /saved\\.colourMetadata\\?\\.source!==\\"ai-reviewed\\"/);
+  assert.match(admin, /ssv-enrich-finder-ui-review-20261015/);
+  assert.match(admin, /max-height:calc\\(100dvh - env\\(safe-area-inset-top/);
+});
+
+test("preserves unsaved review selections when another review is saved", () => {
+  const admin = readFileSync(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(admin, /__ssvOccasionReviewSelections/);
+  assert.match(admin, /__ssvColourReviewSelections/);
+});
