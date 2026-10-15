@@ -10842,6 +10842,7 @@ async function saveProduct(id){
   try{
     const name=$("#fName").value.trim();
     const categoryValue=$("#fCat").value;
+    if(!isCategoryEnabled(categoryValue))throw new Error("Please choose an enabled product category.");
     const price=Number($("#fPrice").value);
     const originalPrice=Number($("#fOriginal").value)||undefined;
     let image=$("#fImage").value.trim();
