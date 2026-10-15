@@ -11593,7 +11593,7 @@ const syncCatalogSortIcon=()=>{
 syncCatalogSortIcon();
 if(catalogSort)catalogSort.onchange=()=>{syncCatalogSortIcon();catalogPage=0;render()};if(catalogClear)catalogClear.onclick=()=>{if(!catalogSearch)return;catalogSearch.value="";catalogSearch.dispatchEvent(new Event("input",{bubbles:true}));catalogSearch.focus()};let catalogResetPulseTimer=0;
 if(catalogReset)catalogReset.onclick=()=>{
-  if(category!=="All"&&!isCategoryEnabled(category)){const enabled=["Sarees","Dresses","Jewellery"].filter(isCategoryEnabled);category=enabled[0]||"";}
+  category=ssvDefaultStorefrontCategory(products);
   if(catalogSearch)catalogSearch.value="";
   if(catalogSort){catalogSort.value="";syncCatalogSortIcon();}
   syncCatalogClear();
