@@ -198,10 +198,14 @@ test("Enrich Finder keeps ranked occasion suggestions for a single uncertain pro
   assert.match(adminSource, /SAVE SELECTED OCCASIONS/);
 });
 
-test("TOP PICK sizing targets the rendered Smart Finder badge without adding popup entrance animation", () => {
-  assert.match(adminSource, /id="ssv-enrich-finder-final-polish-20261015"/);
-  assert.match(adminSource, /\.ssv-finder-top-pick\{[\s\S]*?font-size:8px!important/);
-  assert.match(adminSource, /@media\(max-width:600px\)\{[\s\S]*?font-size:8px!important/);
+test("TOP PICK badge styling is owned by the real Finder renderer and is responsive", () => {
+  assert.match(source, /id="ssv-finder-top-pick-styles"/);
+  assert.match(source, /\.ssv-finder-image-wrap>\.ssv-finder-top-pick\{[\s\S]*?font-size:8px/);
+  assert.match(source, /@media\(max-width:600px\)\{\.ssv-finder-image-wrap>\.ssv-finder-top-pick\{[\s\S]*?font-size:8px/);
+  assert.match(source, /max-width:calc\(100% - 12px\)/);
+  assert.match(source, /white-space:nowrap;overflow:hidden;text-overflow:ellipsis/);
+  assert.match(source, /background:#C8B28A;color:#1C1917/);
+  assert.doesNotMatch(adminSource, /id="ssv-enrich-finder-final-polish-20261015"/);
   assert.doesNotMatch(adminSource, /ssv-enrich-popup-backdrop:not\(\[hidden\]\).*animation:ssvEnrichBackdropIn/);
   assert.doesNotMatch(adminSource, /ssv-enrich-popup-backdrop:not\(\[hidden\]\) \.ssv-enrich-popup\{animation:ssvEnrichPanelIn/);
   assert.match(adminSource, /@media\(prefers-reduced-motion:reduce\)/);
