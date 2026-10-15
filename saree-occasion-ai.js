@@ -132,8 +132,9 @@ export async function createOccasionScanner() {
 export function selectOccasionPrediction(predictions, itemType = "saree") {
   if (!Array.isArray(predictions) || !predictions.length) throw new Error("The image model returned no predictions.");
   const labelByPrompt = new Map(LABELS.map(item => ["a " + itemType + " " + item.description, item.label]));
-  const ranked = predictions
-    .filter(item => item && typeof item.label === "string" && Number.isFinite(Number(item.score)))
+  const valid = predictions.filter(item => item && typeof item.label === "string" && Number.isFinite(Number(item.score)));
+  if (!valid.length) throw new Error("The image model returned invalid predictions.");
+  const ranked = valid
     .map(item => ({ label: labelByPrompt.get(item.label) || "", score: Number(item.score) }))
     .filter(item => item.label)
     .sort((a, b) => b.score - a.score || LABELS.findIndex(label => label.label === a.label) - LABELS.findIndex(label => label.label === b.label));
@@ -157,7 +158,9 @@ function colourResult(ranked) {
 
 export function selectColourPrediction(predictions) {
   if (!Array.isArray(predictions) || !predictions.length) throw new Error("The image model returned no colour predictions.");
-  const normalized = predictions.filter(item => item && typeof item.label === "string" && Number.isFinite(Number(item.score)))
+  const valid = predictions.filter(item => item && typeof item.label === "string" && Number.isFinite(Number(item.score)));
+  if (!valid.length) throw new Error("The image model returned invalid colour predictions.");
+  const normalized = valid
     .map(item => ({ ...item, colour: COLOURS.find(colour => item.label.toLowerCase().includes("colour is " + colour.toLowerCase())) || "" }))
     .filter(item => item.colour)
     .map(item => ({ label: item.colour, score: Number(item.score) }))
