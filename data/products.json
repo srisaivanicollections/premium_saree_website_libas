@@ -17,7 +17,7 @@
     "id": 1791811630242,
     "name": "Antique necklace",
     "category": "Jewellery",
-    "color": "",
+    "color": "Gold",
     "price": 2500,
     "originalPrice": 3600,
     "image": "assets/products/1791811628233-d22037403bd0-Viva_Jewels_Antique_Temple_Lakshmi___Peacock_Grand_Combo___Premium_Gold_Plated_Short___Long_Haram_Set_with_Matching_Jhumkas_PWTE5A2TXX_2026-05-15_1.webp",
@@ -33,6 +33,12 @@
       "model": "CLIP-ViT-B-32",
       "score": 0.5365,
       "margin": 0.2637,
+      "image": "assets/products/1791811628233-d22037403bd0-Viva_Jewels_Antique_Temple_Lakshmi___Peacock_Grand_Combo___Premium_Gold_Plated_Short___Long_Haram_Set_with_Matching_Jhumkas_PWTE5A2TXX_2026-05-15_1.webp",
+      "version": 1
+    },
+    "colourMetadata": {
+      "source": "default",
+      "model": "jewellery-default",
       "image": "assets/products/1791811628233-d22037403bd0-Viva_Jewels_Antique_Temple_Lakshmi___Peacock_Grand_Combo___Premium_Gold_Plated_Short___Long_Haram_Set_with_Matching_Jhumkas_PWTE5A2TXX_2026-05-15_1.webp",
       "version": 1
     }
