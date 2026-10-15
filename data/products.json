@@ -3,7 +3,7 @@
     "id": 1791912684577,
     "name": "Boarder less saree",
     "category": "Sarees",
-    "color": "",
+    "color": "Maroon",
     "price": 2000,
     "originalPrice": 2200,
     "image": "assets/products/1791912682188-614f0db1e8dc-WhatsApp-Image-2026-10-13-at-10.57.14-PM.jpeg",
@@ -11,7 +11,15 @@
     "newArrival": true,
     "bestSeller": true,
     "availability": true,
-    "occasions": []
+    "occasions": [],
+    "colourMetadata": {
+      "source": "ai",
+      "model": "CLIP-ViT-B-32",
+      "score": 0.5472,
+      "margin": 0.3079,
+      "image": "assets/products/1791912682188-614f0db1e8dc-WhatsApp-Image-2026-10-13-at-10.57.14-PM.jpeg",
+      "version": 1
+    }
   },
   {
     "id": 1791811630242,
