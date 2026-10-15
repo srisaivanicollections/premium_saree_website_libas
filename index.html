@@ -10232,7 +10232,8 @@ function ssvEnrichFieldNeeds(product){
   return {eligible,occasion:eligible&&ssvHasNoOccasionMetadata(product)&&!ssvHasOccasionDecision(product),colour:eligible&&ssvHasNoColour(product)};
 }
 function ssvEnrichMissingCounts(items){
-  const needs=(Array.isArray(items)?items:products).map(ssvEnrichFieldNeeds);
+  const enabledProducts=(Array.isArray(items)?items:products).filter(product=>isCategoryEnabled(product.category));
+  const needs=enabledProducts.map(ssvEnrichFieldNeeds);
   return {occasions:needs.filter(item=>item.occasion).length,colours:needs.filter(item=>item.colour).length,products:needs.filter(item=>item.occasion||item.colour).length};
 }
 function ssvEnsureEnrichFinderPopup(){
