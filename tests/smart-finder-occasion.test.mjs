@@ -170,3 +170,32 @@ test("manual occasion review shows product image and identity with mobile-safe r
   assert.match(adminSource, /ssv-enrich-review-card button\{min-height:44px/);
   assert.match(adminSource, /overflow-wrap:anywhere/);
 });
+
+
+test("Enrich Finder keeps ranked occasion suggestions for a single uncertain product image", () => {
+  assert.match(aiSource, /const predictions = await classifier\(url,/);
+  assert.match(aiSource, /rankings: ranked/);
+  assert.match(adminSource, /if\(needsOccasion&&!addOccasion\)\{[\s\S]*?const ranked=Array\.isArray\(occasion\?\.rankings\)/);
+  assert.match(adminSource, /reviewSuggestions\.push\(\{id:candidate\.id,name:/);
+  assert.match(adminSource, /rankings:ranked/);
+  assert.match(adminSource, /Occasion prediction is uncertain\. Review the ranked suggestions/);
+  assert.match(adminSource, /SAVE SELECTED OCCASIONS/);
+});
+
+test("TOP PICK sizing targets the rendered Smart Finder badge without adding popup entrance animation", () => {
+  assert.match(adminSource, /id="ssv-enrich-finder-final-polish-20261015"/);
+  assert.match(adminSource, /\.ssv-finder-top-pick\{[\s\S]*?font-size:8px!important/);
+  assert.match(adminSource, /@media\(max-width:600px\)\{[\s\S]*?font-size:8px!important/);
+  assert.doesNotMatch(adminSource, /ssv-enrich-popup-backdrop:not\(\[hidden\]\).*animation:ssvEnrichBackdropIn/);
+  assert.doesNotMatch(adminSource, /ssv-enrich-popup-backdrop:not\(\[hidden\]\) \.ssv-enrich-popup\{animation:ssvEnrichPanelIn/);
+  assert.match(adminSource, /@media\(prefers-reduced-motion:reduce\)/);
+});
+
+
+test("Enrich Finder exposes real processing progress and honours reduced motion", () => {
+  assert.match(adminSource, /id="adminEnrichProgressTrack"/);
+  assert.match(adminSource, /onProgress:ssvUpdateEnrichProgress/);
+  assert.match(adminSource, /index:i\+1,total:queue\.length,product:candidate/);
+  assert.match(adminSource, /@keyframes ssvEnrichGoldFlow/);
+  assert.match(adminSource, /prefers-reduced-motion:reduce\)\{\.ssv-enrich-scan-icon/);
+});
