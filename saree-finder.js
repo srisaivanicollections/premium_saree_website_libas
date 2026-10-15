@@ -6,6 +6,7 @@
   const esc=value=>String(value??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
   let catalogue=[],loaded=false,loadPromise=null,lastFocus=null,backgroundState=[],preferences={category:"Sarees",budget:"",color:"",occasion:""},allMatches=[],shownCount=0,shopSettings={},quickFilter="",recommendationRun=0;
   const money=value=>new Intl.NumberFormat("en-IN",{style:"currency",currency:"INR",maximumFractionDigits:0}).format(Number(value));
+  function ensureTopPickStyles(){if(document.getElementById("ssv-finder-top-pick-styles"))return;const style=document.createElement("style");style.id="ssv-finder-top-pick-styles";style.textContent=".ssv-finder-image-wrap{position:relative;display:block;overflow:hidden}.ssv-finder-image-wrap>img{display:block;width:100%;height:auto}.ssv-finder-image-wrap>.ssv-finder-top-pick{position:absolute;top:10px;left:10px;z-index:2;display:inline-flex;align-items:center;padding:6px 9px;border-radius:3px;background:#b38e5d;color:#fff;font-size:10px;font-weight:700;letter-spacing:.08em;line-height:1.2;box-shadow:0 2px 8px #0002}@media(max-width:600px){.ssv-finder-image-wrap>.ssv-finder-top-pick{top:7px;left:7px;padding:5px 7px;font-size:9px}}";document.head.append(style);}
   function shell(){
     if($("#ssv-smart-finder-trigger"))return;
     const trigger=document.createElement("button");
@@ -187,7 +188,7 @@
       const availabilityLabel=(product.availability===true||product.inStock===true)?"In stock":"Availability not specified";
       const details=[product.color?"Recorded colour: "+String(product.color).trim():"",availabilityLabel].filter(Boolean).join(" · ");
       const card=document.createElement("article");card.className="ssv-finder-result";card.dataset.productId=String(product.id??"");
-      card.innerHTML='<img loading="lazy" src="'+esc(imageUrl)+'" alt="'+esc(product.name||categoryLabel)+'"><div class="ssv-finder-result-copy">'+'<h3>'+esc(product.name||categoryLabel)+'</h3><p class="ssv-finder-price">'+money(product.price)+(hasOriginalPrice?' <del class="ssv-finder-original">'+money(originalPrice)+'</del>':"")+'</p>'+(badges.length?'<p class="ssv-finder-badges">'+badges.map(badge=>'<span'+(badge==='TOP PICK'?' class="ssv-finder-top-pick"':'')+'>'+esc(badge)+'</span>').join("")+'</p>':"")+'<p class="ssv-finder-meta">'+esc(details)+'</p><div class="ssv-finder-product-actions"><button type="button" class="ssv-finder-view">View Product</button><button type="button" class="ssv-finder-add">Add to Bag</button></div></div>';
+      card.innerHTML='<div class="ssv-finder-image-wrap"><img loading="lazy" src="'+esc(imageUrl)+'" alt="'+esc(product.name||categoryLabel)+'">'+(index===0?'<span class="ssv-finder-top-pick">TOP PICK</span>':"")+'</div><div class="ssv-finder-result-copy">'+'<h3>'+esc(product.name||categoryLabel)+'</h3><p class="ssv-finder-price">'+money(product.price)+(hasOriginalPrice?' <del class="ssv-finder-original">'+money(originalPrice)+'</del>':"")+'</p>'+(badges.length?'<p class="ssv-finder-badges">'+badges.map(badge=>'<span'+(badge==='TOP PICK'?' class="ssv-finder-top-pick"':'')+'>'+esc(badge)+'</span>').join("")+'</p>':"")+'<p class="ssv-finder-meta">'+esc(details)+'</p><div class="ssv-finder-product-actions"><button type="button" class="ssv-finder-view">View Product</button><button type="button" class="ssv-finder-add">Add to Bag</button></div></div>';
       $(".ssv-finder-view",card).addEventListener("click",()=>navigateToProduct(product,false));
       $(".ssv-finder-add",card).addEventListener("click",()=>{
         const cartApi=window.SSVCart;
@@ -301,6 +302,6 @@
     renderMatches();
   }
   window.addEventListener("ssv:settings-updated",event=>{const next=event.detail?.settings;if(!next||typeof next!=="object")return;shopSettings={...next};if($("#ssv-finder-category")){recommendationRun++;syncCategoryOptions();$("#ssv-finder-results")?.replaceChildren();$("#ssv-finder-message").textContent=isCategoryEnabled(preferences.category)?"Category settings updated. Choose your preferences and find matching products.":"No categories are currently available.";}});
-  function start(){try{shell();}catch(error){console.error("Smart Saree Finder could not initialize.",error);}}
+  function start(){try{ensureTopPickStyles();shell();}catch(error){console.error("Smart Saree Finder could not initialize.",error);}}
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",start,{once:true});else start();
 })();
