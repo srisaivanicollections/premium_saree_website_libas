@@ -21,6 +21,29 @@ test("selects the highest valid known occasion prediction", () => {
   assert.equal(isConfidentOccasionPrediction(result), true);
 });
 
+test("returns all tied top occasions and measures confidence against the next distinct score", () => {
+  const result = selectOccasionPrediction([
+    { label: prompts.festive, score: 0.392 },
+    { label: prompts.wedding, score: 0.392 },
+    { label: prompts.daily, score: 0.102 },
+    { label: "a saree intended for party wear, evening events or cocktail occasions", score: 0.072 }
+  ]);
+  assert.deepEqual(result.labels, ["festive", "wedding"]);
+  assert.equal(result.label, "festive");
+  assert.ok(Math.abs(result.margin - 0.29) < 1e-12);
+  assert.equal(isConfidentOccasionPrediction(result), true);
+});
+
+test("keeps tied but low-confidence occasions uncertain", () => {
+  const result = selectOccasionPrediction([
+    { label: prompts.festive, score: 0.292 },
+    { label: prompts.wedding, score: 0.292 },
+    { label: prompts.daily, score: 0.102 }
+  ]);
+  assert.deepEqual(result.labels, ["festive", "wedding"]);
+  assert.equal(isConfidentOccasionPrediction(result), false);
+});
+
 test("rejects a low-confidence prediction", () => {
   assert.equal(isConfidentOccasionPrediction({ label: "wedding", score: 0.29, margin: 0.2 }), false);
   assert.equal(isConfidentOccasionPrediction({ label: "wedding", score: 0.8, margin: 0.069 }), false);
@@ -111,6 +134,10 @@ test("exposes ranked uncertain colours for safe Admin review", () => {
   const admin = readFileSync(new URL("../index.html", import.meta.url), "utf8");
   assert.match(scanner, /rankings: ranked/);
   assert.match(admin, /colourReviewSuggestions/);
+  assert.match(admin, /occasionLabels\.every/);
+  const summary = admin.slice(admin.indexOf("function ssvRenderEnrichFinderSummary"), admin.indexOf("function ssvRenderEnrichFinderSummary") + 7000);
+  assert.doesNotMatch(summary, /SAVE SELECTED OCCASIONS|model score/);
+  assert.match(summary, /uncertain occasion predictions/);
   assert.match(admin, /async function ssvSaveReviewedColour/);
   assert.ok(admin.includes('saved.colourMetadata?.source!=="ai-reviewed"'));
   assert.match(admin, /ssv-enrich-finder-ui-review-20261015/);
