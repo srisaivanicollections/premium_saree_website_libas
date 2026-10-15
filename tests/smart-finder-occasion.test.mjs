@@ -289,3 +289,39 @@ test("customer-facing Finder copy uses Colour wording", () => {
   assert.match(source, /Preferred colour/);
   assert.match(source, /Colour: /);
 });
+
+
+const budgetFriendlyStart = source.indexOf("  function ensureBudgetFriendlyInTopThree(");
+const budgetFriendlyEnd = source.indexOf("\n  // Customer-side image inference is intentionally disabled.", budgetFriendlyStart);
+assert.ok(budgetFriendlyStart >= 0 && budgetFriendlyEnd > budgetFriendlyStart, "Budget-friendly top-three helper must be present");
+const ensureBudgetFriendlyInTopThree = new Function(source.slice(budgetFriendlyStart, budgetFriendlyEnd) + "\nreturn ensureBudgetFriendlyInTopThree;")();
+
+test("the cheapest eligible match is included in the top three without replacing TOP PICK", () => {
+  const ranked = [
+    { id: 1, price: 4000 },
+    { id: 2, price: 3500 },
+    { id: 3, price: 3000 },
+    { id: 4, price: 500 },
+    { id: 5, price: 2500 }
+  ];
+  const result = ensureBudgetFriendlyInTopThree(ranked);
+  assert.deepEqual(result.slice(0, 3).map(product => product.id), [1, 2, 4]);
+  assert.equal(result[0].id, 1);
+  assert.deepEqual(result.map(product => product.id).sort(), [1, 2, 3, 4, 5]);
+});
+
+test("top-three ordering stays unchanged when the cheapest match is already included", () => {
+  const ranked = [
+    { id: 1, price: 1000 },
+    { id: 2, price: 500 },
+    { id: 3, price: 1500 },
+    { id: 4, price: 2000 }
+  ];
+  assert.deepEqual(ensureBudgetFriendlyInTopThree(ranked).map(product => product.id), [1, 2, 3, 4]);
+});
+
+test("small result sets remain unchanged and do not invent a budget-friendly option", () => {
+  const ranked = [{ id: 1, price: 1000 }, { id: 2, price: 2000 }, { id: 3, price: 3000 }];
+  assert.deepEqual(ensureBudgetFriendlyInTopThree(ranked), ranked);
+  assert.deepEqual(ensureBudgetFriendlyInTopThree([]), []);
+});

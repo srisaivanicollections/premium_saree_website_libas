@@ -286,6 +286,18 @@
       String(a.product.id??a.product.name??"").localeCompare(String(b.product.id??b.product.name??""),undefined,{numeric:true,sensitivity:"base"})
     ).map(entry=>entry.product);
   }
+  // Keep the top recommendation intact while ensuring the cheapest eligible
+  // match appears among the first three results when there are more than three.
+  function ensureBudgetFriendlyInTopThree(products){
+    if(!Array.isArray(products)||products.length<=3)return products;
+    const cheapestIndex=products.reduce((bestIndex,product,index)=>
+      Number(product.price)<Number(products[bestIndex].price)?index:bestIndex,0);
+    if(cheapestIndex<3)return products;
+    const result=products.slice();
+    const [cheapest]=result.splice(cheapestIndex,1);
+    result.splice(2,0,cheapest);
+    return result;
+  }
   // Customer-side image inference is intentionally disabled. The Finder reads
   // persisted occasion metadata and conservative text inference only, so it never
   // downloads an AI model or delays customer recommendations.
@@ -312,6 +324,7 @@
       }else allMatches=[];
     }
     allMatches=rankFinderProducts(allMatches,preferences.budget!==""?Number(preferences.budget):null);
+    allMatches=ensureBudgetFriendlyInTopThree(allMatches);
     shownCount=Math.min(3,allMatches.length);
     if(!allMatches.length)message.textContent="";
     renderMatches();
