@@ -90,6 +90,17 @@ test("Enrich Finder is a Products-page text link that opens a closable popup, no
   assert.match(adminSource, /event\.key==="Escape"&&!popup\.hidden/);
 });
 
+test("Enrich Finder link removes the icon underline and safety copy matches current save rules", () => {
+  const styleStart = adminSource.indexOf('<style id="ssv-enrich-finder-ui-review-20261015">');
+  const bodyEnd = adminSource.lastIndexOf("</body>");
+  assert.ok(styleStart >= 0 && bodyEnd > styleStart, "Enrich Finder override styles must be inside the document body");
+  const styleEnd = adminSource.indexOf("</style>", styleStart);
+  assert.ok(styleEnd > styleStart && styleEnd < bodyEnd, "Enrich Finder override styles must close before </body>");
+  assert.match(adminSource.slice(styleStart, styleEnd), /text-decoration:none!important/);
+  assert.match(adminSource, /Missing occasions use the highest-scoring match\(es\)\. Colour values follow catalogue rules, and saved changes are verified\./);
+  assert.doesNotMatch(adminSource, /Only confident predictions for fields that are still missing are saved\./);
+});
+
 test("closing and reopening the enrichment popup does not cancel or duplicate a running save", () => {
   assert.match(adminSource, /if\(button\.disabled\|\|ssvFinderEnrichmentPromise\)return/);
   assert.match(adminSource, /if\(ssvFinderEnrichmentPromise&&button\)\{button\.disabled=true/);
