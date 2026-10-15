@@ -254,7 +254,18 @@ jobs:
               assert.equal(await togglePage.locator('[data-tab="' + category + '"]').count(), 0, label + ": disabled " + category + " tab is hidden");
               assert.equal(await togglePage.locator('[data-tab="All"]').count(), 0, label + ": All tab remains removed");
               assert.equal(await togglePage.locator('[data-tab="Best Seller"]').count(), 0, label + ": Best Seller filter remains removed");
-              assert.equal(await togglePage.locator('#products [data-product-id]').count(), productsFixture.filter(p => p.category !== category).length, label + ": default catalogue excludes disabled " + category);
+              const selectedCategoryAfterDisable = await togglePage.locator("#tabs button.active").getAttribute("data-tab");
+              const enabledCategoriesAfterDisable = ["Sarees", "Dresses", "Jewellery"].filter(name => {
+                const key = ({ Sarees: "categorySareesEnabled", Dresses: "categoryDressesEnabled", Jewellery: "categoryJewelryEnabled" })[name];
+                const value = toggleState.settings[key];
+                return !(value === false || value === "false" || value === 0 || value === "0") &&
+                  productsFixture.some(product => String(product.category || "").trim().toLowerCase() === name.toLowerCase());
+              });
+              assert.equal(selectedCategoryAfterDisable, enabledCategoriesAfterDisable[0] || null, label + ": default category falls back to first populated enabled category");
+              const expectedVisibleAfterDisable = selectedCategoryAfterDisable
+                ? productsFixture.filter(product => String(product.category || "").trim().toLowerCase() === selectedCategoryAfterDisable.toLowerCase()).length
+                : 0;
+              assert.equal(await togglePage.locator('#products [data-product-id]').count(), expectedVisibleAfterDisable, label + ": catalogue shows only the selected enabled category after disabling " + category);
               await togglePage.locator("#ssv-smart-finder-trigger").click();
               assert.equal(await togglePage.locator('#ssv-finder-category option[value="' + category + '"]').count(), 0, label + ": Finder excludes disabled " + category);
               await togglePage.locator(".ssv-finder-close").click();
