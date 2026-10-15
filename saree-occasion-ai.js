@@ -99,7 +99,10 @@ export async function createOccasionScanner() {
       if (!options.retry && resultCache.has(cacheKey)) return resultCache.get(cacheKey);
 
       const occasionRuns = [], colourRuns = [];
-      let occasion = null, colour = null, colourError = null, passes = 0;
+      let occasion = null;
+      let colour = null;
+      let colourError = null;
+      let passes = 0;
       for (let pass = 0; pass < MAX_INFERENCE_PASSES; pass++) {
         passes = pass + 1;
         const currentOccasionPrompts = occasionPrompts(itemType, pass);
