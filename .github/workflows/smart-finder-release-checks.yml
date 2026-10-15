@@ -223,7 +223,7 @@ jobs:
             return state;
           }
 
-          async function runCategoryToggleJourney(label, context, category) {
+          async function runCategoryToggleJourney(label, context, category, previouslyAddedCount) {
             const togglePage = await context.newPage();
             const toggleState = await installMocks(togglePage);
             try {
@@ -258,7 +258,8 @@ jobs:
               assert.equal(await togglePage.locator('#ssv-finder-category option[value="' + category + '"]').count(), 0, label + ": Finder excludes disabled " + category);
               await togglePage.locator(".ssv-finder-close").click();
               await togglePage.locator("#ssv-cart-trigger").click();
-              assert.equal(await togglePage.locator(".ssv-cart-item").count(), 0, label + ": disabled-category cart row is not visible");
+              assert.equal(await togglePage.locator(".ssv-cart-item").count(), previouslyAddedCount, label + ": cart shows only previously enabled-category rows");
+              for (const product of productsFixture.filter(p => p.category === category)) assert.equal(await togglePage.locator(".ssv-cart-item").getByText(product.name, { exact: true }).count(), 0, label + ": disabled " + category + " product is hidden from cart");
               assert.equal(toggleState.workerActions.filter(action => action === "submitOrder").length, 0, label + ": disabled category cannot submit an order");
 
               toggleState.settings[categorySettingKey] = true;
@@ -270,7 +271,7 @@ jobs:
               assert.ok(toggleState.settingsReads > beforeEnabledSettingsRead, label + ": re-enabled category settings reloaded");
               await togglePage.locator("#ssv-cart-trigger").click();
               await togglePage.locator(".ssv-cart-item").first().waitFor({ state: "visible" });
-              assert.equal(await togglePage.locator(".ssv-cart-item").count(), 1, label + ": cart row returns when " + category + " is re-enabled");
+              assert.equal(await togglePage.locator(".ssv-cart-item").count(), previouslyAddedCount + 1, label + ": cart row returns when " + category + " is re-enabled");
               console.log("PASS " + label + ": category OFF/ON hides catalogue, Best Seller, Finder and cart rows without deleting saved cart data.");
             } finally {
               await togglePage.close();
@@ -294,7 +295,7 @@ jobs:
               assert.equal(await page.locator('#products [data-product-id]').count(), productsFixture.filter(p => p.bestSeller === true || p.bestSeller === "true" || p.bestSeller === 1 || p.bestSeller === "1").length, label + ": Best Seller collection");
               await page.locator('[data-tab="All"]').click();
 
-              for (const category of ["Sarees", "Dresses", "Jewellery"]) await runCategoryToggleJourney(label, context, category);
+              for (const [index, category] of ["Sarees", "Dresses", "Jewellery"].entries()) await runCategoryToggleJourney(label, context, category, index);
 
               await page.locator('[data-tab="Dresses"]').click();
               assert.equal(await page.locator("#products [data-product-id]").count(), 2, label + ": Dresses category filter");
