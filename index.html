@@ -10319,7 +10319,7 @@ function ssvRenderEnrichFinderSummary(result){
   details.replaceChildren();const suggestions=Array.isArray(result.reviewSuggestions)?result.reviewSuggestions:[];
   suggestions.forEach(suggestion=>{
    const card=document.createElement("section");card.className="ssv-enrich-review-card";card.style.cssText="margin-top:14px;padding:14px;border:1px solid #E4D8C5;background:#fffdf9";
-   const title=document.createElement("h4");title.textContent=suggestion.name+" · Product "+suggestion.id;title.style.cssText="margin:0 0 6px;font-size:16px;font-weight:600";card.append(title);
+   const identity=document.createElement("div");identity.className="ssv-enrich-review-identity";identity.style.cssText="display:flex;align-items:center;gap:12px;min-width:0;margin-bottom:10px";const preview=document.createElement("img");preview.className="ssv-enrich-review-image";preview.src=String(suggestion.image||"");preview.alt=suggestion.name+" product image";preview.loading="lazy";preview.style.cssText="width:76px;height:96px;flex:0 0 76px;object-fit:contain;background:#FAF7F2;border:1px solid #E4D8C5";preview.onerror=()=>{preview.hidden=true;};identity.append(preview);const identityCopy=document.createElement("div");identityCopy.style.cssText="min-width:0;overflow-wrap:anywhere";const title=document.createElement("h4");title.textContent=suggestion.name;title.style.cssText="margin:0 0 4px;font-size:16px;font-weight:600;overflow-wrap:anywhere";const productMeta=document.createElement("p");productMeta.textContent="Product "+suggestion.id+(suggestion.category?" · "+suggestion.category:"");productMeta.style.cssText="margin:0;font-size:12px;color:#6f665b;overflow-wrap:anywhere";identityCopy.append(title,productMeta);identity.append(identityCopy);card.append(identity);
    const note=document.createElement("p");note.textContent="Occasion prediction is uncertain. Review the ranked suggestions and select every occasion supported by the product. Scores are ranking signals, not calibrated probabilities.";note.style.cssText="margin:0 0 10px;font-size:13px;line-height:1.5;color:#6f665b";card.append(note);
    const rankings=Array.isArray(suggestion.rankings)?suggestion.rankings:[];
    const scoreStore=window.__ssvOccasionReviewScores||(window.__ssvOccasionReviewScores={});scoreStore[String(suggestion.id)]=rankings;
@@ -14725,7 +14725,7 @@ if ("serviceWorker" in navigator) {
 .ssv-enrich-safety-note{font-size:12px;color:#6F6252}
 #adminEnrichFinderStatus[data-state="error"]{color:#9b332b}
 #adminEnrichFinderStatus[data-state="success"]{color:#356347}
-#adminEnrichFinderFailures{font-size:12px;line-height:1.5;overflow-wrap:anywhere}
+#adminEnrichFinderFailures{font-size:12px;line-height:1.5;overflow-wrap:anywhere;min-width:0}#adminEnrichFinderFailures *{box-sizing:border-box;max-width:100%}.ssv-enrich-review-card{min-width:0;max-width:100%;overflow-wrap:anywhere}.ssv-enrich-review-card button{white-space:normal;overflow-wrap:anywhere}.ssv-enrich-review-card label{min-width:0}.ssv-enrich-review-card label span{min-width:0;overflow-wrap:anywhere}
 @media(max-width:600px){
  #admin .admin-products-heading{flex-wrap:wrap!important;align-items:center!important}
  #admin .admin-products-heading>div:first-child{flex:1 1 100%!important;min-width:0!important}
@@ -14733,7 +14733,10 @@ if ("serviceWorker" in navigator) {
  #admin .admin-products-heading-actions>#adminEnrichFinderLink{font-size:10px!important}
  #admin .admin-products-heading-actions>#adminAddProduct{min-height:40px!important;padding:0 10px!important;font-size:10px!important}
  .ssv-enrich-popup-backdrop{align-items:flex-end;padding:0}
- .ssv-enrich-popup{width:100%;max-height:92dvh;padding:28px 18px 24px;border-left:0;border-right:0;border-bottom:0}
+ .ssv-enrich-popup{width:100%;max-width:100vw;max-height:92dvh;max-height:92vh;padding:28px 18px 24px;border-left:0;border-right:0;border-bottom:0;box-sizing:border-box}
+ #adminEnrichFinderPopup .ssv-enrich-review-card{padding:12px!important;margin-top:12px!important}
+ #adminEnrichFinderPopup .ssv-enrich-review-image{width:64px!important;height:82px!important;flex-basis:64px!important}
+ #adminEnrichFinderPopup .ssv-enrich-review-card button{min-height:44px;padding:10px 12px;line-height:1.35}
  .ssv-enrich-count-grid{gap:7px}
  .ssv-enrich-count-grid>div{padding:11px 8px}
  .ssv-enrich-count-grid strong{font-size:19px}
