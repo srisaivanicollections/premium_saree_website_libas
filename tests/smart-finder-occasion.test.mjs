@@ -51,16 +51,19 @@ test("browser image inference uses the WASM-compatible uint8 model artifact", ()
   assert.match(aiSource, /pipeline\("zero-shot-image-classification",\s*MODEL_ID/);
 });
 
-test("model and image inference errors propagate to the Admin failure handler", () => {
+test("occasion rankings survive an independent colour-inference failure", () => {
   assert.match(aiSource, /const predictions = await classifier\(url,/);
+  assert.match(aiSource, /let colour = null;/);
   assert.match(aiSource, /const colourPredictions = await classifier\(url,/);
+  assert.match(aiSource, /colourError = error;/);
   assert.doesNotMatch(aiSource, /catch\s*\(error\)\s*\{\s*console\.warn\("Finder (occasion|colour) inference was inconclusive:/);
   assert.match(aiSource, /Runtime\/image\/model errors deliberately propagate/);
+  assert.match(aiSource, /const combined = \{ occasion, colour, colourError \}/);
 });
 
 test("uncertain predictions are not cached and an explicit retry bypasses cached results", () => {
   assert.match(aiSource, /if \(!options\.retry && resultCache\.has\(cacheKey\)\)/);
-  assert.match(aiSource, /if \(occasion\.confident && colour\.confident\) resultCache\.set\(cacheKey, combined\)/);
+  assert.match(aiSource, /if \(occasion\.confident && colour\?\.confident\) resultCache\.set\(cacheKey, combined\)/);
 });
 
 test("Admin enrichment exposes actionable safe failure diagnostics", () => {
@@ -90,7 +93,10 @@ test("Enrich Finder is a Products-page text link that opens a closable popup, no
 test("closing and reopening the enrichment popup does not cancel or duplicate a running save", () => {
   assert.match(adminSource, /if\(button\.disabled\|\|ssvFinderEnrichmentPromise\)return/);
   assert.match(adminSource, /if\(ssvFinderEnrichmentPromise&&button\)\{button\.disabled=true/);
-  assert.match(adminSource, /const close=\(\)=>\{if\(popup\.hidden\)return;popup\.hidden=true;const opener=popup\._opener/);
+  assert.match(adminSource, /const close=\(\)=>\{if\(popup\.hidden\|\|popup\.classList\.contains\("is-closing"\)\)return/);
+  assert.match(adminSource, /popup\._closeTimer=setTimeout/);
+  assert.match(adminSource, /clearTimeout\(popup\._closeTimer\)/);
+  assert.match(adminSource, /popup\.removeEventListener\("animationend",popup\._closeHandler\)/);
   assert.match(adminSource, /function ssvRenderEnrichFinderSummary\(result\)/);
 });
 
@@ -169,6 +175,16 @@ test("manual occasion review shows product image and identity with mobile-safe r
   assert.match(adminSource, /max-width:100vw/);
   assert.match(adminSource, /ssv-enrich-review-card button\{min-height:44px/);
   assert.match(adminSource, /overflow-wrap:anywhere/);
+});
+
+test("Enrich Finder close animation and final badge sizing overrides exist", () => {
+  assert.match(adminSource, /popup\.classList\.add\("is-closing"\)/);
+  assert.match(adminSource, /ssvEnrichBackdropOut/);
+  assert.match(adminSource, /id="enrich-finder-and-badge-final-overrides"/);
+  assert.match(adminSource, /\.lux-item-media \.ssv-badge-pill/);
+  assert.match(adminSource, /\.ssv-finder-image-wrap>\.ssv-finder-top-pick/);
+  assert.match(adminSource, /font-size:7\.5px!important/);
+  assert.match(adminSource, /prefers-reduced-motion:reduce/);
 });
 
 

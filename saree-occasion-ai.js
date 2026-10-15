@@ -64,15 +64,23 @@ export async function createOccasionScanner() {
       const occasion = selectOccasionPrediction(predictions, itemType);
       occasion.confident = isConfidentOccasionPrediction(occasion);
 
-      const colourPredictions = await classifier(url, COLOURS.map(value =>
-        "a product photo of a " + itemType + " whose main visible fabric or material colour is " + value.toLowerCase()
-      ));
-      const colour = selectColourPrediction(colourPredictions);
-      colour.confident = isConfidentColourPrediction(colour);
+      // Occasion rankings are useful even when colour inference fails. Keep the
+      // two predictions independent so one image still yields manual occasion choices.
+      let colour = null;
+      let colourError = null;
+      try {
+        const colourPredictions = await classifier(url, COLOURS.map(value =>
+          "a product photo of a " + itemType + " whose main visible fabric or material colour is " + value.toLowerCase()
+        ));
+        colour = selectColourPrediction(colourPredictions);
+        colour.confident = isConfidentColourPrediction(colour);
+      } catch (error) {
+        colourError = error;
+      }
 
-      const combined = { occasion, colour };
+      const combined = { occasion, colour, colourError };
       // Do not poison retries with transient failures or uncertain predictions.
-      if (occasion.confident && colour.confident) resultCache.set(cacheKey, combined);
+      if (occasion.confident && colour?.confident) resultCache.set(cacheKey, combined);
       return combined;
     }
   };
