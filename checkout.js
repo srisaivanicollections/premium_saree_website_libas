@@ -8,6 +8,7 @@
   const esc = value => String(value ?? "").replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
   let cart = readCart();
   let categorySettings={};
+  let categorySettingsReady=false;
   let toastTimer = 0;
   let submitting = false;
   let lastSubmittedOrder = null;
@@ -30,8 +31,8 @@
   function currentProducts(){try{return Array.isArray(products)?products:[]}catch(_){return []}}
   function getProduct(id){return currentProducts().find(p=>Number(p.id)===Number(id))}
   function normalizeCategoryName(category){const value=String(category||"").trim().toLowerCase();if(value==="jewellery"||value==="jewelry")return "Jewellery";if(value==="sarees")return "Sarees";if(value==="dresses")return "Dresses";return "";}
-  function isCategoryEnabled(category){const normalized=normalizeCategoryName(category);const key=({Sarees:"categorySareesEnabled",Dresses:"categoryDressesEnabled",Jewellery:"categoryJewelryEnabled"})[normalized];if(!key)return false;const value=categorySettings[key];return value!==false&&value!=="false"&&value!==0&&value!=="0";}
-  async function loadCategorySettings(){const response=await fetch("./data/settings.json?cartSettings="+Date.now(),{cache:"no-store",headers:{Accept:"application/json"}});if(!response.ok)throw new Error("Could not load category settings.");const value=await response.json();if(!value||typeof value!=="object"||Array.isArray(value))throw new Error("Invalid category settings.");categorySettings=value;}
+  function isCategoryEnabled(category){if(!categorySettingsReady)return false;const normalized=normalizeCategoryName(category);const key=({Sarees:"categorySareesEnabled",Dresses:"categoryDressesEnabled",Jewellery:"categoryJewelryEnabled"})[normalized];if(!key)return false;const value=categorySettings[key];return value!==false&&value!=="false"&&value!==0&&value!=="0";}
+  async function loadCategorySettings(){const response=await fetch("./data/settings.json?cartSettings="+Date.now(),{cache:"no-store",headers:{Accept:"application/json"}});if(!response.ok)throw new Error("Could not load category settings.");const value=await response.json();if(!value||typeof value!=="object"||Array.isArray(value))throw new Error("Invalid category settings.");categorySettings=value;categorySettingsReady=true;}
   function visibleCart(){return cart.filter(row=>{const product=getProduct(row.id);return !!product&&isCategoryEnabled(product.category);});}
   function productImage(p){if(!p)return "";const src=String(p.image||"");return /^(https?:|data:|blob:)/i.test(src)?src:"https://raw.githubusercontent.com/srisaivanicollections/srisaivanicollections.github.io/main/"+src.replace(/^\.\//,"")}
   function count(){return visibleCart().reduce((sum,row)=>sum+row.quantity,0)}
@@ -70,6 +71,7 @@
   }
   function addProductToCart(id){
     const product=getProduct(id);
+    if(!categorySettingsReady)return {ok:false,reason:"settings-unavailable"};
     if(!product||!isCategoryEnabled(product.category))return {ok:false,reason:"unavailable"};
     if(product.availability===false||product.inStock===false||product.outOfStock===true)return {ok:false,reason:"out-of-stock"};
     const existing=cart.find(row=>row.id===Number(id));
@@ -143,7 +145,7 @@
     }
     form.classList.add("is-visible");form.hidden=false;
   }
-  function showCheckout(){if(!visibleCart().length){showToast("Your selected products are currently unavailable.");return}const content=$("#ssv-cart-content");if(!content)return;let form=$("#ssv-checkout-form");if(!form){renderCheckoutForm();form=$("#ssv-checkout-form")}form.classList.add("is-visible");const clearButton=$("#ssv-clear-bag");if(clearButton){clearButton.hidden=true;clearButton.disabled=true}renderCheckoutForm();content.scrollTop=0;$("#ssv-full-name")?.focus()}
+  function showCheckout(){if(!categorySettingsReady){showToast("Category availability is still being verified. Please try again shortly.");return}if(!visibleCart().length){showToast("Your selected products are currently unavailable.");return}const content=$("#ssv-cart-content");if(!content)return;let form=$("#ssv-checkout-form");if(!form){renderCheckoutForm();form=$("#ssv-checkout-form")}form.classList.add("is-visible");const clearButton=$("#ssv-clear-bag");if(clearButton){clearButton.hidden=true;clearButton.disabled=true}renderCheckoutForm();content.scrollTop=0;$("#ssv-full-name")?.focus()}
   function showStatus(message,success=false){const status=$("#ssv-checkout-status");if(!status)return;status.textContent=message;status.classList.toggle("is-success",success)}
 
   async function buildOrderPdf(order){
@@ -314,6 +316,7 @@
   }
   async function submitCheckout(form){
     if(submitting)return;
+    if(!categorySettingsReady){showStatus("Category availability could not be verified. Please try again before submitting your order.");return}
     const orderCart=visibleCart();
     if(!orderCart.length){showStatus("Your cart has no currently available products.");return}
     const fd=new FormData(form);
@@ -341,7 +344,7 @@
   }
   document.addEventListener("click",event=>{
     const add=event.target.closest("[data-add-cart]");
-    if(add){const result=addProductToCart(Number(add.dataset.addCart));if(!result.ok){showToast(result.reason==="max-quantity"?"Maximum quantity reached (10)":result.reason==="out-of-stock"?"This item is sold out":result.reason==="storage"?"Your bag could not be saved. Please try again.":"This item is no longer available");}return}
+    if(add){const result=addProductToCart(Number(add.dataset.addCart));if(!result.ok){showToast(result.reason==="max-quantity"?"Maximum quantity reached (10)":result.reason==="out-of-stock"?"This item is sold out":result.reason==="storage"?"Your bag could not be saved. Please try again.":result.reason==="settings-unavailable"?"Category availability is still being verified. Please try again shortly.":"This item is no longer available");}return}
         if(event.target.closest("[data-download-order]")){const button=event.target.closest("[data-download-order]");button.disabled=true;button.textContent="Preparing PDF…";downloadOrderDetails().finally(()=>{if(button.isConnected){button.disabled=false;button.textContent="Download order details"}});return}
     if(event.target.closest("#ssv-cart-trigger")){openCart();return}
     if(event.target.closest("[data-clear-cancel]")){closeClearBagDialog();return}
@@ -377,7 +380,7 @@
   const observer=new MutationObserver(()=>{
     if(attachCardButtons())updateCount();
   });
-  window.addEventListener("ssv:settings-updated",event=>{const next=event.detail?.settings;if(!next||typeof next!=="object")return;categorySettings={...next};updateCount();if($("#ssv-cart-layer")?.classList.contains("is-open"))renderCart();});
-  function init(){injectStylesAndShell();attachCardButtons();updateCount();observer.observe($("#products")||document.body,{childList:true,subtree:true});loadCategorySettings().then(()=>{updateCount();if($("#ssv-cart-layer")?.classList.contains("is-open"))renderCart();}).catch(()=>{categorySettings={categorySareesEnabled:false,categoryDressesEnabled:false,categoryJewelryEnabled:false};updateCount();if($("#ssv-cart-layer")?.classList.contains("is-open"))renderCart();});}
+  window.addEventListener("ssv:settings-updated",event=>{const next=event.detail?.settings;if(!next||typeof next!=="object")return;categorySettings={...next};categorySettingsReady=true;updateCount();if($("#ssv-cart-layer")?.classList.contains("is-open"))renderCart();});
+  function init(){injectStylesAndShell();attachCardButtons();updateCount();observer.observe($("#products")||document.body,{childList:true,subtree:true});loadCategorySettings().then(()=>{updateCount();if($("#ssv-cart-layer")?.classList.contains("is-open"))renderCart();}).catch(()=>{categorySettings={categorySareesEnabled:false,categoryDressesEnabled:false,categoryJewelryEnabled:false};categorySettingsReady=false;updateCount();if($("#ssv-cart-layer")?.classList.contains("is-open"))renderCart();});}
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init,{once:true});else init();
 })();
