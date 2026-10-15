@@ -142,7 +142,7 @@ test("A failed final catalogue refresh preserves partial-save results and warns 
 
 
 test("uncertain occasion enrichment retains all ranked suggestions and exposes manual multi-occasion saving", () => {
-  assert.match(aiSource, /rankings: ranked/);
+  assert.match(aiSource, /rankings\s*:\s*ranked/);
   assert.match(adminSource, /reviewSuggestions\.push\(\{id:candidate\.id,name:/);
   assert.match(adminSource, /SAVE SELECTED OCCASIONS/);
   assert.match(adminSource, /occasion prediction is uncertain/i);
@@ -190,7 +190,7 @@ test("Enrich Finder close animation and final badge sizing overrides exist", () 
 
 test("Enrich Finder keeps ranked occasion suggestions for a single uncertain product image", () => {
   assert.match(aiSource, /const predictions = await classifier\(url,/);
-  assert.match(aiSource, /rankings: ranked/);
+  assert.match(aiSource, /rankings\s*:\s*ranked/);
   assert.match(adminSource, /if\(needsOccasion&&!addOccasion\)\{[\s\S]*?const ranked=Array\.isArray\(occasion\?\.rankings\)/);
   assert.match(adminSource, /reviewSuggestions\.push\(\{id:candidate\.id,name:/);
   assert.match(adminSource, /rankings:ranked/);
