@@ -280,8 +280,8 @@ test("budget ranking is relevance-first, affordability-aware, and respects the h
   assert.match(source, /allMatches=allMatches\.filter\(p=>Number\(p\.price\)<=budget\)/);
   assert.match(source, /badges\.push\("Budget-Friendly"\)/);
   assert.match(source, /ssv-finder-budget-friendly/);
-  assert.match(source, /normalizedMerchandising\*0\.75/);
-  assert.match(source, /affordabilityScore\*0\.25/);
+  assert.match(source, /normalizedMerchandising\*0\.7/);
+  assert.match(source, /affordabilityScore\*0\.3/);
 });
 
 test("customer-facing Finder copy uses Colour wording", () => {
