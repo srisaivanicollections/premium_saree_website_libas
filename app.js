@@ -327,10 +327,9 @@ async function load(){
     ]);
     if(!Array.isArray(pr.value)||pr.value.length===0) throw new Error("Empty Git-backed catalog.");
     products=pr.value;
-    // Open the first storefront category that actually contains products, not the catch-all All tab.
-    category=ssvDefaultStorefrontCategory(products);
     githubOriginalIds=new Set(products.map(p=>Number(p.id)));
     settings=(sr.value&&typeof sr.value==="object")?{...sr.value}:{};
+    category=ssvDefaultStorefrontCategory(products);
     delete settings.githubToken;
     apply();
     render();
@@ -396,14 +395,7 @@ function productImageSrc(value){
 function apply(){all(".brand b").forEach(x=>x.textContent=settings.name||"SRI SAI VANI");const n=waNumber();$("#waMain").href=n?"https://wa.me/"+n+"?text="+encodeURIComponent("Hi Sri Sai Vani, I would like to know about your collection."): "#";$("#instagram").href=settings.instagram}
 
 
-function ssvDefaultStorefrontCategory(items=products){
-  const available=new Set((Array.isArray(items)?items:[]).map(p=>String(p?.category||"").trim().toLowerCase()).filter(Boolean));
-  for(const name of ["Sarees","Dresses","Jewellery"]){
-    if(available.has(name.toLowerCase()))return name;
-  }
-  const first=(Array.isArray(items)?items:[]).find(p=>String(p?.category||"").trim());
-  return first?String(first.category).trim():"Sarees";
-}
+function ssvDefaultStorefrontCategory(items=products){const list=Array.isArray(items)?items:[];const enabled=["Sarees","Dresses","Jewellery"].filter(name=>{const key=({Sarees:"categorySareesEnabled",Dresses:"categoryDressesEnabled",Jewellery:"categoryJewelryEnabled"})[name];const value=settings[key];return !(value===false||value==="false"||value===0||value==="0");});for(const name of enabled){if(list.some(p=>String(p?.category||"").trim().toLowerCase()===name.toLowerCase()))return name;}return enabled[0]||"Sarees";}
 function renderTabs(){$("#tabs").innerHTML=["All","Sarees","Dresses","Jewellery","Best Seller"].map(c=>'<button class="'+(category===c?"active":"")+'" data-tab="'+c+'">'+c.toUpperCase()+"</button>").join("")}
 function render(){
   renderTabs();
