@@ -70,14 +70,6 @@ function scoresByPrompt(predictions, prompts) {
   return prompts.map((prompt, index) => ({ index, score: byPrompt.get(prompt) }));
 }
 
-function scoresByPrompt(predictions, prompts) {
-  const byPrompt = new Map(prompts.map(prompt => [prompt, null]));
-  for (const item of Array.isArray(predictions) ? predictions : []) {
-    if (item && byPrompt.has(item.label) && Number.isFinite(Number(item.score))) byPrompt.set(item.label, Number(item.score));
-  }
-  return prompts.map((prompt, index) => ({ index, score: byPrompt.get(prompt) }));
-}
-
 function strongestPass(results, isConfident) {
   // Compare complete per-pass rankings, never average scores from different prompts.
   // Prefer a confident result, then the clearest top-vs-runner-up separation, then
