@@ -165,6 +165,7 @@
 .ssv-finder-badges span:first-child{display:inline-block}
 .ssv-finder-badges span:first-child{border:1px solid #C8B28A}
 .ssv-finder-badges span.ssv-finder-top-pick{background:#E4D8C5;color:#5D3B22;border-color:#C8B28A;font-weight:700;letter-spacing:.05em}
+.ssv-finder-badges span.ssv-finder-budget-friendly{background:#F5F0E8;color:#4B5B42;border-color:#B9C7AE;font-weight:600}
 .admin-occasion-field{display:flex;flex-wrap:wrap;gap:8px 14px;min-width:0;width:100%;margin:0;padding:10px 12px;border:1px solid #E7E0D8;border-radius:8px}
 .admin-occasion-field legend{padding:0 5px;font-size:12px;font-weight:600}
 .admin-occasion-field label{display:inline-flex;align-items:center;gap:5px;font-size:12px}

@@ -215,3 +215,77 @@ test("Enrich Finder exposes real processing progress and honours reduced motion"
   assert.match(adminSource, /@keyframes ssvEnrichGoldFlow/);
   assert.match(adminSource, /prefers-reduced-motion:reduce\)\{\.ssv-enrich-scan-icon/);
 });
+
+
+const rankStart = source.indexOf("  function rankFinderProducts(");
+const rankEnd = source.indexOf("\n  // Customer-side image inference is intentionally disabled.", rankStart);
+assert.ok(rankStart >= 0 && rankEnd > rankStart, "Finder ranking helper must be present");
+const rankFinderProducts = new Function(source.slice(rankStart, rankEnd) + "\nreturn rankFinderProducts;")();
+
+test("a strong bestseller stays ahead of a much cheaper new arrival with a selected budget", () => {
+  const products = [
+    { id: 1, price: 1000, bestSeller: true, newArrival: true },
+    { id: 2, price: 100, bestSeller: false, newArrival: true }
+  ];
+  assert.deepEqual(rankFinderProducts(products, 1000).map(product => product.id), [1, 2]);
+});
+
+test("a very large saving can overcome one merchandising tier, but not the strongest combined signal", () => {
+  const products = [
+    { id: 1, price: 990, bestSeller: true, newArrival: false },
+    { id: 2, price: 10, bestSeller: false, newArrival: true }
+  ];
+  assert.deepEqual(rankFinderProducts(products, 1000).map(product => product.id), [2, 1]);
+  const strongest = [
+    { id: 3, price: 1000, bestSeller: true, newArrival: true },
+    { id: 2, price: 100, bestSeller: false, newArrival: true }
+  ];
+  assert.deepEqual(rankFinderProducts(strongest, 1000).map(product => product.id), [3, 2]);
+});
+
+test("affordability improves ranking among equally merchandised products", () => {
+  const products = [
+    { id: 1, price: 900, bestSeller: false, newArrival: false },
+    { id: 2, price: 100, bestSeller: false, newArrival: false }
+  ];
+  assert.deepEqual(rankFinderProducts(products, 1000).map(product => product.id), [2, 1]);
+});
+
+test("without a budget, merchandising relevance stays primary and price breaks ties", () => {
+  const products = [
+    { id: 3, price: 900, bestSeller: true, newArrival: true },
+    { id: 2, price: 500, bestSeller: true, newArrival: true },
+    { id: 1, price: 100, bestSeller: false, newArrival: true }
+  ];
+  assert.deepEqual(rankFinderProducts(products, null).map(product => product.id), [2, 3, 1]);
+});
+
+test("ranking ties are deterministic and independent of catalogue order", () => {
+  const products = [
+    { id: 12, price: 400, bestSeller: true, newArrival: false },
+    { id: 3, price: 400, bestSeller: true, newArrival: false },
+    { id: 8, price: 400, bestSeller: true, newArrival: false }
+  ];
+  const expected = [3, 8, 12];
+  assert.deepEqual(rankFinderProducts(products, null).map(product => product.id), expected);
+  assert.deepEqual(rankFinderProducts([...products].reverse(), null).map(product => product.id), expected);
+});
+
+test("budget ranking is relevance-first, affordability-aware, and respects the hard budget", () => {
+  const products = [
+    { id: 1, price: 900, bestSeller: false, newArrival: false },
+    { id: 2, price: 100, bestSeller: false, newArrival: false }
+  ];
+  assert.deepEqual(rankFinderProducts(products, 1000).map(product => product.id), [2, 1]);
+  assert.match(source, /allMatches=allMatches\.filter\(p=>Number\(p\.price\)<=budget\)/);
+  assert.match(source, /badges\.push\("Budget-Friendly"\)/);
+  assert.match(source, /ssv-finder-budget-friendly/);
+  assert.match(source, /normalizedMerchandising\*0\.7/);
+  assert.match(source, /affordabilityScore\*0\.3/);
+});
+
+test("customer-facing Finder copy uses Colour wording", () => {
+  assert.doesNotMatch(source, /recorded colour/i);
+  assert.match(source, /Preferred colour/);
+  assert.match(source, /Colour: /);
+});

@@ -23,6 +23,7 @@ jobs:
           node --check saree-finder.js
           node --check saree-occasion-ai.js
           node --test tests/saree-occasion-ai.test.mjs
+          node --test tests/smart-finder-occasion.test.mjs
           node --input-type=module <<'NODE'
           import { readFileSync } from "node:fs";
           import assert from "node:assert/strict";
