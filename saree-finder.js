@@ -87,7 +87,7 @@
         });
         const settingsResponse=await fetch("./data/settings.json?finder="+Date.now(),{cache:"no-store",headers:{Accept:"application/json"}});if(!settingsResponse.ok)throw new Error("Category settings request failed.");const settings=await settingsResponse.json();if(!settings||typeof settings!=="object"||Array.isArray(settings))throw new Error("Category settings are invalid.");shopSettings=settings;
         loaded=true;syncCategoryOptions();populateColors();populateOccasions();
-        message.textContent=catalogue.length?"Choose your category and preferences, then find matching products.":"No supported products are currently available in the catalogue.";
+        message.textContent=![ "Sarees","Dresses","Jewellery" ].some(isCategoryEnabled)?"No categories are currently available.":(catalogue.length?"Choose your category and preferences, then find matching products.":"No supported products are currently available in the catalogue.");
         return true;
       }catch(error){
         shopSettings={categorySareesEnabled:false,categoryDressesEnabled:false,categoryJewelryEnabled:false};syncCategoryOptions();loadPromise=null;
