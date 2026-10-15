@@ -82,3 +82,18 @@ test("blocks checkout submission when no cart products remain enabled", () => {
   assert.match(checkout, /window\.addEventListener\("ssv:settings-updated",event=>\{const next=event\.detail\?\.settings;[\s\S]*?categorySettings=\{\.\.\.next\};categorySettingsReady=true;[\s\S]*?renderCart\(\);\}\);/,
     "a category settings update must refresh checkout eligibility and the visible cart");
 });
+
+
+test("returns all known occasions ranked for manual review when top predictions are close", () => {
+  const result = selectOccasionPrediction([
+    { label: prompts.festive, score: 0.31 },
+    { label: prompts.wedding, score: 0.29 },
+    { label: prompts.daily, score: 0.14 },
+    { label: "unknown label", score: 0.12 }
+  ]);
+  assert.deepEqual(result.rankings.map(item => item.label), ["festive", "wedding", "daily wear"]);
+  assert.deepEqual(result.rankings.map(item => item.rank), [1, 2, 3]);
+  assert.ok(result.rankings[0].score >= result.rankings[1].score);
+  assert.equal(result.label, "festive");
+  assert.equal(isConfidentOccasionPrediction(result), false, "close top scores should remain reviewable");
+});
