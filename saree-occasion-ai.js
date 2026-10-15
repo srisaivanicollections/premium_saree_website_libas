@@ -99,31 +99,36 @@ export async function createOccasionScanner() {
       if (!options.retry && resultCache.has(cacheKey)) return resultCache.get(cacheKey);
 
       const occasionRuns = [], colourRuns = [];
-      let occasion = null, colour = null, passes = 0;
+      let occasion = null, colour = null, colourError = null, passes = 0;
       for (let pass = 0; pass < MAX_INFERENCE_PASSES; pass++) {
         passes = pass + 1;
-        const [occasionPredictions, colourPredictions] = await Promise.all([
-          classifier(url, occasionPrompts(itemType, pass)),
-          classifier(url, colourPrompts(itemType, pass))
-        ]);
-        const occasionScores = scoresByPrompt(occasionPredictions, occasionPrompts(itemType, pass));
-        const colourScores = scoresByPrompt(colourPredictions, colourPrompts(itemType, pass));
+        const currentOccasionPrompts = occasionPrompts(itemType, pass);
+        const predictions = await classifier(url, currentOccasionPrompts);
+        const occasionScores = scoresByPrompt(predictions, currentOccasionPrompts);
         occasionRuns.push(occasionScores.map(item => item.score));
-        colourRuns.push(colourScores.map(item => item.score));
-
-        const occasionRanked = meanScores(occasionRuns, LABELS.map(item => item.label));
-        occasion = occasionResult(occasionRanked);
-        const colourRanked = meanScores(colourRuns, COLOURS);
-        colour = colourResult(colourRanked);
+        occasion = occasionResult(meanScores(occasionRuns, LABELS.map(item => item.label)));
         occasion.confident = isConfidentOccasionPrediction(occasion);
-        colour.confident = isConfidentColourPrediction(colour);
-        if (occasion.confident && colour.confident) break;
+
+        // Keep colour inference independent: a colour-model failure must not
+        // erase a usable occasion prediction. Retry colour on later bounded passes.
+        try {
+          const currentColourPrompts = colourPrompts(itemType, pass);
+          const colourPredictions = await classifier(url, currentColourPrompts);
+          const colourScores = scoresByPrompt(colourPredictions, currentColourPrompts);
+          colourRuns.push(colourScores.map(item => item.score));
+          colour = colourResult(meanScores(colourRuns, COLOURS));
+          colour.confident = isConfidentColourPrediction(colour);
+          colourError = null;
+        } catch (error) {
+          colourError = error;
+        }
+        if (occasion.confident && colour?.confident) break;
       }
 
-      const combined = { occasion: { ...occasion, passes }, colour: { ...colour, passes }, passes };
-      // Only cache completed deterministic inference results. Errors propagate so
-      // Admin never mistakes a failed model call for a valid empty prediction.
-      if (occasion?.labels?.length && COLOURS.includes(colour?.label)) resultCache.set(cacheKey, combined);
+      const combined = { occasion: { ...occasion, passes }, colour: colour ? { ...colour, passes } : null, colourError, passes };
+      // Cache only complete confident results. Transient failures and uncertain
+      // predictions remain retryable, and Admin can report real failures.
+      if (occasion?.confident && colour?.confident) resultCache.set(cacheKey, combined);
       return combined;
     }
   };
