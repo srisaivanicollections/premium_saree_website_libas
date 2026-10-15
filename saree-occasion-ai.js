@@ -70,15 +70,30 @@ function scoresByPrompt(predictions, prompts) {
   return prompts.map((prompt, index) => ({ index, score: byPrompt.get(prompt) }));
 }
 
-function meanScores(runs, labels) {
-  // Use strongest evidence observed per approved label. Prompt variants differ,
-  // so averaging them can dilute or reverse a stronger visual signal.
-  return labels.map((label, index) => {
-    const values = runs.map(run => run[index]).filter(Number.isFinite);
-    return { label, score: values.length ? Math.max(...values) : NaN, index };
-  }).filter(item => Number.isFinite(item.score))
-    .sort((a, b) => b.score - a.score || a.index - b.index)
-    .map(({ label, score }) => ({ label, score }));
+function scoresByPrompt(predictions, prompts) {
+  const byPrompt = new Map(prompts.map(prompt => [prompt, null]));
+  for (const item of Array.isArray(predictions) ? predictions : []) {
+    if (item && byPrompt.has(item.label) && Number.isFinite(Number(item.score))) byPrompt.set(item.label, Number(item.score));
+  }
+  return prompts.map((prompt, index) => ({ index, score: byPrompt.get(prompt) }));
+}
+
+function strongestPass(results, isConfident) {
+  // Compare complete per-pass rankings, never average scores from different prompts.
+  // Prefer a confident result, then the clearest top-vs-runner-up separation, then
+  // the top score. Strict comparisons preserve the earliest pass on exact ties.
+  let best = null;
+  for (const result of results) {
+    if (!best) { best = result; continue; }
+    const candidateConfidence = isConfident(result) ? 1 : 0;
+    const bestConfidence = isConfident(best) ? 1 : 0;
+    if (candidateConfidence > bestConfidence ||
+        (candidateConfidence === bestConfidence && result.margin > best.margin) ||
+        (candidateConfidence === bestConfidence && result.margin === best.margin && result.score > best.score)) {
+      best = result;
+    }
+  }
+  return best;
 }
 
 function occasionResult(ranked) {
@@ -102,7 +117,7 @@ export async function createOccasionScanner() {
       const cacheKey = url + "|" + itemType;
       if (!options.retry && resultCache.has(cacheKey)) return resultCache.get(cacheKey);
 
-      const occasionRuns = [], colourRuns = [];
+      const occasionResults = [], colourResults = [];
       let occasion = null;
       let colour = null;
       let colourError = null;
@@ -112,20 +127,29 @@ export async function createOccasionScanner() {
         const currentOccasionPrompts = occasionPrompts(itemType, pass);
         // Runtime/image/model errors deliberately propagate to Admin diagnostics.
         const predictions = await classifier(url, currentOccasionPrompts);
-        const occasionScores = scoresByPrompt(predictions, currentOccasionPrompts);
-        occasionRuns.push(occasionScores.map(item => item.score));
-        occasion = occasionResult(meanScores(occasionRuns, LABELS.map(item => item.label)));
-        occasion.confident = isConfidentOccasionPrediction(occasion);
+        const occasionScores = scoresByPrompt(predictions, currentOccasionPrompts)
+          .map((item, index) => ({ label: LABELS[index].label, score: item.score }))
+          .filter(item => Number.isFinite(item.score))
+          .sort((a, b) => b.score - a.score || LABELS.findIndex(label => label.label === a.label) - LABELS.findIndex(label => label.label === b.label));
+        if (!occasionScores.length) throw new Error("The image model returned no valid occasion predictions.");
+        const passOccasion = occasionResult(occasionScores);
+        passOccasion.confident = isConfidentOccasionPrediction(passOccasion);
+        occasionResults.push(passOccasion);
+        occasion = strongestPass(occasionResults, isConfidentOccasionPrediction);
 
         // Keep colour inference independent: a colour-model failure must not
         // erase a usable occasion prediction. Retry colour on later bounded passes.
         try {
           const currentColourPrompts = colourPrompts(itemType, pass);
           const colourPredictions = await classifier(url, currentColourPrompts);
-          const colourScores = scoresByPrompt(colourPredictions, currentColourPrompts);
-          colourRuns.push(colourScores.map(item => item.score));
-          colour = colourResult(meanScores(colourRuns, COLOURS));
-          colour.confident = isConfidentColourPrediction(colour);
+          const colourScores = scoresByPrompt(colourPredictions, currentColourPrompts)
+            .map((item, index) => ({ label: COLOURS[index], score: item.score }))
+            .filter(item => Number.isFinite(item.score))
+            .sort((a, b) => b.score - a.score || COLOURS.indexOf(a.label) - COLOURS.indexOf(b.label));
+          const passColour = colourResult(colourScores);
+          passColour.confident = isConfidentColourPrediction(passColour);
+          colourResults.push(passColour);
+          colour = strongestPass(colourResults, isConfidentColourPrediction);
           colourError = null;
         } catch (error) {
           colourError = error;
