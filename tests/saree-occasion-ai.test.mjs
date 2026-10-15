@@ -40,7 +40,7 @@ test("keeps tied but low-confidence occasions uncertain", () => {
     { label: prompts.wedding, score: 0.292 },
     { label: prompts.daily, score: 0.102 }
   ]);
-  assert.deepEqual(result.labels, ["festive", "wedding"]);
+  assert.deepEqual(result.labels, ["wedding", "festive"]);
   assert.equal(isConfidentOccasionPrediction(result), false);
 });
 
