@@ -103,7 +103,7 @@ export async function createOccasionScanner() {
       for (let pass = 0; pass < MAX_INFERENCE_PASSES; pass++) {
         passes = pass + 1;
         const currentOccasionPrompts = occasionPrompts(itemType, pass);
-        // Runtime/image/model errors in the primary occasion inference propagate to Admin diagnostics.
+        // Runtime/image/model errors deliberately propagate to Admin diagnostics.
         const predictions = await classifier(url, currentOccasionPrompts);
         const occasionScores = scoresByPrompt(predictions, currentOccasionPrompts);
         occasionRuns.push(occasionScores.map(item => item.score));
