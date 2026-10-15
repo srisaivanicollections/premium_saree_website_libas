@@ -10888,10 +10888,10 @@ async function ssvEnrichFinderCatalogue({allMissing=false,productId=null,onProgr
     try{
      await new Promise(resolve=>setTimeout(resolve,0));
      const result=await scanner.classify(candidate.image,candidate.category);imageProcessed++;
-     const occasion=result?.occasion||result,colour=result?.colour||null,label=ssvOccasionLabel(occasion?.label);
+     const occasion=result?.occasion||result,colour=result?.colour||null,occasionLabels=[...new Set((Array.isArray(occasion?.labels)&&occasion.labels.length?occasion.labels:[occasion?.label]).map(ssvOccasionLabel).filter(value=>SSV_OCCASION_LABELS.has(value)))],label=occasionLabels[0]||ssvOccasionLabel(occasion?.label);
      const candidateNeeds=ssvEnrichFieldNeeds(candidate);
      const needsOccasion=candidateNeeds.occasion,needsColour=candidateNeeds.colour;
-     const addOccasion=needsOccasion&&!!occasion?.confident&&!!label;
+     const addOccasion=needsOccasion&&!!occasion?.confident&&occasionLabels.length>0;
      const isJewellery=normalizeCategoryName(candidate.category)==="Jewellery";const colourToSave=isJewellery?"Gold":colour?.label;const addColour=needsColour&&(isJewellery||(!!colour?.confident&&SSV_FINDER_COLOURS.has(colour.label)));
      if(needsOccasion&&!addOccasion)occasionUncertain++;
      if(needsColour&&!addColour){
@@ -10902,10 +10902,6 @@ async function ssvEnrichFinderCatalogue({allMissing=false,productId=null,onProgr
        .map((item,index)=>({label:item.label,score:Number(item.score),rank:Number(item.rank)||index+1}))
        .sort((a,b)=>a.rank-b.rank):[];
       colourReviewSuggestions.push({id:candidate.id,name:String(candidate.name||("Product "+candidate.id)),image:String(candidate.image||""),category:String(candidate.category||""),reason:colour?"Colour prediction did not meet the automatic-save confidence threshold.":"No valid colour prediction was returned.",rankings:colourRankings});
-     }
-     if(needsOccasion&&!addOccasion){
-      const ranked=Array.isArray(occasion?.rankings)?occasion.rankings.filter(item=>SSV_OCCASION_LABELS.has(ssvOccasionLabel(item.label))&&Number.isFinite(Number(item.score))).map(item=>({label:ssvOccasionLabel(item.label),score:Number(item.score),rank:Number(item.rank)||0})).sort((a,b)=>a.rank-b.rank):[];
-      reviewSuggestions.push({id:candidate.id,name:String(candidate.name||("Product "+candidate.id)),image:String(candidate.image||""),category:String(candidate.category||""),reason:"Occasion prediction did not meet the automatic-save confidence threshold.",rankings:ranked});
      }
      if((needsOccasion&&!addOccasion)||(needsColour&&!addColour))if(!uncertainProductIds.includes(candidate.id))uncertainProductIds.push(candidate.id);
      if(!addOccasion&&!addColour){skipped++;continue;}
@@ -10919,7 +10915,7 @@ async function ssvEnrichFinderCatalogue({allMissing=false,productId=null,onProgr
       if(current.image!==candidate.image){skipped++;stop=true;break;}
       const next={...current};let changed=false;
       if(addOccasion&&ssvHasNoOccasionMetadata(current)&&!ssvHasOccasionDecision(current)){
-       next.occasions=[label];next.occasionMetadata={source:"ai",model:"CLIP-ViT-B-32",score:Number(occasion.score.toFixed(4)),margin:Number(occasion.margin.toFixed(4)),image:String(current.image),version:1};changed=true;
+       next.occasions=occasionLabels;next.occasionMetadata={source:"ai",model:"CLIP-ViT-B-32",score:Number(occasion.score.toFixed(4)),margin:Number(occasion.margin.toFixed(4)),scores:occasionLabels.map(value=>({label:value,score:Number(occasion.score.toFixed(4))})),image:String(current.image),version:1};changed=true;
       }
       if(addColour&&ssvHasNoColour(current)){
        next.color=colourToSave;next.colourMetadata=isJewellery?{source:"default",model:"jewellery-default",image:String(current.image),version:1}:{source:"ai",model:"CLIP-ViT-B-32",score:Number(colour.score.toFixed(4)),margin:Number(colour.margin.toFixed(4)),image:String(current.image),version:1};changed=true;
@@ -10933,20 +10929,20 @@ async function ssvEnrichFinderCatalogue({allMissing=false,productId=null,onProgr
        writeCompleted=true;
        const verify=await githubReadJsonFresh("data/products.json");
        const savedProduct=Array.isArray(verify.value)?verify.value.find(p=>Number(p.id)===Number(current.id)):null;
-       const occasionVerified=!addOccasion||(Array.isArray(savedProduct?.occasions)&&savedProduct.occasions.includes(label)&&savedProduct?.occasionMetadata?.image===String(current.image));
+       const occasionVerified=!addOccasion||(Array.isArray(savedProduct?.occasions)&&occasionLabels.every(value=>savedProduct.occasions.includes(value))&&savedProduct?.occasionMetadata?.image===String(current.image));
        const colourVerified=!addColour||(savedProduct?.color===colourToSave&&savedProduct?.colourMetadata?.image===String(current.image));
        if(!savedProduct||!occasionVerified||!colourVerified)throw new Error("Save verification failed: GitHub did not return the expected metadata for this product.");
-       processed++;if(addOccasion)occasionsSaved++;if(addColour)coloursSaved++;saved=true;
+       processed++;if(addOccasion)occasionsSaved+=occasionLabels.length;if(addColour)coloursSaved++;saved=true;
       }catch(e){
        if(isGithubShaConflict(e)&&attempt<2){await new Promise(resolve=>setTimeout(resolve,300*(attempt+1)));continue;}
        if(writeAttempted){
         try{
          const recovery=await githubReadJsonFresh("data/products.json");
          const persisted=Array.isArray(recovery.value)?recovery.value.find(p=>Number(p.id)===Number(current.id)):null;
-         const occasionPersisted=!addOccasion||(Array.isArray(persisted?.occasions)&&persisted.occasions.includes(label)&&persisted?.occasionMetadata?.image===String(current.image));
+         const occasionPersisted=!addOccasion||(Array.isArray(persisted?.occasions)&&occasionLabels.every(value=>persisted.occasions.includes(value))&&persisted?.occasionMetadata?.image===String(current.image));
          const colourPersisted=!addColour||(persisted?.color===colourToSave&&persisted?.colourMetadata?.image===String(current.image));
          if(persisted&&persisted.image===current.image&&occasionPersisted&&colourPersisted){
-          processed++;if(addOccasion)occasionsSaved++;if(addColour)coloursSaved++;saved=true;stop=true;break;
+          processed++;if(addOccasion)occasionsSaved+=occasionLabels.length;if(addColour)coloursSaved++;saved=true;stop=true;break;
          }
          throw new Error("Save outcome unknown: the write was attempted but expected metadata could not be confirmed. Refresh the catalogue before retrying.");
         }catch(recoveryError){
