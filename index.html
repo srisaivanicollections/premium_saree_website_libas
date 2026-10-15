@@ -9958,6 +9958,7 @@ function apply(){
 }
 function normalizeCategoryName(name){const value=String(name||"").trim().toLowerCase();if(value==="jewellery"||value==="jewelry")return "Jewellery";if(value==="sarees")return "Sarees";if(value==="dresses")return "Dresses";return "";}
 function isCategoryEnabled(name){if(!categorySettingsReady)return false;const normalized=normalizeCategoryName(name);const key=({Sarees:"categorySareesEnabled",Dresses:"categoryDressesEnabled",Jewellery:"categoryJewelryEnabled"})[normalized];return !!key&&!(settings[key]===false||settings[key]==="false"||settings[key]===0||settings[key]==="0")}
+window.addEventListener("ssv:settings-updated",event=>{if(event.detail?.settings&&typeof event.detail.settings==="object")categorySettingsReady=true;});
 function renderTabs(){const enabled=["Sarees","Dresses","Jewellery"].filter(isCategoryEnabled);if(categorySettingsReady&&category!=="All"&&category!=="Best Seller"&&!enabled.includes(category))category="All";const tabs=["All","Best Seller",...enabled];$("#tabs").innerHTML=tabs.map(c=>'<button class="'+(category===c?"active":"")+'" data-tab="'+c+'">'+(c==="Jewellery"?"JEWELLERY":c.toUpperCase())+"</button>").join("")}
 function render(){
   renderTabs();
