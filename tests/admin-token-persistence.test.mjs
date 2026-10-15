@@ -3,10 +3,10 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 
 const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
-const start = html.indexOf("function getSavedGithubToken(){");
-const end = html.indexOf("\n/* Keep the token accessor available", start);
-assert.ok(start >= 0 && end > start, "token accessor must be present");
-const getterSource = html.slice(start, end);
+const getterStart = html.indexOf("function getSavedGithubToken(){");
+const getterEnd = html.indexOf("\n/* Keep the token accessor available", getterStart);
+assert.ok(getterStart >= 0 && getterEnd > getterStart, "token accessor must be present");
+const getterSource = html.slice(getterStart, getterEnd);
 
 function storage(seed = {}) {
   const values = new Map(Object.entries(seed));
@@ -33,38 +33,75 @@ function runGetter(localSeed = {}, sessionSeed = {}) {
   return { token: getSavedGithubToken(), localStorage, sessionStorage, window };
 }
 
-test("canonical saved token is reused even if its prefix is not recognized by an older build", () => {
+function functionSource(name, nextName) {
+  const start = html.indexOf(name);
+  const end = html.indexOf(nextName, start);
+  assert.ok(start >= 0 && end > start, `expected function range: ${name}`);
+  return html.slice(start, end);
+}
+
+test("canonical saved token is reused when its prefix is not recognized by this client", () => {
   const result = runGetter({ ssv_github_token_v1: "future_github_token_format" });
   assert.equal(result.token, "future_github_token_format");
 });
 
-test("legacy token is recovered and migrated to the canonical localStorage key", () => {
+test("empty or missing canonical token is treated as missing", () => {
+  assert.equal(runGetter({ ssv_github_token_v1: "   " }).token, "");
+  assert.equal(runGetter().token, "");
+});
+
+test("legacy localStorage token is recovered and migrated to the canonical key", () => {
   const legacy = "ghp_" + "testToken012345678901234567890123456789";
   const result = runGetter({ github_token: legacy });
   assert.equal(result.token, legacy);
   assert.equal(result.localStorage.getItem("ssv_github_token_v1"), legacy);
 });
 
-test("sessionStorage token remains recoverable and is migrated for persistence", () => {
+test("sessionStorage token is recovered and migrated for persistence", () => {
   const legacy = "github_pat_" + "testToken012345678901234567890123456789";
   const result = runGetter({}, { gh_admin_token_libas: legacy });
   assert.equal(result.token, legacy);
   assert.equal(result.localStorage.getItem("ssv_github_token_v1"), legacy);
 });
 
-test("missing token remains missing and OTP verification is still required", () => {
-  assert.equal(runGetter().token, "");
-  const verifyStart = html.indexOf("async function verifyAdminOtp()");
-  const verifyEnd = html.indexOf("\nfunction logoutAdmin()", verifyStart);
-  const verify = html.slice(verifyStart, verifyEnd);
-  assert.ok(verify.indexOf('await callOtpWorker("verify",email,otp)') >= 0);
-  assert.ok(verify.indexOf('await callOtpWorker("verify",email,otp)') < verify.indexOf("const token=getSavedGithubToken()"));
+test("unrelated application storage values are not treated as tokens", () => {
+  const result = runGetter({ theme: "dark", cart: '{"token":"not-a-github-token"}' });
+  assert.equal(result.token, "");
+});
+
+test("OTP is verified before the saved token is read", () => {
+  const verify = functionSource("async function verifyAdminOtp()", "\nfunction logoutAdmin()");
+  const otpIndex = verify.indexOf('await callOtpWorker("verify",email,otp)');
+  const tokenIndex = verify.indexOf("const token=getSavedGithubToken()");
+  assert.ok(otpIndex >= 0, "OTP verification call must exist");
+  assert.ok(tokenIndex > otpIndex, "token must not be used before OTP verification");
+});
+
+test("401 and 403 catalogue failures reopen token setup without opening Admin Studio", () => {
+  const verify = functionSource("async function verifyAdminOtp()", "\nfunction logoutAdmin()");
+  assert.match(verify, /catalogError\?\.status===401\|\|catalogError\?\.status===403/);
+  assert.match(verify, /showGithubStorageSetup\(\)/);
+  assert.match(verify, /return false;/);
+  assert.ok(verify.indexOf("showGithubStorageSetup()") < verify.indexOf("adminSessionActive=true"));
+});
+
+test("replacement token is checked against products and settings before success", () => {
+  const connect = functionSource("async function connectGithubStorage()", "\nfunction resetOtpScreen()");
+  assert.match(connect, /await githubReadJson\("data\/products\.json"\)/);
+  assert.match(connect, /await githubReadJsonFresh\("data\/settings\.json"\)/);
+  assert.match(connect, /hideGithubStorageSetup\(\)/);
+  assert.ok(connect.indexOf('await githubReadJson("data/products.json")') < connect.indexOf("hideGithubStorageSetup()"));
+});
+
+test("failed replacement restores the previous canonical token", () => {
+  const connect = functionSource("async function connectGithubStorage()", "\nfunction resetOtpScreen()");
+  assert.match(connect, /const previousLocal=localStorage\.getItem\(GITHUB_TOKEN_KEY\)\|\|""/);
+  assert.match(connect, /if\(previousLocal\)localStorage\.setItem\(GITHUB_TOKEN_KEY,previousLocal\)/);
+  assert.match(connect, /else localStorage\.removeItem\(GITHUB_TOKEN_KEY\)/);
 });
 
 test("logout ends the session without deleting the saved token", () => {
-  const logoutStart = html.indexOf("function logoutAdmin()");
-  const logoutEnd = html.indexOf("\nif(!window.__LIBAS_ADMIN_OTP_BOUND)", logoutStart);
-  const logout = html.slice(logoutStart, logoutEnd);
+  const logout = functionSource("function logoutAdmin()", "\nif(!window.__LIBAS_ADMIN_OTP_BOUND)");
   assert.match(logout, /adminSessionActive=false/);
   assert.match(logout, /otpAdminSession=false/);
   assert.doesNotMatch(logout, /localStorage\.removeItem|sessionStorage\.removeItem|localStorage\.clear|sessionStorage\.clear/);
