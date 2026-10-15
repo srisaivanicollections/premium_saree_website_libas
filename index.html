@@ -10802,7 +10802,7 @@ async function ssvEnrichFinderCatalogue({allMissing=false,productId=null,onProgr
      const isJewellery=normalizeCategoryName(candidate.category)==="Jewellery";const colourToSave=isJewellery?"Gold":colour?.label;const addColour=needsColour&&SSV_FINDER_COLOURS.has(colourToSave);
      if(needsOccasion&&!occasion?.confident)occasionUncertain++;
      if(needsOccasion&&!addOccasion&&!uncertainProductIds.includes(candidate.id))uncertainProductIds.push(candidate.id);
-     if(needsColour&&!addColour)throw new Error("Colour inference did not return a valid approved colour.");
+
      if(!addOccasion&&!addColour){
       if(needsColour&&!addColour){const reason="Colour inference did not return a valid approved colour.";failed++;failures.push({id:candidate.id,reason});if(!uncertainProductIds.includes(candidate.id))uncertainProductIds.push(candidate.id);}
       skipped++;continue;
