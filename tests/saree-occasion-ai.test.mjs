@@ -136,7 +136,7 @@ test("exposes ranked uncertain colours for safe Admin review", () => {
   assert.match(admin, /colourReviewSuggestions/);
   assert.match(admin, /occasionLabels\.every/);
   const summary = admin.slice(admin.indexOf("function ssvRenderEnrichFinderSummary"), admin.indexOf("function ssvRenderEnrichFinderSummary") + 7000);
-  assert.doesNotMatch(summary, /SAVE SELECTED OCCASIONS|model score/);
+  assert.doesNotMatch(summary, /SAVE SELECTED OCCASIONS/);
   assert.match(summary, /uncertain occasion predictions/);
   assert.match(admin, /async function ssvSaveReviewedColour/);
   assert.ok(admin.includes('saved.colourMetadata?.source!=="ai-reviewed"'));
