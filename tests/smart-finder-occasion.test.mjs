@@ -213,13 +213,12 @@ test("Enrich Finder close animation and final badge sizing overrides exist", () 
 });
 
 
-test("Enrich Finder returns occasion rankings internally without exposing them for uncertain results", () => {
-  assert.match(aiSource, /const predictions = await classifier\(url,/);
-  assert.match(aiSource, /rankings: ranked/);
-  assert.match(aiSource, /const labels = ranked/);
-  assert.match(adminSource, /low-confidence occasion predictions/);
-  assert.doesNotMatch(adminSource, /SAVE SELECTED OCCASIONS/);
-  assert.doesNotMatch(adminSource, /Occasion prediction is uncertain\. Review the ranked suggestions/);
+test("Enrich Finder uses automated inference without a manual colour-review workflow", () => {
+  assert.match(aiSource, /MAX_INFERENCE_PASSES = 3/);
+  assert.match(adminSource, /const addColour=needsColour&&\(isJewellery\|\|SSV_FINDER_COLOURS\.has\(colour\?\.label\)\)/);
+  assert.doesNotMatch(adminSource, /ssvSaveReviewedColour/);
+  assert.doesNotMatch(adminSource, /colourReviewSuggestions/);
+  assert.doesNotMatch(adminSource, /SAVE REVIEWED COLOUR/);
 });
 
 test("TOP PICK sizing targets the rendered Smart Finder badge without adding popup entrance animation", () => {
