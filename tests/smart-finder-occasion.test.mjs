@@ -175,7 +175,8 @@ test("manual occasion review shows product image and identity with mobile-safe r
 test("Enrich Finder keeps ranked occasion suggestions for a single uncertain product image", () => {
   assert.match(aiSource, /const predictions = await classifier\(url,/);
   assert.match(aiSource, /rankings: ranked/);
-  assert.match(adminSource, /if\(needsOccasion&&!addOccasion\)\{[\s\S]*?const ranked=Array\.isArray\(occasion\?\.rankings\)/);\n  assert.match(adminSource, /reviewSuggestions\.push\(\{[\s\S]*?rankings:ranked/);
+  assert.match(adminSource, /if\(needsOccasion&&!addOccasion\)\{[\s\S]*?const ranked=Array\.isArray\(occasion\?\.rankings\)/);
+  assert.match(adminSource, /reviewSuggestions\.push\(\{[\s\S]*?rankings:ranked/);
   assert.match(adminSource, /Occasion prediction is uncertain\. Review the ranked suggestions/);
   assert.match(adminSource, /SAVE SELECTED OCCASIONS/);
 });
