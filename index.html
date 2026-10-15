@@ -10937,7 +10937,7 @@ async function ssvEnrichFinderCatalogue({allMissing=false,productId=null,onProgr
     const refreshed=await githubReadJsonFresh("data/products.json");
     if(!Array.isArray(refreshed.value))throw new Error("Product catalogue is invalid.");
     products=refreshed.value;githubOriginalIds=new Set(products.map(p=>Number(p.id)));
-    paint(summary+(failures.length?" Details: "+failures.map(item=>"Product "+item.id+": "+item.reason).join(" | "):""));
+    paint(summary+(failures.length?" Details: "+failures.map(item=>item.reason).join(" · "):""));
    }catch(refreshError){
     refreshFailed=true;
     const refreshMessage="Final catalogue refresh failed. Some saves may already be complete. Refresh the catalogue before retrying. "+ssvFinderFailureReason(refreshError);
