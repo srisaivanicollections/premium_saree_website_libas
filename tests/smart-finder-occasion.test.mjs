@@ -159,3 +159,14 @@ test("concurrent occasion review saves filter the latest result list instead of 
   assert.ok(adminSource.includes('result.reviewSuggestions=(Array.isArray(result.reviewSuggestions)?result.reviewSuggestions:[]).filter(item=>String(item.id)!==String(suggestion.id));'));
   assert.ok(!adminSource.includes('result.reviewSuggestions=suggestions.filter(item=>String(item.id)!==String(suggestion.id));'));
 });
+
+ 
+test("manual occasion review shows product image and identity with mobile-safe review controls", () => {
+  assert.match(adminSource, /ssv-enrich-review-image/);
+  assert.match(adminSource, /preview\.src=String\(suggestion\.image\|\|\"\"\)/);
+  assert.match(adminSource, /suggestion\.name\+" product image"/);
+  assert.match(adminSource, /suggestion\.category\?" · "\+suggestion\.category/);
+  assert.match(adminSource, /max-width:100vw/);
+  assert.match(adminSource, /ssv-enrich-review-card button\{min-height:44px/);
+  assert.match(adminSource, /overflow-wrap:anywhere/);
+});
