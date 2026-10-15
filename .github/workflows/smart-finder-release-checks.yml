@@ -279,6 +279,44 @@ jobs:
             }
           }
 
+          async function runDisabledOnlyCheckoutSafety(label, browser, category, viewport, mobile) {
+            const safetyContext = await browser.newContext({ viewport, isMobile: mobile, hasTouch: mobile });
+            const safetyPage = await safetyContext.newPage();
+            const safetyState = await installMocks(safetyPage);
+            try {
+              await safetyPage.goto("http://127.0.0.1:4173/");
+              await safetyPage.locator("#products [data-product-id]").first().waitFor();
+              await safetyPage.locator("#ssv-smart-finder-trigger").click();
+              await safetyPage.locator("#ssv-finder-category").selectOption(category);
+              await safetyPage.locator("#ssv-finder-budget").fill("");
+              await safetyPage.locator("#ssv-finder-form button[type='submit']").click();
+              await safetyPage.locator(".ssv-finder-result .ssv-finder-add").first().waitFor();
+              const deadline = Date.now() + 5000;
+              while (safetyState.settingsReads < 2 && Date.now() < deadline) await safetyPage.waitForTimeout(25);
+              assert.ok(safetyState.settingsReads >= 2, label + ": checkout category settings loaded");
+              await safetyPage.locator(".ssv-finder-result .ssv-finder-add").first().click();
+              await safetyPage.waitForFunction(() => JSON.parse(localStorage.getItem("ssv_guest_cart_v1") || "[]").length === 1);
+              await safetyPage.locator(".ssv-finder-close").click();
+              await safetyPage.locator("#ssv-cart-trigger").click();
+              assert.equal(await safetyPage.locator(".ssv-cart-item").count(), 1, label + ": safety case has one cart row");
+              await safetyPage.locator("#ssv-proceed-checkout").click();
+              const staleForm = await safetyPage.locator("#ssv-checkout-form").elementHandle();
+              assert.ok(staleForm, label + ": checkout opened before category was disabled");
+              const settingKey = ({ Sarees: "categorySareesEnabled", Dresses: "categoryDressesEnabled", Jewellery: "categoryJewelryEnabled" })[category];
+              safetyState.settings[settingKey] = false;
+              await safetyPage.evaluate(settings => window.dispatchEvent(new CustomEvent("ssv:settings-updated", { detail: { settings } })), safetyState.settings);
+              await staleForm.evaluate(form => {
+                document.body.appendChild(form);
+                form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+              });
+              await safetyPage.waitForFunction(() => document.querySelector("#ssv-checkout-status")?.textContent.includes("no currently available products"));
+              assert.equal(safetyState.workerActions.filter(action => action === "submitOrder").length, 0,
+                label + ": stale checkout submit with only disabled-category product is blocked");
+            } finally {
+              await safetyContext.close();
+            }
+          }
+
           async function runJourney(label, viewport, mobile) {
             const browser = await chromium.launch({ headless: true });
             const context = await browser.newContext({ viewport, isMobile: mobile, hasTouch: mobile });
@@ -295,7 +333,10 @@ jobs:
               const expectedBestSellerBadges = productsFixture.filter(p => p.bestSeller === true || p.bestSeller === "true" || p.bestSeller === 1 || p.bestSeller === "1").length;
               assert.equal(await page.locator("#products .pill-best").count(), expectedBestSellerBadges, label + ": original Best Seller ribbons remain on the same products");
 
-              for (const [index, category] of ["Sarees", "Dresses", "Jewellery"].entries()) await runCategoryToggleJourney(label, context, category, index);
+              for (const [index, category] of ["Sarees", "Dresses", "Jewellery"].entries()) {
+                await runCategoryToggleJourney(label, context, category, index);
+                await runDisabledOnlyCheckoutSafety(label, browser, category, viewport, mobile);
+              }
 
               await page.locator('[data-tab="Dresses"]').click();
               assert.equal(await page.locator("#products [data-product-id]").count(), 2, label + ": Dresses category filter");
