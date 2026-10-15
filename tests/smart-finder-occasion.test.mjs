@@ -173,7 +173,8 @@ test("occasion enrichment always saves highest-scoring matches, including low-co
   assert.doesNotMatch(adminSource, /const addOccasion=needsOccasion&&!!occasion\?\.confident/);
   assert.match(adminSource, /if\(needsOccasion&&!occasion\?\.confident\)occasionUncertain\+\+/);
   assert.match(adminSource, /next\.occasions=occasionLabels/);
-  assert.match(adminSource, /occasionLabels\.every(value=>savedProduct\.occasions\.includes(value))/);
+  assert.match(adminSource, /occasionLabels\.every/);
+  assert.match(adminSource, /SSV_OCCASION_LABELS\.has\(value\)/);
   assert.doesNotMatch(adminSource, /SAVE SELECTED OCCASIONS/);
   assert.doesNotMatch(adminSource, /reviewSuggestions\.push\(\{id:candidate\.id,name:/);
 });
@@ -182,7 +183,8 @@ test("automatic multi-occasion save preserves product fields and verifies all ti
   assert.match(adminSource, /const next=\{\.\.\.current\}/);
   assert.match(adminSource, /next\.occasions=occasionLabels/);
   assert.match(adminSource, /await githubWriteJson\("data\/products\.json"/);
-  assert.match(adminSource, /occasionLabels\.every(value=>savedProduct\.occasions\.includes(value))/);
+  assert.match(adminSource, /occasionLabels\.every/);
+  assert.match(adminSource, /SSV_OCCASION_LABELS\.has\(value\)/);
   assert.match(adminSource, /persisted\?\.occasionMetadata\?\.image===String\(current\.image\)/);
 });
 
