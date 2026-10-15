@@ -228,6 +228,9 @@ jobs:
           async function runCategoryToggleJourney(label, context, category, previouslyAddedCount) {
             const togglePage = await context.newPage();
             const toggleState = await installMocks(togglePage);
+            const categorySettingKey = ({ Sarees: "categorySareesEnabled", Dresses: "categoryDressesEnabled", Jewellery: "categoryJewelryEnabled" })[category];
+            // This isolated journey explicitly enables the target category in its mock settings so it can test OFF/ON behavior even when production has it disabled.
+            toggleState.settings[categorySettingKey] = true;
             try {
               await togglePage.goto("http://127.0.0.1:4173/");
               await togglePage.locator("#products [data-product-id]").first().waitFor();
@@ -243,7 +246,6 @@ jobs:
               await togglePage.waitForFunction(() => JSON.parse(localStorage.getItem("ssv_guest_cart_v1") || "[]").length > 0);
               await togglePage.locator(".ssv-finder-close").click();
 
-              const categorySettingKey = ({ Sarees: "categorySareesEnabled", Dresses: "categoryDressesEnabled", Jewellery: "categoryJewelryEnabled" })[category];
               toggleState.settings[categorySettingKey] = false;
               const beforeDisabledSettingsRead = toggleState.settingsReads;
               await togglePage.reload();
@@ -291,6 +293,9 @@ jobs:
             const safetyContext = await browser.newContext({ viewport, isMobile: mobile, hasTouch: mobile });
             const safetyPage = await safetyContext.newPage();
             const safetyState = await installMocks(safetyPage);
+            const settingKey = ({ Sarees: "categorySareesEnabled", Dresses: "categoryDressesEnabled", Jewellery: "categoryJewelryEnabled" })[category];
+            // Use an enabled mock-only category to seed a cart item before testing that disabling it blocks stale checkout.
+            safetyState.settings[settingKey] = true;
             try {
               await safetyPage.goto("http://127.0.0.1:4173/");
               await safetyPage.locator("#products [data-product-id]").first().waitFor();
@@ -310,7 +315,6 @@ jobs:
               await safetyPage.locator("#ssv-proceed-checkout").click();
               const staleForm = await safetyPage.locator("#ssv-checkout-form").elementHandle();
               assert.ok(staleForm, label + ": checkout opened before category was disabled");
-              const settingKey = ({ Sarees: "categorySareesEnabled", Dresses: "categoryDressesEnabled", Jewellery: "categoryJewelryEnabled" })[category];
               safetyState.settings[settingKey] = false;
               await safetyPage.evaluate(settings => window.dispatchEvent(new CustomEvent("ssv:settings-updated", { detail: { settings } })), safetyState.settings);
               await staleForm.evaluate(form => {
@@ -375,9 +379,13 @@ jobs:
               }
 
               await page.locator('[data-tab="Dresses"]').click();
-              assert.equal(await page.locator("#products [data-product-id]").count(), 2, label + ": Dresses category filter");
-              await page.locator('[data-tab="Jewellery"]').click();
-              assert.equal(await page.locator("#products [data-product-id]").count(), 1, label + ": Jewellery category filter");
+              assert.equal(await page.locator("#products [data-product-id]").count(), productsFixture.filter(p => String(p.category || "").trim().toLowerCase() === "dresses").length, label + ": Dresses category filter");
+              if (enabledCategoryNames.includes("Jewellery")) {
+                await page.locator('[data-tab="Jewellery"]').click();
+                assert.equal(await page.locator("#products [data-product-id]").count(), productsFixture.filter(p => String(p.category || "").trim().toLowerCase() === "jewellery").length, label + ": Jewellery category filter");
+              } else {
+                assert.equal(await page.locator('[data-tab="Jewellery"]').count(), 0, label + ": disabled Jewellery tab remains hidden");
+              }
 
               await page.locator("#ssv-smart-finder-trigger").click();
               const finderPanelBox = await page.locator("#ssv-smart-finder-panel").boundingBox();
@@ -388,7 +396,13 @@ jobs:
               await page.locator('[data-recovery="all"]').waitFor();
               await page.locator('[data-recovery="all"]').click();
               await page.locator("#ssv-smart-finder-panel").waitFor({ state: "hidden" });
-              assert.equal(await page.locator("#products [data-product-id]").count(), 6, label + ": Browse All must show the full enabled catalogue");
+              const expectedEnabledCatalogueCount = productsFixture.filter(product => {
+                const category = String(product.category || "").trim().toLowerCase();
+                const key = ({ sarees: "categorySareesEnabled", dresses: "categoryDressesEnabled", jewellery: "categoryJewelryEnabled", jewelry: "categoryJewelryEnabled" })[category];
+                const value = key ? settingsFixture[key] : undefined;
+                return !key || !(value === false || value === "false" || value === 0 || value === "0");
+              }).length;
+              assert.equal(await page.locator("#products [data-product-id]").count(), expectedEnabledCatalogueCount, label + ": Browse All shows the full enabled catalogue");
 
               await page.locator("#ssv-smart-finder-trigger").click();
               await page.locator("#ssv-finder-category").selectOption("Dresses");
@@ -403,8 +417,13 @@ jobs:
               await page.waitForFunction(() => document.querySelector(".ssv-finder-result h3")?.textContent.trim() === "Printed frock");
               assert.equal(await page.locator(".ssv-finder-result h3").count(), 1, label + ": colour filter returns only the matching product");
               assert.equal((await page.locator(".ssv-finder-result h3").innerText()).trim(), "Printed frock", label + ": recorded colour filter");
-              await page.locator("#ssv-finder-category").selectOption("Jewellery");
-              assert.equal(await page.locator("#ssv-finder-color-field").isVisible(), false, label + ": Jewellery must hide colour");
+              if (enabledCategoryNames.includes("Jewellery")) {
+                await page.locator("#ssv-finder-category").selectOption("Jewellery");
+                assert.equal(await page.locator("#ssv-finder-color-field").isVisible(), false, label + ": Jewellery must hide colour");
+              } else {
+                assert.equal(await page.locator('#ssv-finder-category option[value="Jewellery"]').count(), 0, label + ": disabled Jewellery stays unavailable in Finder");
+                await page.locator("#ssv-finder-category").selectOption("Dresses");
+              }
               await page.locator("#ssv-finder-budget").fill("");
               await page.locator("#ssv-finder-form button[type='submit']").click();
               const add = page.locator(".ssv-finder-result .ssv-finder-add");
