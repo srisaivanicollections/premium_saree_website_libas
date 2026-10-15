@@ -55,7 +55,8 @@ jobs:
           const checkout = readFileSync("checkout.js", "utf8");
 
           assert.match(page, /function validateProductInput\(product\)\{[\s\S]*?\["Sarees","Dresses","Jewellery"\]/, "Live Admin validation must allow Jewellery");
-          assert.match(page, /id="fCat"[\s\S]{0,700}value="Jewellery"/, "Live Admin editor must render a Jewellery option");
+          assert.match(page, /const enabledCategories=\["Sarees","Dresses","Jewellery"\]\.filter\(isCategoryEnabled\)/, "Live Admin editor must derive category options from enabled categories");
+          assert.match(page, /const categoryOptions=enabledCategories\.map\(c=>/, "Live Admin editor must render options from the enabled category list");
           assert.match(page, /const fields=\["name","category","image","color","price"/, "Live Admin persistence verification must cover category and price");
           assert.match(page, /const enabled=\["Sarees","Dresses","Jewellery"\]/, "Live storefront must expose enabled Sarees, Dresses, and Jewellery categories");
           assert.match(aiScanner, /onnx-community\/CLIP-ViT-B-32-laion2B-s34B-b79K-ONNX/, "AI scanner must use the selected MIT-licensed model");
