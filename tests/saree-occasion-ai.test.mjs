@@ -50,7 +50,14 @@ test("selects a known dominant colour from image prompt predictions", () => {
     { label: "a product photo of a saree whose main visible fabric or material colour is pink", score: 0.20 },
     { label: "a product photo of a saree whose main visible fabric or material colour is blue", score: 0.08 }
   ]);
-  assert.deepEqual(result, { label: "Red", score: 0.62, margin: 0.42 });
+  assert.deepEqual(result, {
+    label: "Red", score: 0.62, margin: 0.42,
+    rankings: [
+      { label: "Red", score: 0.62, rank: 1 },
+      { label: "Pink", score: 0.2, rank: 2 },
+      { label: "Blue", score: 0.08, rank: 3 }
+    ]
+  });
   assert.equal(isConfidentColourPrediction(result), true);
 });
 
