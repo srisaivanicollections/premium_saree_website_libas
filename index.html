@@ -9447,7 +9447,7 @@ function getSavedGithubToken(){
 /* Keep the token accessor available to every Admin handler.
    This also protects older cached page instances from a missing global binding. */
 window.getSavedGithubToken=getSavedGithubToken;
-let products=[],settings={},category="Sarees",adminPassword="",githubOriginalIds=new Set();
+let products=[],settings={},category="Sarees",adminPassword="",githubOriginalIds=new Set(),categorySettingsReady=false;
 // Settings may only be edited after a successful authoritative GitHub read.
 let settingsAuthoritativeLoaded=false;
 let settingsFormBaseline={};
@@ -9770,12 +9770,16 @@ async function load(){
   try{
     const sr=await loadPublicJson("data/settings.json");
     settings=(sr.value&&typeof sr.value==="object")?{...sr.value}:{};
+    categorySettingsReady=true;
   }catch(e){
-    console.error("Public storefront settings could not be loaded; using defaults:",e);
+    console.error("Public storefront settings could not be loaded; category visibility is locked:",e);
     settings={name:"SRI SAI VANI",whatsapp:"",instagram:"https://www.instagram.com/sri_sai_vani_collections/"};
+    categorySettingsReady=false;
   }
   delete settings.githubToken;
-  window.dispatchEvent(new CustomEvent("ssv:settings-updated",{detail:{settings:{...settings}}}));
+  // Never broadcast fallback settings as if category availability were verified.
+  // Finder and cart remain fail-closed until a successful settings read or Admin refresh.
+  if(categorySettingsReady)window.dispatchEvent(new CustomEvent("ssv:settings-updated",{detail:{settings:{...settings}}}));
 
   try{
     apply();
@@ -9953,8 +9957,8 @@ function apply(){
   all("a[href*=\"instagram.com\"]").forEach(a=>a.href=settings.instagram||"https://www.instagram.com/sri_sai_vani_collections/");
 }
 function normalizeCategoryName(name){const value=String(name||"").trim().toLowerCase();if(value==="jewellery"||value==="jewelry")return "Jewellery";if(value==="sarees")return "Sarees";if(value==="dresses")return "Dresses";return "";}
-function isCategoryEnabled(name){const normalized=normalizeCategoryName(name);const key=({Sarees:"categorySareesEnabled",Dresses:"categoryDressesEnabled",Jewellery:"categoryJewelryEnabled"})[normalized];return !!key&&!(settings[key]===false||settings[key]==="false"||settings[key]===0||settings[key]==="0")}
-function renderTabs(){const enabled=["Sarees","Dresses","Jewellery"].filter(isCategoryEnabled);if(category!=="All"&&category!=="Best Seller"&&!enabled.includes(category))category="All";const tabs=["All","Best Seller",...enabled];$("#tabs").innerHTML=tabs.map(c=>'<button class="'+(category===c?"active":"")+'" data-tab="'+c+'">'+(c==="Jewellery"?"JEWELLERY":c.toUpperCase())+"</button>").join("")}
+function isCategoryEnabled(name){if(!categorySettingsReady)return false;const normalized=normalizeCategoryName(name);const key=({Sarees:"categorySareesEnabled",Dresses:"categoryDressesEnabled",Jewellery:"categoryJewelryEnabled"})[normalized];return !!key&&!(settings[key]===false||settings[key]==="false"||settings[key]===0||settings[key]==="0")}
+function renderTabs(){const enabled=["Sarees","Dresses","Jewellery"].filter(isCategoryEnabled);if(categorySettingsReady&&category!=="All"&&category!=="Best Seller"&&!enabled.includes(category))category="All";const tabs=["All","Best Seller",...enabled];$("#tabs").innerHTML=tabs.map(c=>'<button class="'+(category===c?"active":"")+'" data-tab="'+c+'">'+(c==="Jewellery"?"JEWELLERY":c.toUpperCase())+"</button>").join("")}
 function render(){
   renderTabs();
   const grid=$("#products");
