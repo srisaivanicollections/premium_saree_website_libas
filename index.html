@@ -10355,7 +10355,7 @@ function ssvRenderEnrichFinderSummary(result){
  if(review){review.textContent=String(reviewCount);review.dataset.hasResult="true";}
  if(status){status.textContent=(result.refreshFailed?"Partial results":"Complete")+" · "+result.imageProcessed+" images analysed · "+result.occasionsSaved+" occasions saved · "+result.coloursSaved+" colours saved"+(reviewCount?" · "+reviewCount+" need review":"");status.setAttribute("data-state",result.failed||result.refreshFailed?"error":"success");}
  if(details){
-  details.replaceChildren();if(Number(result.occasionUncertain)>0){const note=document.createElement("p");note.className="ssv-enrich-occasion-review-note";note.textContent=String(result.occasionUncertain)+" product(s) had uncertain occasion predictions. No occasion was saved for those products; review their metadata in the catalogue.";note.style.cssText="margin:10px 0;padding:12px;border:1px solid #E4D8C5;background:#FAF7F2;color:#6f6252;font-size:13px;line-height:1.5";details.append(note);}
+  details.replaceChildren();if(Number(result.occasionUncertain)>0){const note=document.createElement("p");note.className="ssv-enrich-occasion-review-note";note.textContent=String(result.occasionUncertain)+" product(s) had low-confidence occasion predictions. Their highest-scoring occasion(s) were saved automatically; verify the catalogue tags if needed.";note.style.cssText="margin:10px 0;padding:12px;border:1px solid #E4D8C5;background:#FAF7F2;color:#6f6252;font-size:13px;line-height:1.5";details.append(note);}
   const colourSuggestions=Array.isArray(result.colourReviewSuggestions)?result.colourReviewSuggestions:[];
   colourSuggestions.forEach(suggestion=>{
    const card=document.createElement("section");card.className="ssv-enrich-review-card ssv-enrich-colour-review-card";
@@ -10861,9 +10861,9 @@ async function ssvEnrichFinderCatalogue({allMissing=false,productId=null,onProgr
      const occasion=result?.occasion||result,colour=result?.colour||null,occasionLabels=[...new Set((Array.isArray(occasion?.labels)&&occasion.labels.length?occasion.labels:[occasion?.label]).map(ssvOccasionLabel).filter(value=>SSV_OCCASION_LABELS.has(value)))],label=occasionLabels[0]||ssvOccasionLabel(occasion?.label);
      const candidateNeeds=ssvEnrichFieldNeeds(candidate);
      const needsOccasion=candidateNeeds.occasion,needsColour=candidateNeeds.colour;
-     const addOccasion=needsOccasion&&!!occasion?.confident&&occasionLabels.length>0;
+     const addOccasion=needsOccasion&&occasionLabels.length>0;
      const isJewellery=normalizeCategoryName(candidate.category)==="Jewellery";const colourToSave=isJewellery?"Gold":colour?.label;const addColour=needsColour&&(isJewellery||(!!colour?.confident&&SSV_FINDER_COLOURS.has(colour.label)));
-     if(needsOccasion&&!addOccasion)occasionUncertain++;
+     if(needsOccasion&&!occasion?.confident)occasionUncertain++;
      if(needsColour&&!addColour){
       colourUncertain++;
       if(!uncertainColourProductIds.includes(candidate.id))uncertainColourProductIds.push(candidate.id);
