@@ -9447,7 +9447,7 @@ function getSavedGithubToken(){
 /* Keep the token accessor available to every Admin handler.
    This also protects older cached page instances from a missing global binding. */
 window.getSavedGithubToken=getSavedGithubToken;
-let products=[],settings={},category="Sarees",adminPassword="",githubOriginalIds=new Set();
+let products=[],settings={},category="All",adminPassword="",githubOriginalIds=new Set(),categorySettingsReady=false;
 // Settings may only be edited after a successful authoritative GitHub read.
 let settingsAuthoritativeLoaded=false;
 let settingsFormBaseline={};
@@ -9770,11 +9770,16 @@ async function load(){
   try{
     const sr=await loadPublicJson("data/settings.json");
     settings=(sr.value&&typeof sr.value==="object")?{...sr.value}:{};
+    categorySettingsReady=true;
   }catch(e){
-    console.error("Public storefront settings could not be loaded; using defaults:",e);
+    console.error("Public storefront settings could not be loaded; category visibility is locked:",e);
     settings={name:"SRI SAI VANI",whatsapp:"",instagram:"https://www.instagram.com/sri_sai_vani_collections/"};
+    categorySettingsReady=false;
   }
   delete settings.githubToken;
+  // Never broadcast fallback settings as if category availability were verified.
+  // Finder and cart remain fail-closed until a successful settings read or Admin refresh.
+  if(categorySettingsReady)window.dispatchEvent(new CustomEvent("ssv:settings-updated",{detail:{settings:{...settings}}}));
 
   try{
     apply();
@@ -9951,8 +9956,10 @@ function apply(){
   }
   all("a[href*=\"instagram.com\"]").forEach(a=>a.href=settings.instagram||"https://www.instagram.com/sri_sai_vani_collections/");
 }
-function isCategoryEnabled(name){const key=({Sarees:"categorySareesEnabled",Dresses:"categoryDressesEnabled",Jewellery:"categoryJewelryEnabled"})[String(name||"").trim()];return !key||!(settings[key]===false||settings[key]==="false"||settings[key]===0)}
-function renderTabs(){const enabled=["Sarees","Dresses","Jewellery"].filter(isCategoryEnabled);if(category!=="All"&&!enabled.includes(category))category=enabled[0]||"";$("#tabs").innerHTML=enabled.map(c=>'<button class="'+(category===c?"active":"")+'" data-tab="'+c+'">'+(c==="Jewellery"?"JEWELLERY":c.toUpperCase())+"</button>").join("")}
+function normalizeCategoryName(name){const value=String(name||"").trim().toLowerCase();if(value==="jewellery"||value==="jewelry")return "Jewellery";if(value==="sarees")return "Sarees";if(value==="dresses")return "Dresses";return "";}
+function isCategoryEnabled(name){if(!categorySettingsReady)return false;const normalized=normalizeCategoryName(name);const key=({Sarees:"categorySareesEnabled",Dresses:"categoryDressesEnabled",Jewellery:"categoryJewelryEnabled"})[normalized];return !!key&&!(settings[key]===false||settings[key]==="false"||settings[key]===0||settings[key]==="0")}
+window.addEventListener("ssv:settings-updated",event=>{if(event.detail?.settings&&typeof event.detail.settings==="object")categorySettingsReady=true;});
+function renderTabs(){const enabled=["Sarees","Dresses","Jewellery"].filter(isCategoryEnabled);if(categorySettingsReady&&category!=="All"&&!enabled.includes(category))category=enabled[0]||"All";$("#tabs").innerHTML=enabled.map(c=>'<button class="'+(category===c?"active":"")+'" data-tab="'+c+'">'+(c==="Jewellery"?"JEWELLERY":c.toUpperCase())+"</button>").join("")}
 function render(){
   renderTabs();
   const grid=$("#products");
@@ -9963,12 +9970,9 @@ function render(){
   }
   const q=$("#search").value.trim().toLowerCase(),pf=$("#price").value;
   let list=products.filter(p=>{
-    const productCategory=String(p.category||"").trim().toLowerCase();
-    const selectedCategory=String(category||"All").trim().toLowerCase();
-    const isBestSeller=p.bestSeller===true||p.bestSeller==="true"||p.bestSeller===1||p.bestSeller==="1";
-    const matchesCollection=
-      selectedCategory==="all" ||
-      (selectedCategory==="best seller" ? isBestSeller : productCategory===selectedCategory);
+    const productCategory=normalizeCategoryName(p.category).toLowerCase();
+    const selectedCategory=String(category||"All").trim().toLowerCase()==="all"?"all":normalizeCategoryName(category).toLowerCase();
+    const matchesCollection=selectedCategory==="all"||productCategory===selectedCategory;
     const matchesSearch=
       !q ||
       String(p.name||"").toLowerCase().includes(q) ||
@@ -10115,7 +10119,9 @@ function form(p={}){
   const price=esc(p.price??"");
   const original=esc(p.originalPrice??"");
   const image=esc(p.image||"");
-  return '<div class="admin-row"><input id="fName" maxlength="120" placeholder="Product name" value="'+name+'"><select id="fCat"><option value="Sarees" '+(p.category==="Sarees"?"selected":"")+'>Sarees</option><option value="Dresses" '+(p.category==="Dresses"?"selected":"")+'>Dresses</option><option value="Jewellery" '+(p.category==="Jewellery"?"selected":"")+'>Jewellery</option></select></div><div class="admin-row admin-occasion-row"><fieldset class="admin-occasion-field"><legend>Finder occasions (optional)</legend><label><input type="checkbox" name="fOccasion" value="Daily Wear" '+((Array.isArray(p.occasions)&&p.occasions.includes("Daily Wear"))?"checked":"")+'> Daily Wear</label> <label><input type="checkbox" name="fOccasion" value="Wedding" '+((Array.isArray(p.occasions)&&p.occasions.includes("Wedding"))?"checked":"")+'> Wedding</label> <label><input type="checkbox" name="fOccasion" value="Festive" '+((Array.isArray(p.occasions)&&p.occasions.includes("Festive"))?"checked":"")+'> Festive</label> <label><input type="checkbox" name="fOccasion" value="Party Wear" '+((Array.isArray(p.occasions)&&p.occasions.includes("Party Wear"))?"checked":"")+'> Party Wear</label> <label><input type="checkbox" name="fOccasion" value="Traditional" '+((Array.isArray(p.occasions)&&p.occasions.includes("Traditional"))?"checked":"")+'> Traditional</label></fieldset></div><div class="admin-row"><input id="fColor" maxlength="40" placeholder="Colour (e.g. Pink, Maroon, Green)" value="'+esc(p.color||"")+'"><input id="fPrice" type="number" min="1" step="1" placeholder="Price" value="'+price+'"><input id="fOriginal" type="number" min="1" step="1" placeholder="Original price" value="'+original+'"></div><div class="upload-row"><input id="fImage" maxlength="1000" placeholder="Image path or URL" value="'+image+'"><input id="fFile" type="file" accept="image/jpeg,image/png,image/webp,image/gif"></div><div class="admin-image-preview-wrap"><img id="fImagePreview" class="admin-image-preview" src="'+(image?esc(productImageSrc(p.image)):'')+'" alt="Selected product preview" '+(image?'':'hidden')+'><span id="fImagePreviewEmpty" '+(image?'hidden':'')+'>IMAGE PREVIEW</span></div><label><input id="fNew" type="checkbox" '+(p.newArrival?"checked":"")+'> New arrival</label> <label><input id="fBest" type="checkbox" '+(p.bestSeller?"checked":"")+'> Best seller</label> <label><input id="fAvail" type="checkbox" '+(p.availability!==false?"checked":"")+'> Available</label><br><br><button type="button" class="btn dark" id="saveItem">'+(p.id?"SAVE CHANGES":"SAVE ITEM")+'</button>'+(p.id?' <button type="button" class="danger" id="deleteItem">DELETE ITEM</button>':"");
+  const enabledCategories=["Sarees","Dresses","Jewellery"].filter(isCategoryEnabled);
+  const categoryOptions=enabledCategories.map(c=>'<option value="'+c+'" '+(normalizeCategoryName(p.category)===c?"selected":"")+'>'+c+'</option>').join("");
+  return '<div class="admin-row"><input id="fName" maxlength="120" placeholder="Product name" value="'+name+'"><select id="fCat">'+categoryOptions+'</select></div><div class="admin-row admin-occasion-row"><fieldset class="admin-occasion-field"><legend>Occasion</legend><label><input type="checkbox" name="fOccasion" value="Daily Wear" '+((Array.isArray(p.occasions)&&p.occasions.includes("Daily Wear"))?"checked":"")+'> Daily Wear</label> <label><input type="checkbox" name="fOccasion" value="Wedding" '+((Array.isArray(p.occasions)&&p.occasions.includes("Wedding"))?"checked":"")+'> Wedding</label> <label><input type="checkbox" name="fOccasion" value="Festive" '+((Array.isArray(p.occasions)&&p.occasions.includes("Festive"))?"checked":"")+'> Festive</label> <label><input type="checkbox" name="fOccasion" value="Party Wear" '+((Array.isArray(p.occasions)&&p.occasions.includes("Party Wear"))?"checked":"")+'> Party Wear</label> <label><input type="checkbox" name="fOccasion" value="Traditional" '+((Array.isArray(p.occasions)&&p.occasions.includes("Traditional"))?"checked":"")+'> Traditional</label></fieldset></div><div class="admin-row"><input id="fColor" maxlength="40" placeholder="Colour (e.g. Pink, Maroon, Green)" value="'+esc(p.color||"")+'"><input id="fPrice" type="number" min="1" step="1" placeholder="Price" value="'+price+'"><input id="fOriginal" type="number" min="1" step="1" placeholder="Original price" value="'+original+'"></div><div class="upload-row"><input id="fImage" maxlength="1000" placeholder="Image path or URL" value="'+image+'"><input id="fFile" type="file" accept="image/jpeg,image/png,image/webp,image/gif"></div><div class="admin-image-preview-wrap"><img id="fImagePreview" class="admin-image-preview" src="'+(image?esc(productImageSrc(p.image)):'')+'" alt="Selected product preview" '+(image?'':'hidden')+'><span id="fImagePreviewEmpty" '+(image?'hidden':'')+'>IMAGE PREVIEW</span></div><label><input id="fNew" type="checkbox" '+(p.newArrival?"checked":"")+'> New arrival</label> <label><input id="fBest" type="checkbox" '+(p.bestSeller?"checked":"")+'> Best seller</label> <label><input id="fAvail" type="checkbox" '+(p.availability!==false?"checked":"")+'> Available</label><br><br><button type="button" class="btn dark" id="saveItem">'+(p.id?"SAVE CHANGES":"SAVE ITEM")+'</button>'+(p.id?' <button type="button" class="danger" id="deleteItem">DELETE ITEM</button>':"");
 }
 function updateStudioNav(activeView){
   all("[data-view]").forEach(btn=>{
@@ -10228,13 +10234,14 @@ function ssvEnrichFieldNeeds(product){
   return {eligible,occasion:eligible&&ssvHasNoOccasionMetadata(product)&&!ssvHasOccasionDecision(product),colour:eligible&&ssvHasNoColour(product)};
 }
 function ssvEnrichMissingCounts(items){
-  const needs=(Array.isArray(items)?items:products).map(ssvEnrichFieldNeeds);
+  const enabledProducts=(Array.isArray(items)?items:products).filter(product=>isCategoryEnabled(product.category));
+  const needs=enabledProducts.map(ssvEnrichFieldNeeds);
   return {occasions:needs.filter(item=>item.occasion).length,colours:needs.filter(item=>item.colour).length,products:needs.filter(item=>item.occasion||item.colour).length};
 }
 function ssvEnsureEnrichFinderPopup(){
   let popup=$("#adminEnrichFinderPopup");if(popup)return popup;
   popup=document.createElement("div");popup.id="adminEnrichFinderPopup";popup.className="ssv-enrich-popup-backdrop";popup.hidden=true;
-  popup.innerHTML='<section class="ssv-enrich-popup" role="dialog" aria-modal="true" aria-labelledby="adminEnrichTitle" aria-describedby="adminEnrichIntro"><button type="button" class="ssv-enrich-popup-close" id="adminEnrichFinderClose" aria-label="Close Enrich Finder">×</button><p class="eyebrow">SMART SAREE FINDER</p><h3 id="adminEnrichTitle">Enrich Finder</h3><p id="adminEnrichIntro">Analyse product images to suggest missing occasion and colour metadata. Existing occasion tags, colour values, product images and unrelated product fields are preserved.</p><div class="ssv-enrich-count-grid"><div><strong id="adminEnrichCandidateCount">0</strong><span>PRODUCTS TO CHECK</span></div><div><strong id="adminEnrichOccasionCount">0 / 0</strong><span>OCCASIONS SAVED</span></div><div><strong id="adminEnrichColourCount">0 / 0</strong><span>COLOURS SAVED</span></div></div><p class="ssv-enrich-safety-note">Only confident predictions for fields that are still missing are saved.</p><button type="button" class="btn dark" id="adminEnrichFinder">ANALYSE MISSING METADATA</button><p id="adminEnrichFinderStatus" role="status" aria-live="polite" style="margin-top:16px;overflow-wrap:anywhere">Ready. Start enrichment to process products with missing occasion or colour metadata.</p><div id="adminEnrichFinderFailures" aria-live="polite"></div></section>';
+  popup.innerHTML='<section class="ssv-enrich-popup" role="dialog" aria-modal="true" aria-labelledby="adminEnrichTitle" aria-describedby="adminEnrichIntro"><button type="button" class="ssv-enrich-popup-close" id="adminEnrichFinderClose" aria-label="Close Enrich Finder">×</button><p class="eyebrow">SMART SAREE FINDER</p><h3 id="adminEnrichTitle">Enrich Finder</h3><p id="adminEnrichIntro">Analyse product images to suggest missing occasion and colour metadata. Existing occasion tags, colour values, product images and unrelated product fields are preserved.</p><div class="ssv-enrich-count-grid"><div><strong id="adminEnrichOccasionCount">0</strong><span>OCCASIONS SAVED</span></div><div><strong id="adminEnrichColourCount">0</strong><span>COLOURS SAVED</span></div><div><strong id="adminEnrichReviewCount">0</strong><span>NEEDS REVIEW</span></div></div><p class="ssv-enrich-safety-note">Only confident predictions for fields that are still missing are saved.</p><button type="button" class="btn dark" id="adminEnrichFinder">ANALYSE MISSING METADATA</button><p id="adminEnrichFinderStatus" role="status" aria-live="polite" style="margin-top:16px;overflow-wrap:anywhere">Ready to analyse missing occasion and colour details.</p><div id="adminEnrichFinderFailures" aria-live="polite"></div></section>';
   document.body.appendChild(popup);
   const focusableSelector='a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
   const close=()=>{if(popup.hidden)return;popup.hidden=true;const opener=popup._opener;if(opener&&opener.isConnected)opener.focus();};
@@ -10277,10 +10284,10 @@ function ssvOpenEnrichFinderPopup(){
 }
 function ssvRenderEnrichFinderSummary(result){
   const status=$("#adminEnrichFinderStatus"),occasion=$("#adminEnrichOccasionCount"),colour=$("#adminEnrichColourCount"),details=$("#adminEnrichFinderFailures"),button=$("#adminEnrichFinder");
-  if(occasion){occasion.textContent=result.occasionsSaved+" / "+result.occasionMissingCount;occasion.dataset.hasResult="true";}
-  if(colour){colour.textContent=result.coloursSaved+" / "+result.colourMissingCount;colour.dataset.hasResult="true";}
-  if(status){status.textContent=(result.refreshFailed?"Partial results: ":"Complete: ")+result.imageProcessed+" images analysed · "+result.occasionsSaved+"/"+result.occasionMissingCount+" missing occasions saved · "+result.coloursSaved+"/"+result.colourMissingCount+" missing colours saved · "+result.occasionUncertain+" occasion uncertain · "+result.colourUncertain+" colour uncertain · "+result.skipped+" skipped/uncertain · "+result.failed+" failed."+(result.refreshFailed?" Final catalogue refresh failed. Refresh before retrying.":"");status.setAttribute("data-state",result.failed||result.refreshFailed?"error":"success");}
-  if(details){const lines=[];if(result.uncertainProductIds?.length)lines.push("Uncertain predictions: product IDs "+result.uncertainProductIds.join(", ")+".");if(result.failures?.length)lines.push("Failed products: "+result.failures.map(item=>"ID "+item.id+": "+item.reason).join(" | "));details.textContent=lines.join(" ");}
+  if(occasion){occasion.textContent=String(result.occasionsSaved);occasion.dataset.hasResult="true";}
+  if(colour){colour.textContent=String(result.coloursSaved);colour.dataset.hasResult="true";}
+  const reviewIds=new Set((result.uncertainProductIds||[]).map(id=>String(id)));(result.failures||[]).forEach((item,index)=>reviewIds.add(item?.id==null?"failure:"+index:String(item.id)));const reviewCount=reviewIds.size;const review=$("#adminEnrichReviewCount");if(review){review.textContent=String(reviewCount);review.dataset.hasResult="true";}if(status){status.textContent=(result.refreshFailed?"Partial results":"Complete")+" · "+result.imageProcessed+" images analysed · "+result.occasionsSaved+" occasions saved · "+result.coloursSaved+" colours saved"+(reviewCount?" · "+reviewCount+" need review":"");status.setAttribute("data-state",result.failed||result.refreshFailed?"error":"success");}
+  if(details){const lines=[];if(result.uncertainProductIds?.length)lines.push(result.uncertainProductIds.length+" product(s) had uncertain predictions and need manual review.");const failures=Array.isArray(result.failures)?result.failures:[];if(failures.length)lines.push("Processing failures: "+failures.slice(0,5).map(item=>"Product "+item.id+": "+item.reason).join(" | ")+(failures.length>5?" · "+(failures.length-5)+" more failure(s).":""));if(result.refreshFailed)lines.push("Final catalogue refresh failed. Refresh before retrying.");details.textContent=lines.join(" ");details.hidden=!lines.length;}
   if(button){button.disabled=false;button.textContent="ANALYSE MISSING METADATA";}
 }
 function showView(v){
@@ -10303,6 +10310,7 @@ function showView(v){
         settings={...fresh.value};
         delete settings.githubToken;
         settingsAuthoritativeLoaded=true;
+        window.dispatchEvent(new CustomEvent("ssv:settings-updated",{detail:{settings:{...settings}}}));
         apply();
         showView("settings");
         showAdminToast("Latest website settings loaded. Editing is now enabled.","success");
@@ -10316,10 +10324,10 @@ function showView(v){
     return;
   }
   if(v==="products"){
-    const productCounts={total:products.length,newArrival:products.filter(p=>p.newArrival).length,bestSeller:products.filter(p=>p.bestSeller).length,available:products.filter(p=>p.availability!==false).length};
-    const knownColors=["Black","Blue","Brown","Gold","Green","Grey","Ivory","Maroon","Multi-colour","Orange","Pink","Purple","Red","Silver","White","Yellow"];
-    const colorOptions=[...new Set([...knownColors,...products.map(p=>String(p.color||"").trim()).filter(Boolean)])].sort((a,b)=>a.localeCompare(b));
-    const categoryOptions=[...new Set(products.map(p=>String(p.category||"").trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+    const enabledAdminProducts=products.filter(p=>isCategoryEnabled(p.category));
+    const productCounts={total:enabledAdminProducts.length,newArrival:enabledAdminProducts.filter(p=>p.newArrival).length,bestSeller:enabledAdminProducts.filter(p=>p.bestSeller).length,available:enabledAdminProducts.filter(p=>p.availability!==false).length};
+    const colorOptions=[...new Set(enabledAdminProducts.map(p=>String(p.color||"").trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+    const categoryOptions=[...new Set(enabledAdminProducts.map(p=>normalizeCategoryName(p.category)).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
     b.innerHTML='<div class="admin-products-heading"><div><h3>Product Catalogue</h3><p>Manage your collection and product availability.</p></div><div class="admin-products-heading-actions"><a href="#" id="adminEnrichFinderLink" class="admin-enrich-finder-link">✦ Enrich Finder <span aria-hidden="true">→</span></a><button type="button" id="adminAddProduct" class="admin-add-product"><span aria-hidden="true">+</span> Add Product</button></div></div><div class="admin-product-counts" aria-label="Product summary"><div><strong>'+productCounts.total+'</strong><span>PRODUCTS</span></div><div><strong>'+productCounts.newArrival+'</strong><span>NEW</span></div><div><strong>'+productCounts.bestSeller+'</strong><span>BEST SELLER</span></div><div><strong>'+productCounts.available+'</strong><span>AVAILABLE</span></div></div><div class="admin-product-filters"><label class="admin-product-search"><span class="admin-filter-label">Search products</span><input id="adminProductSearch" type="search" placeholder="Name, description or product ID" autocomplete="off"><span class="admin-search-icon" aria-hidden="true">⌕</span></label><label><span class="admin-filter-label">Category</span><select id="adminProductCategory"><option value="">All</option>'+categoryOptions.map(category=>'<option value="'+esc(category)+'">'+esc(category)+'</option>').join("")+'</select></label><label><span class="admin-filter-label">Colour</span><select id="adminProductColor"><option value="">All</option><option value="__none">Colour not set</option>'+colorOptions.map(color=>'<option value="'+esc(color)+'">'+esc(color)+'</option>').join("")+'</select></label><label><span class="admin-filter-label">Status</span><select id="adminProductStatus"><option value="">All</option><option value="available">Available</option><option value="unavailable">Unavailable</option><option value="new">New arrival</option><option value="best">Best seller</option></select></label><label><span class="admin-filter-label">Sort by</span><select id="adminProductSort"><option value="recommended">Recommended</option><option value="price-asc">Price: low to high</option><option value="price-desc">Price: high to low</option><option value="name-asc">Name: A to Z</option><option value="name-desc">Name: Z to A</option></select></label><button type="button" id="clearAdminProductFilters" class="admin-filter-clear">Reset</button></div><div id="adminProductResults" class="admin-product-results" aria-live="polite"></div><nav id="adminProductPagination" class="admin-product-pagination" aria-label="Product pages"></nav><div id="adminProductsScroll" class="admin-products-scroll" aria-label="Product list"></div>';
     const enrichLink=$("#adminEnrichFinderLink");if(enrichLink)enrichLink.onclick=event=>{event.preventDefault();ssvOpenEnrichFinderPopup();};
     const searchInput=$("#adminProductSearch"), categoryFilter=$("#adminProductCategory"), colorFilter=$("#adminProductColor"), statusFilter=$("#adminProductStatus"), sortFilter=$("#adminProductSort"), results=$("#adminProductResults"), list=$("#adminProductsScroll");
@@ -10327,9 +10335,9 @@ function showView(v){
     const adminProductsPerPage=10;
     const renderAdminProductList=()=>{
       const q=String(searchInput.value||"").trim().toLowerCase(), cat=categoryFilter.value, color=colorFilter.value, status=statusFilter.value;
-      const filtered=products.filter(p=>{
+      const filtered=products.filter(p=>isCategoryEnabled(p.category)).filter(p=>{
         const haystack=[p.name,p.description,p.category,p.color,p.id].map(v=>String(v??"")).join(" ").toLowerCase();
-        return (!q||haystack.includes(q))&&(!cat||String(p.category||"").trim()===cat)&&(!color||(color==="__none"?!String(p.color||"").trim():String(p.color||"").trim().toLowerCase()===color.toLowerCase()))&&(!status||(status==="available"?p.availability!==false:status==="unavailable"?p.availability===false:status==="new"?!!p.newArrival:!!p.bestSeller));
+        return (!q||haystack.includes(q))&&(!cat||normalizeCategoryName(p.category)===normalizeCategoryName(cat))&&(!color||(color==="__none"?!String(p.color||"").trim():String(p.color||"").trim().toLowerCase()===color.toLowerCase()))&&(!status||(status==="available"?p.availability!==false:status==="unavailable"?p.availability===false:status==="new"?!!p.newArrival:!!p.bestSeller));
       });
       const sort=sortFilter.value;
       if(sort==="price-asc")filtered.sort((a,b)=>(Number(a.price)||0)-(Number(b.price)||0));
@@ -10343,7 +10351,7 @@ function showView(v){
       results.textContent=filtered.length
         ? "Showing "+(start+1)+"–"+Math.min(start+adminProductsPerPage,filtered.length)+" of "+filtered.length+" products"
         : "Showing 0 of 0 products";
-      list.innerHTML=pageItems.length?pageItems.map(p=>'<div class="admin-item"><div class="admin-product-main"><img class="admin-product-thumb" src="'+esc(productImageSrc(p.image))+'" alt="" loading="lazy" onerror="this.classList.add(\'image-missing\');this.onerror=null;this.src=\'assets/dress-4.svg\'"><div class="admin-product-copy"><strong>'+esc(cleanProductName(p.name))+'</strong><small class="admin-product-meta">'+esc(p.category)+" · "+money(p.price)+(p.color?' · '+esc(p.color):' · Colour not set')+'</small><div class="admin-product-status">'+(p.newArrival?'<span class="admin-status is-new">NEW</span>':"")+(p.bestSeller?'<span class="admin-status is-best">BEST SELLER</span>':"")+(p.availability===false?'<span class="admin-status is-unavailable">UNAVAILABLE</span>':'<span class="admin-status is-available">AVAILABLE</span>')+'</div></div></div><button class="danger edit" data-id="'+Number(p.id)+'">EDIT</button></div>').join(""):'<div class="admin-products-empty">No products match these filters.<button type="button" id="clearAdminProductFiltersEmpty">Clear filters</button></div>';
+      list.innerHTML=pageItems.length?pageItems.map(p=>'<div class="admin-item"><div class="admin-product-main"><img class="admin-product-thumb" src="'+esc(productImageSrc(p.image))+'" alt="" loading="lazy" onerror="this.classList.add(\'image-missing\');this.onerror=null;this.src=\'assets/dress-4.svg\'"><div class="admin-product-copy"><strong>'+esc(cleanProductName(p.name))+'</strong><small class="admin-product-meta">'+esc(p.category)+" · "+money(p.price)+(Array.isArray(p.occasions)&&p.occasions.length?' · '+esc(p.occasions.join(", ")):'')+(p.color?' · '+esc(p.color):'')+'</small><div class="admin-product-status">'+(p.newArrival?'<span class="admin-status is-new">NEW</span>':"")+(p.bestSeller?'<span class="admin-status is-best">BEST SELLER</span>':"")+(p.availability===false?'<span class="admin-status is-unavailable">UNAVAILABLE</span>':'<span class="admin-status is-available">AVAILABLE</span>')+'</div></div></div><button class="danger edit" data-id="'+Number(p.id)+'">EDIT</button></div>').join(""):'<div class="admin-products-empty">No products match these filters.<button type="button" id="clearAdminProductFiltersEmpty">Clear filters</button></div>';
       const pagination=$("#adminProductPagination");
       if(!filtered.length){pagination.innerHTML="";pagination.hidden=true;return;}
       pagination.hidden=false;
@@ -10412,7 +10420,7 @@ function showView(v){
       field('Primary button label','heroButtonText','Explore Collection')+
       field('Hero image URL or site path','heroImage','assets/hero-banner.webp?v=20261006')+'</div></details>'+
       '<details class="admin-settings-group"><summary>Category Management</summary><div class="admin-settings-grid">'+
-      '<p class="admin-settings-help">Disabled categories are hidden from the storefront. Their products and settings are preserved and can be restored by enabling the category again.</p>'+
+      '<p class="admin-settings-help">Disabled categories and their products are hidden across Admin Products, the storefront, Smart Saree Finder, filters and counts. Product data is preserved and returns when the category is enabled again.</p>'+
       '<div class="admin-settings-toggles">'+toggle("Enable Sarees category","categorySareesEnabled")+toggle("Enable Dresses category","categoryDressesEnabled")+toggle("Enable Jewellery category","categoryJewelryEnabled")+'</div></details>'+
       '<details class="admin-settings-group"><summary>Catalogue</summary><div class="admin-settings-grid">'+
       field('Search placeholder','searchPlaceholder','Search collection')+
@@ -10466,7 +10474,7 @@ function showView(v){
 }
 function edit(id){
   const p=products.find(x=>Number(x.id)===Number(id));
-  if(!p)return;
+  if(!p||!isCategoryEnabled(p.category))return;
   $("#studioBody").innerHTML=form(p);
   const saveBtn=$("#saveItem");
   if(saveBtn){
@@ -10730,7 +10738,7 @@ async function ssvEnrichFinderCatalogue({allMissing=false,productId=null}={}){
   try{
    const module=await import("./saree-occasion-ai.js"),scanner=await module.createOccasionScanner(),initial=await githubReadJson("data/products.json");
    if(!Array.isArray(initial.value))throw new Error("Product catalogue is invalid.");
-   const candidates=initial.value.filter(p=>(!productId||Number(p.id)===Number(productId))&&(ssvEnrichFieldNeeds(p).occasion||ssvEnrichFieldNeeds(p).colour));
+   const candidates=initial.value.filter(p=>isCategoryEnabled(p.category)&&(!productId||Number(p.id)===Number(productId))&&(ssvEnrichFieldNeeds(p).occasion||ssvEnrichFieldNeeds(p).colour));
    const queue=allMissing?candidates:candidates.slice(0,1);
    const occasionMissingCount=queue.filter(p=>ssvEnrichFieldNeeds(p).occasion).length,colourMissingCount=queue.filter(p=>ssvEnrichFieldNeeds(p).colour).length;
    let imageProcessed=0;
@@ -10743,7 +10751,7 @@ async function ssvEnrichFinderCatalogue({allMissing=false,productId=null}={}){
      const candidateNeeds=ssvEnrichFieldNeeds(candidate);
      const needsOccasion=candidateNeeds.occasion,needsColour=candidateNeeds.colour;
      const addOccasion=needsOccasion&&!!occasion?.confident&&!!label;
-     const addColour=needsColour&&!!colour?.confident&&SSV_FINDER_COLOURS.has(colour.label);
+     const isJewellery=normalizeCategoryName(candidate.category)==="Jewellery";const colourToSave=isJewellery?"Gold":colour?.label;const addColour=needsColour&&(isJewellery||(!!colour?.confident&&SSV_FINDER_COLOURS.has(colour.label)));
      if(needsOccasion&&!addOccasion)occasionUncertain++;
      if(needsColour&&!addColour)colourUncertain++;
      if((needsOccasion&&!addOccasion)||(needsColour&&!addColour))if(!uncertainProductIds.includes(candidate.id))uncertainProductIds.push(candidate.id);
@@ -10761,7 +10769,7 @@ async function ssvEnrichFinderCatalogue({allMissing=false,productId=null}={}){
        next.occasions=[label];next.occasionMetadata={source:"ai",model:"CLIP-ViT-B-32",score:Number(occasion.score.toFixed(4)),margin:Number(occasion.margin.toFixed(4)),image:String(current.image),version:1};changed=true;
       }
       if(addColour&&ssvHasNoColour(current)){
-       next.color=colour.label;next.colourMetadata={source:"ai",model:"CLIP-ViT-B-32",score:Number(colour.score.toFixed(4)),margin:Number(colour.margin.toFixed(4)),image:String(current.image),version:1};changed=true;
+       next.color=colourToSave;next.colourMetadata=isJewellery?{source:"default",model:"jewellery-default",image:String(current.image),version:1}:{source:"ai",model:"CLIP-ViT-B-32",score:Number(colour.score.toFixed(4)),margin:Number(colour.margin.toFixed(4)),image:String(current.image),version:1};changed=true;
       }
       if(!changed){skipped++;stop=true;break;}
       latest.value[index]=next;
@@ -10773,7 +10781,7 @@ async function ssvEnrichFinderCatalogue({allMissing=false,productId=null}={}){
        const verify=await githubReadJsonFresh("data/products.json");
        const savedProduct=Array.isArray(verify.value)?verify.value.find(p=>Number(p.id)===Number(current.id)):null;
        const occasionVerified=!addOccasion||(Array.isArray(savedProduct?.occasions)&&savedProduct.occasions.includes(label)&&savedProduct?.occasionMetadata?.image===String(current.image));
-       const colourVerified=!addColour||(savedProduct?.color===colour.label&&savedProduct?.colourMetadata?.image===String(current.image));
+       const colourVerified=!addColour||(savedProduct?.color===colourToSave&&savedProduct?.colourMetadata?.image===String(current.image));
        if(!savedProduct||!occasionVerified||!colourVerified)throw new Error("Save verification failed: GitHub did not return the expected metadata for this product.");
        processed++;if(addOccasion)occasionsSaved++;if(addColour)coloursSaved++;saved=true;
       }catch(e){
@@ -10783,7 +10791,7 @@ async function ssvEnrichFinderCatalogue({allMissing=false,productId=null}={}){
          const recovery=await githubReadJsonFresh("data/products.json");
          const persisted=Array.isArray(recovery.value)?recovery.value.find(p=>Number(p.id)===Number(current.id)):null;
          const occasionPersisted=!addOccasion||(Array.isArray(persisted?.occasions)&&persisted.occasions.includes(label)&&persisted?.occasionMetadata?.image===String(current.image));
-         const colourPersisted=!addColour||(persisted?.color===colour.label&&persisted?.colourMetadata?.image===String(current.image));
+         const colourPersisted=!addColour||(persisted?.color===colourToSave&&persisted?.colourMetadata?.image===String(current.image));
          if(persisted&&persisted.image===current.image&&occasionPersisted&&colourPersisted){
           processed++;if(addOccasion)occasionsSaved++;if(addColour)coloursSaved++;saved=true;stop=true;break;
          }
@@ -10837,6 +10845,7 @@ async function saveProduct(id){
   try{
     const name=$("#fName").value.trim();
     const categoryValue=$("#fCat").value;
+    if(!isCategoryEnabled(categoryValue))throw new Error("Please choose an enabled product category.");
     const price=Number($("#fPrice").value);
     const originalPrice=Number($("#fOriginal").value)||undefined;
     let image=$("#fImage").value.trim();
@@ -11151,6 +11160,7 @@ async function connectGithubStorage(){
     settings={...settingsRead.value};
     delete settings.githubToken;
     settingsAuthoritativeLoaded=true;
+    window.dispatchEvent(new CustomEvent("ssv:settings-updated",{detail:{settings:{...settings}}}));
 
     otpAdminSession=true;
     adminSessionActive=true;
@@ -11324,6 +11334,7 @@ async function verifyAdminOtp(){
       if(!siteSettings.value||typeof siteSettings.value!=="object"||Array.isArray(siteSettings.value))throw new Error("GitHub settings are invalid.");
       settings={...siteSettings.value};
       settingsAuthoritativeLoaded=true;
+      window.dispatchEvent(new CustomEvent("ssv:settings-updated",{detail:{settings:{...settings}}}));
     }catch(settingsError){
       console.warn("Admin settings could not be loaded; settings editing is locked until a fresh read succeeds:",settingsError);
       settings={name:"SRI SAI VANI",whatsapp:"",instagram:"https://www.instagram.com/sri_sai_vani_collections/"};
@@ -11419,7 +11430,7 @@ window.addEventListener("pageshow",()=>{
 
 window.SSVStorefront=Object.freeze({showAllProducts(){category="All";const search=$("#search");if(search)search.value="";catalogPage=0;syncCatalogClear?.();render();}});
 all("[data-view]").forEach(b=>b.onclick=()=>showView(b.dataset.view));
-document.addEventListener("click",async e=>{const t=e.target.closest("[data-tab]");if(t){if(!isCategoryEnabled(t.dataset.tab))return;category=t.dataset.tab;catalogPage=0;render()}const c=e.target.closest("[data-cat]");if(c){if(!isCategoryEnabled(c.dataset.cat))return;category=c.dataset.cat;catalogPage=0;$("#nav").classList.remove("open");render()}const eb=e.target.closest(".edit");if(eb)edit(Number(eb.dataset.id));if(e.target.id==="saveSettings"){
+document.addEventListener("click",async e=>{const t=e.target.closest("[data-tab]");if(t){const selected=String(t.dataset.tab||"").trim();if(!isCategoryEnabled(selected))return;category=normalizeCategoryName(selected);catalogPage=0;render()}const c=e.target.closest("[data-cat]");if(c){const selected=String(c.dataset.cat||"").trim(),special=selected.toLowerCase();if(special!=="all"&&!isCategoryEnabled(selected))return;category=special==="all"?"All":normalizeCategoryName(selected);catalogPage=0;$("#nav").classList.remove("open");render()}const eb=e.target.closest(".edit");if(eb)edit(Number(eb.dataset.id));if(e.target.id==="saveSettings"){
   e.preventDefault();
   if(!settingsAuthoritativeLoaded){
     showAdminToast("Settings are locked because the latest GitHub settings were not verified. Retry the settings read before editing.","error");
@@ -11455,6 +11466,7 @@ document.addEventListener("click",async e=>{const t=e.target.closest("[data-tab]
     const result=await settingsWriteQueue;
     if(!result?.settings) throw new Error("Settings were saved but could not be verified. Refresh before retrying.");
     settings=result.settings;
+    window.dispatchEvent(new CustomEvent("ssv:settings-updated",{detail:{settings:{...settings}}}));
     apply();
     render();
     showView("settings");
@@ -14657,6 +14669,23 @@ if ("serviceWorker" in navigator) {
  .ssv-enrich-count-grid strong{font-size:19px}
  .ssv-enrich-count-grid span{font-size:8px}
 }
+</style>
+
+<style id="ssv-admin-finder-polish-20261015">
+#admin .admin-enrich-finder-link{display:inline-flex!important;align-items:center!important;justify-content:center!important;gap:8px!important;padding:10px 0!important;border:0!important;border-bottom:1px solid rgba(179,142,93,.55)!important;color:#806641!important;text-decoration:none!important;font-weight:600!important;line-height:1.25!important;white-space:nowrap!important;transition:color .18s ease,transform .18s ease,border-color .18s ease!important}
+#admin .admin-enrich-finder-link span{display:inline-block!important;transition:transform .18s ease!important}
+#admin .admin-enrich-finder-link:hover span{transform:translateX(3px)!important}
+#admin #adminEnrichFinder:disabled{opacity:.86;cursor:progress}
+#admin #adminEnrichFinder:disabled::after{content:"";position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(100deg,transparent,rgba(255,255,255,.24),transparent);animation:ssvFinderShimmer 1.5s ease-in-out infinite}
+#adminEnrichFinderPopup .ssv-enrich-count-grid>div{animation:ssvFinderFadeIn .35s ease both}
+#adminEnrichFinderPopup .ssv-enrich-count-grid>div:nth-child(2){animation-delay:.06s}
+#adminEnrichFinderPopup .ssv-enrich-count-grid>div:nth-child(3){animation-delay:.12s}
+@keyframes ssvFinderShimmer{to{transform:translateX(100%)}}
+@keyframes ssvFinderFadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+#admin.modal:not(.hidden) #adminClose{display:none!important}
+#admin.modal:not(.hidden):has(#login:not(.hidden)) #adminClose{display:inline-flex!important}
+#admin.modal:not(.hidden):has(#studio.admin-view-add) #adminClose{display:inline-flex!important}
+@media(prefers-reduced-motion:reduce){#admin .admin-enrich-finder-link,#admin .admin-enrich-finder-link span,#admin #adminEnrichFinder:disabled::after,#adminEnrichFinderPopup .ssv-enrich-count-grid>div{animation:none!important;transition:none!important}}
 </style>
 
 </html>

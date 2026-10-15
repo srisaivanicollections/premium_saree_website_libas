@@ -55,7 +55,8 @@ jobs:
           const checkout = readFileSync("checkout.js", "utf8");
 
           assert.match(page, /function validateProductInput\(product\)\{[\s\S]*?\["Sarees","Dresses","Jewellery"\]/, "Live Admin validation must allow Jewellery");
-          assert.match(page, /id="fCat"[\s\S]{0,700}value="Jewellery"/, "Live Admin editor must render a Jewellery option");
+          assert.match(page, /const enabledCategories=\["Sarees","Dresses","Jewellery"\]\.filter\(isCategoryEnabled\)/, "Live Admin editor must derive category options from enabled categories");
+          assert.match(page, /const categoryOptions=enabledCategories\.map\(c=>/, "Live Admin editor must render options from the enabled category list");
           assert.match(page, /const fields=\["name","category","image","color","price"/, "Live Admin persistence verification must cover category and price");
           assert.match(page, /const enabled=\["Sarees","Dresses","Jewellery"\]/, "Live storefront must expose enabled Sarees, Dresses, and Jewellery categories");
           assert.match(aiScanner, /onnx-community\/CLIP-ViT-B-32-laion2B-s34B-b79K-ONNX/, "AI scanner must use the selected MIT-licensed model");
@@ -73,7 +74,17 @@ jobs:
           assert.match(page, /#admin \.admin-products-heading-actions>#adminEnrichFinderLink/, "Enrich Finder text link must have a scoped style override");
           assert.match(page, /@media\(max-width:600px\)[\s\S]*?#admin \.admin-products-heading-actions\s*\{[\s\S]*?width:100%!important;[\s\S]*?justify-content:space-between!important;/, "Enrich Finder link and Add Product must remain visible in the mobile action row");
           assert.match(page, /occasionMetadata=\{source:"ai"/, "AI occasion results must record their provenance");
-          assert.match(page, /colourMetadata=\{source:"ai"/, "AI colour results must record their provenance");
+          assert.match(page, /colourMetadata=isJewellery\?\{source:"default",model:"jewellery-default"/, "Missing Jewellery colour must use the documented Gold default provenance");
+          assert.match(page, /:\{source:"ai",model:"CLIP-ViT-B-32"/, "Non-Jewellery AI colour results must record their provenance");
+          assert.match(page, /let products=\[\],settings=\{\},category="All"/, "Catalogue must default to all enabled categories without an All tab");
+          assert.match(page, /function renderTabs\(\)\{const enabled=\["Sarees","Dresses","Jewellery"\]\.filter\(isCategoryEnabled\);[\s\S]*?\$\("#tabs"\)\.innerHTML=enabled\.map/, "Only enabled category tabs may be rendered");
+          assert.doesNotMatch(page, /data-tab=["\x27](?:All|Best Seller)["\x27]/i, "All and Best Seller must not be customer-facing catalogue tabs");
+          assert.match(page, /if\(!categorySettingsReady\)return false/, "Storefront must fail closed until category settings are verified");
+          assert.match(page, /window\.addEventListener\("ssv:settings-updated",event=>\{if\(event\.detail\?\.settings/, "Successful Admin settings refresh must restore storefront category visibility");
+          assert.match(page, /if\(categorySettingsReady\)window\.dispatchEvent\(new CustomEvent\("ssv:settings-updated"/, "Fallback settings must not be broadcast as authoritative");
+          assert.doesNotMatch(page, /selectedCategory==="best seller"|special==="best seller"/, "Best Seller must not be a customer-facing catalogue filter");
+          assert.match(checkout, /if\(!categorySettingsReady\)return false/, "Cart must fail closed until category settings are loaded");
+          assert.match(checkout, /if\(!categorySettingsReady\)\{showStatus\(/, "Checkout submission must wait for verified category settings");
           assert.match(page, /attempt<3&&!saved/, "Occasion metadata writes must retry GitHub SHA conflicts");
           assert.match(page, /ssvHasNoOccasionMetadata\(current\)/, "Enrichment must preserve existing occasion metadata");
           assert.match(page, /ssvHasNoColour\(current\)/, "Enrichment must preserve existing product colours");
@@ -154,7 +165,7 @@ jobs:
           const githubPattern = /^https:\/\/api\.github\.com\/repos\/srisaivanicollections\/srisaivanicollections\.github\.io\/contents\/data\/(products|settings)\.json/;
 
           async function installMocks(page) {
-            const state = { products: structuredClone(productsFixture), settings: structuredClone(settingsFixture), workerActions: [] };
+            const state = { products: structuredClone(productsFixture), settings: structuredClone(settingsFixture), workerActions: [], settingsReads: 0 };
             await page.addInitScript(() => {
               // Syntactically valid test-only token. All GitHub requests are intercepted below.
               localStorage.setItem("ssv_github_token_v1", "ghp_" + "e2eTestToken012345678901234567890123456789");
@@ -207,7 +218,103 @@ jobs:
               }
               await route.continue();
             });
+            await page.route("**/data/settings.json*", async route => {
+              state.settingsReads++;
+              await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(state.settings) });
+            });
             return state;
+          }
+
+          async function runCategoryToggleJourney(label, context, category, previouslyAddedCount) {
+            const togglePage = await context.newPage();
+            const toggleState = await installMocks(togglePage);
+            try {
+              await togglePage.goto("http://127.0.0.1:4173/");
+              await togglePage.locator("#products [data-product-id]").first().waitFor();
+              await togglePage.locator("#ssv-smart-finder-trigger").click();
+              await togglePage.locator("#ssv-finder-category").selectOption(category);
+              await togglePage.locator("#ssv-finder-budget").fill("");
+              await togglePage.locator("#ssv-finder-form button[type='submit']").click();
+              await togglePage.locator(".ssv-finder-result .ssv-finder-add").first().waitFor();
+              const settingsReadyDeadline = Date.now() + 5000;
+              while (toggleState.settingsReads < 2 && Date.now() < settingsReadyDeadline) await togglePage.waitForTimeout(25);
+              assert.ok(toggleState.settingsReads >= 2, label + ": storefront and cart settings loaded before adding");
+              await togglePage.locator(".ssv-finder-result .ssv-finder-add").first().click();
+              await togglePage.waitForFunction(() => JSON.parse(localStorage.getItem("ssv_guest_cart_v1") || "[]").length > 0);
+              await togglePage.locator(".ssv-finder-close").click();
+
+              const categorySettingKey = ({ Sarees: "categorySareesEnabled", Dresses: "categoryDressesEnabled", Jewellery: "categoryJewelryEnabled" })[category];
+              toggleState.settings[categorySettingKey] = false;
+              const beforeDisabledSettingsRead = toggleState.settingsReads;
+              await togglePage.reload();
+              await togglePage.locator("#products [data-product-id]").first().waitFor();
+              const disabledSettingsDeadline = Date.now() + 5000;
+              while (toggleState.settingsReads <= beforeDisabledSettingsRead && Date.now() < disabledSettingsDeadline) await togglePage.waitForTimeout(25);
+              assert.ok(toggleState.settingsReads > beforeDisabledSettingsRead, label + ": disabled category settings reloaded");
+              assert.equal(await togglePage.locator('[data-tab="' + category + '"]').count(), 0, label + ": disabled " + category + " tab is hidden");
+              assert.equal(await togglePage.locator('[data-tab="All"]').count(), 0, label + ": All tab remains removed");
+              assert.equal(await togglePage.locator('[data-tab="Best Seller"]').count(), 0, label + ": Best Seller filter remains removed");
+              assert.equal(await togglePage.locator('#products [data-product-id]').count(), productsFixture.filter(p => p.category !== category).length, label + ": default catalogue excludes disabled " + category);
+              await togglePage.locator("#ssv-smart-finder-trigger").click();
+              assert.equal(await togglePage.locator('#ssv-finder-category option[value="' + category + '"]').count(), 0, label + ": Finder excludes disabled " + category);
+              await togglePage.locator(".ssv-finder-close").click();
+              await togglePage.locator("#ssv-cart-trigger").click();
+              assert.equal(await togglePage.locator(".ssv-cart-item").count(), previouslyAddedCount, label + ": cart shows only previously enabled-category rows");
+              for (const product of productsFixture.filter(p => p.category === category)) assert.equal(await togglePage.locator(".ssv-cart-item").getByText(product.name, { exact: true }).count(), 0, label + ": disabled " + category + " product is hidden from cart");
+              assert.equal(toggleState.workerActions.filter(action => action === "submitOrder").length, 0, label + ": disabled category cannot submit an order");
+
+              toggleState.settings[categorySettingKey] = true;
+              const beforeEnabledSettingsRead = toggleState.settingsReads;
+              await togglePage.reload();
+              await togglePage.locator("#products [data-product-id]").first().waitFor();
+              const enabledSettingsDeadline = Date.now() + 5000;
+              while (toggleState.settingsReads <= beforeEnabledSettingsRead && Date.now() < enabledSettingsDeadline) await togglePage.waitForTimeout(25);
+              assert.ok(toggleState.settingsReads > beforeEnabledSettingsRead, label + ": re-enabled category settings reloaded");
+              await togglePage.locator("#ssv-cart-trigger").click();
+              await togglePage.locator(".ssv-cart-item").first().waitFor({ state: "visible" });
+              assert.equal(await togglePage.locator(".ssv-cart-item").count(), previouslyAddedCount + 1, label + ": cart row returns when " + category + " is re-enabled");
+              console.log("PASS " + label + ": category OFF/ON hides catalogue, Best Seller, Finder and cart rows without deleting saved cart data.");
+            } finally {
+              await togglePage.close();
+            }
+          }
+
+          async function runDisabledOnlyCheckoutSafety(label, browser, category, viewport, mobile) {
+            const safetyContext = await browser.newContext({ viewport, isMobile: mobile, hasTouch: mobile });
+            const safetyPage = await safetyContext.newPage();
+            const safetyState = await installMocks(safetyPage);
+            try {
+              await safetyPage.goto("http://127.0.0.1:4173/");
+              await safetyPage.locator("#products [data-product-id]").first().waitFor();
+              await safetyPage.locator("#ssv-smart-finder-trigger").click();
+              await safetyPage.locator("#ssv-finder-category").selectOption(category);
+              await safetyPage.locator("#ssv-finder-budget").fill("");
+              await safetyPage.locator("#ssv-finder-form button[type='submit']").click();
+              await safetyPage.locator(".ssv-finder-result .ssv-finder-add").first().waitFor();
+              const deadline = Date.now() + 5000;
+              while (safetyState.settingsReads < 2 && Date.now() < deadline) await safetyPage.waitForTimeout(25);
+              assert.ok(safetyState.settingsReads >= 2, label + ": checkout category settings loaded");
+              await safetyPage.locator(".ssv-finder-result .ssv-finder-add").first().click();
+              await safetyPage.waitForFunction(() => JSON.parse(localStorage.getItem("ssv_guest_cart_v1") || "[]").length === 1);
+              await safetyPage.locator(".ssv-finder-close").click();
+              await safetyPage.locator("#ssv-cart-trigger").click();
+              assert.equal(await safetyPage.locator(".ssv-cart-item").count(), 1, label + ": safety case has one cart row");
+              await safetyPage.locator("#ssv-proceed-checkout").click();
+              const staleForm = await safetyPage.locator("#ssv-checkout-form").elementHandle();
+              assert.ok(staleForm, label + ": checkout opened before category was disabled");
+              const settingKey = ({ Sarees: "categorySareesEnabled", Dresses: "categoryDressesEnabled", Jewellery: "categoryJewelryEnabled" })[category];
+              safetyState.settings[settingKey] = false;
+              await safetyPage.evaluate(settings => window.dispatchEvent(new CustomEvent("ssv:settings-updated", { detail: { settings } })), safetyState.settings);
+              await staleForm.evaluate(form => {
+                document.body.appendChild(form);
+                form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+              });
+              await safetyPage.waitForFunction(() => document.querySelector("#ssv-checkout-status")?.textContent.includes("no currently available products"));
+              assert.equal(safetyState.workerActions.filter(action => action === "submitOrder").length, 0,
+                label + ": stale checkout submit with only disabled-category product is blocked");
+            } finally {
+              await safetyContext.close();
+            }
           }
 
           async function runJourney(label, viewport, mobile) {
@@ -220,7 +327,16 @@ jobs:
               await page.locator("#products [data-product-id]").first().waitFor();
               await page.locator("#ssv-finder-hint").waitFor({ state: "visible" });
               assert.ok(await page.locator("#ssv-smart-finder-trigger").isVisible(), label + ": Finder trigger remains visible with first-load hint");
-              assert.equal(await page.locator("#products [data-product-id]").count(), 3, label + ": initial Sarees category");
+              assert.equal(await page.locator("#products [data-product-id]").count(), productsFixture.length, label + ": default catalogue shows all enabled categories");
+              assert.equal(await page.locator('[data-tab="All"]').count(), 0, label + ": All tab is absent");
+              assert.equal(await page.locator('[data-tab="Best Seller"]').count(), 0, label + ": Best Seller filter is absent");
+              const expectedBestSellerBadges = productsFixture.filter(p => p.bestSeller === true || p.bestSeller === "true" || p.bestSeller === 1 || p.bestSeller === "1").length;
+              assert.equal(await page.locator("#products .pill-best").count(), expectedBestSellerBadges, label + ": original Best Seller ribbons remain on the same products");
+
+              for (const [index, category] of ["Sarees", "Dresses", "Jewellery"].entries()) {
+                await runCategoryToggleJourney(label, context, category, index);
+                await runDisabledOnlyCheckoutSafety(label, browser, category, viewport, mobile);
+              }
 
               await page.locator('[data-tab="Dresses"]').click();
               assert.equal(await page.locator("#products [data-product-id]").count(), 2, label + ": Dresses category filter");
@@ -242,11 +358,14 @@ jobs:
               await page.locator("#ssv-finder-category").selectOption("Dresses");
               await page.locator("#ssv-finder-budget").fill("500");
               await page.locator("#ssv-finder-form button[type='submit']").click();
+              await page.locator(".ssv-finder-result").first().waitFor();
               assert.equal(await page.locator(".ssv-finder-result").count(), 1, label + ": budget ceiling filters results");
               assert.equal((await page.locator(".ssv-finder-result h3").innerText()).trim(), "Blue frock", label + ": budget result");
               await page.locator("#ssv-finder-budget").fill("800");
               await page.locator("#ssv-finder-color").selectOption("Pink");
               await page.locator("#ssv-finder-form button[type='submit']").click();
+              await page.waitForFunction(() => document.querySelector(".ssv-finder-result h3")?.textContent.trim() === "Printed frock");
+              assert.equal(await page.locator(".ssv-finder-result h3").count(), 1, label + ": colour filter returns only the matching product");
               assert.equal((await page.locator(".ssv-finder-result h3").innerText()).trim(), "Printed frock", label + ": recorded colour filter");
               await page.locator("#ssv-finder-category").selectOption("Jewellery");
               assert.equal(await page.locator("#ssv-finder-color-field").isVisible(), false, label + ": Jewellery must hide colour");

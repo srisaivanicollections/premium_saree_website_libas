@@ -7,6 +7,8 @@
   const $ = (selector, root=document) => root.querySelector(selector);
   const esc = value => String(value ?? "").replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
   let cart = readCart();
+  let categorySettings={};
+  let categorySettingsReady=false;
   let toastTimer = 0;
   let submitting = false;
   let lastSubmittedOrder = null;
@@ -28,8 +30,12 @@
   function saveCart(nextCart=cart){try{localStorage.setItem(CART_KEY,JSON.stringify(nextCart.map(row=>({id:row.id,quantity:row.quantity}))));return true}catch(_){return false}}
   function currentProducts(){try{return Array.isArray(products)?products:[]}catch(_){return []}}
   function getProduct(id){return currentProducts().find(p=>Number(p.id)===Number(id))}
+  function normalizeCategoryName(category){const value=String(category||"").trim().toLowerCase();if(value==="jewellery"||value==="jewelry")return "Jewellery";if(value==="sarees")return "Sarees";if(value==="dresses")return "Dresses";return "";}
+  function isCategoryEnabled(category){if(!categorySettingsReady)return false;const normalized=normalizeCategoryName(category);const key=({Sarees:"categorySareesEnabled",Dresses:"categoryDressesEnabled",Jewellery:"categoryJewelryEnabled"})[normalized];if(!key)return false;const value=categorySettings[key];return value!==false&&value!=="false"&&value!==0&&value!=="0";}
+  async function loadCategorySettings(){const response=await fetch("./data/settings.json?cartSettings="+Date.now(),{cache:"no-store",headers:{Accept:"application/json"}});if(!response.ok)throw new Error("Could not load category settings.");const value=await response.json();if(!value||typeof value!=="object"||Array.isArray(value))throw new Error("Invalid category settings.");categorySettings=value;categorySettingsReady=true;}
+  function visibleCart(){return cart.filter(row=>{const product=getProduct(row.id);return !!product&&isCategoryEnabled(product.category);});}
   function productImage(p){if(!p)return "";const src=String(p.image||"");return /^(https?:|data:|blob:)/i.test(src)?src:"https://raw.githubusercontent.com/srisaivanicollections/srisaivanicollections.github.io/main/"+src.replace(/^\.\//,"")}
-  function count(){return cart.reduce((sum,row)=>sum+row.quantity,0)}
+  function count(){return visibleCart().reduce((sum,row)=>sum+row.quantity,0)}
   function injectStylesAndShell(){
     if(!$("#ssv-cart-trigger")){
       const header=$(".header-inner");
@@ -65,7 +71,8 @@
   }
   function addProductToCart(id){
     const product=getProduct(id);
-    if(!product)return {ok:false,reason:"unavailable"};
+    if(!categorySettingsReady)return {ok:false,reason:"settings-unavailable"};
+    if(!product||!isCategoryEnabled(product.category))return {ok:false,reason:"unavailable"};
     if(product.availability===false||product.inStock===false||product.outOfStock===true)return {ok:false,reason:"out-of-stock"};
     const existing=cart.find(row=>row.id===Number(id));
     if(existing&&existing.quantity>=MAX_QUANTITY)return {ok:false,reason:"max-quantity"};
@@ -115,10 +122,11 @@
     const content=$("#ssv-cart-content"),footer=$("#ssv-cart-footer"),layer=$("#ssv-cart-layer");if(!content||!footer)return;
     cart=cart.filter(row=>getProduct(row.id));
     saveCart();updateCount();
-    const items=cart.map(row=>({row,p:getProduct(row.id)})).filter(x=>x.p);
+    const items=cart.map(row=>({row,p:getProduct(row.id)})).filter(x=>x.p&&isCategoryEnabled(x.p.category));
     const clearButton=$("#ssv-clear-bag");if(clearButton){clearButton.hidden=items.length===0;clearButton.disabled=items.length===0}
     const form=$("#ssv-checkout-form");
-    if(form&&form.classList.contains("is-visible")){renderCheckoutForm();return}
+    if(form&&form.classList.contains("is-visible")&&items.length){renderCheckoutForm();return}
+    if(form&&form.classList.contains("is-visible")&&!items.length)form.classList.remove("is-visible");
     if(!items.length){
       content.innerHTML='<div class="ssv-cart-empty"><strong>Your bag is waiting</strong><span>Add a piece from the collection to get started.</span></div>';
       footer.style.display="none";return;
@@ -137,7 +145,7 @@
     }
     form.classList.add("is-visible");form.hidden=false;
   }
-  function showCheckout(){if(!cart.length)return;const content=$("#ssv-cart-content");if(!content)return;let form=$("#ssv-checkout-form");if(!form){renderCheckoutForm();form=$("#ssv-checkout-form")}form.classList.add("is-visible");const clearButton=$("#ssv-clear-bag");if(clearButton){clearButton.hidden=true;clearButton.disabled=true}renderCheckoutForm();content.scrollTop=0;$("#ssv-full-name")?.focus()}
+  function showCheckout(){if(!categorySettingsReady){showToast("Category availability is still being verified. Please try again shortly.");return}if(!visibleCart().length){showToast("Your selected products are currently unavailable.");return}const content=$("#ssv-cart-content");if(!content)return;let form=$("#ssv-checkout-form");if(!form){renderCheckoutForm();form=$("#ssv-checkout-form")}form.classList.add("is-visible");const clearButton=$("#ssv-clear-bag");if(clearButton){clearButton.hidden=true;clearButton.disabled=true}renderCheckoutForm();content.scrollTop=0;$("#ssv-full-name")?.focus()}
   function showStatus(message,success=false){const status=$("#ssv-checkout-status");if(!status)return;status.textContent=message;status.classList.toggle("is-success",success)}
 
   async function buildOrderPdf(order){
@@ -308,14 +316,16 @@
   }
   async function submitCheckout(form){
     if(submitting)return;
-    if(!cart.length){showStatus("Your cart is empty.");return}
+    if(!categorySettingsReady){showStatus("Category availability could not be verified. Please try again before submitting your order.");return}
+    const orderCart=visibleCart();
+    if(!orderCart.length){showStatus("Your cart has no currently available products.");return}
     const fd=new FormData(form);
     const customer={fullName:String(fd.get("fullName")||"").trim(),mobile:String(fd.get("mobile")||"").trim()};
     const shipping={houseStreet:String(fd.get("houseStreet")||"").trim(),landmark:String(fd.get("landmark")||"").trim(),city:String(fd.get("city")||"").trim(),district:String(fd.get("district")||"").trim(),state:String(fd.get("state")||"").trim(),pinCode:String(fd.get("pinCode")||"").trim()};
     if(!form.reportValidity())return;
     const button=$(".ssv-checkout-submit",form);submitting=true;if(button){button.disabled=true;button.textContent="SUBMITTING…"}showStatus("Submitting your order securely…");
     try{
-      const response=await fetch(WORKER_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"submitOrder",items:cart.map(row=>({id:row.id,quantity:row.quantity})),customer,shipping})});
+      const response=await fetch(WORKER_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"submitOrder",items:orderCart.map(row=>({id:row.id,quantity:row.quantity})),customer,shipping})});
       const data=await response.json().catch(()=>({}));
       if(!response.ok||data.success!==true||data.accepted!==true)throw new Error(data.message||"We could not submit the order. Your cart has been kept.");
       lastSubmittedOrder={
@@ -323,10 +333,10 @@
         createdAt:new Date().toLocaleString("en-IN",{dateStyle:"medium",timeStyle:"short"}),
         customer,
         shipping,
-        items:cart.map(row=>({name:String(getProduct(row.id)?.name||"Product"),quantity:row.quantity,image:productImage(getProduct(row.id))}))
+        items:orderCart.map(row=>({name:String(getProduct(row.id)?.name||"Product"),quantity:row.quantity,image:productImage(getProduct(row.id))}))
       };
-      try{localStorage.removeItem(CART_KEY)}catch(_){}
-      cart=[];updateCount();
+      cart=cart.filter(row=>{const product=getProduct(row.id);return !!product&&!isCategoryEnabled(product.category);});
+      saveCart();updateCount();
       const content=$("#ssv-cart-content"),footer=$("#ssv-cart-footer");if(footer)footer.style.display="none";
       content.innerHTML='<div class="ssv-order-success"><span class="ssv-success-mark" aria-hidden="true">✓</span><h3>Order received</h3><p>Your order request has been emailed to the store. We will contact you on your mobile number to confirm availability, delivery, and the final amount.</p><div class="ssv-order-ref">'+esc(data.reference||"Order received")+'</div><button type="button" class="ssv-checkout-submit ssv-download-order" data-download-order>Download order details</button><p class="ssv-order-download-note">Downloads a PDF copy of your order.</p><button type="button" class="ssv-order-continue" data-cart-close>Continue shopping</button></div>';
     }catch(error){showStatus(error?.message||"Order submission failed. Your cart has been kept.");}
@@ -334,7 +344,7 @@
   }
   document.addEventListener("click",event=>{
     const add=event.target.closest("[data-add-cart]");
-    if(add){const result=addProductToCart(Number(add.dataset.addCart));if(!result.ok){showToast(result.reason==="max-quantity"?"Maximum quantity reached (10)":result.reason==="out-of-stock"?"This item is sold out":result.reason==="storage"?"Your bag could not be saved. Please try again.":"This item is no longer available");}return}
+    if(add){const result=addProductToCart(Number(add.dataset.addCart));if(!result.ok){showToast(result.reason==="max-quantity"?"Maximum quantity reached (10)":result.reason==="out-of-stock"?"This item is sold out":result.reason==="storage"?"Your bag could not be saved. Please try again.":result.reason==="settings-unavailable"?"Category availability is still being verified. Please try again shortly.":"This item is no longer available");}return}
         if(event.target.closest("[data-download-order]")){const button=event.target.closest("[data-download-order]");button.disabled=true;button.textContent="Preparing PDF…";downloadOrderDetails().finally(()=>{if(button.isConnected){button.disabled=false;button.textContent="Download order details"}});return}
     if(event.target.closest("#ssv-cart-trigger")){openCart();return}
     if(event.target.closest("[data-clear-cancel]")){closeClearBagDialog();return}
@@ -370,6 +380,7 @@
   const observer=new MutationObserver(()=>{
     if(attachCardButtons())updateCount();
   });
-  function init(){injectStylesAndShell();attachCardButtons();updateCount();observer.observe($("#products")||document.body,{childList:true,subtree:true});}
+  window.addEventListener("ssv:settings-updated",event=>{const next=event.detail?.settings;if(!next||typeof next!=="object")return;categorySettings={...next};categorySettingsReady=true;updateCount();if($("#ssv-cart-layer")?.classList.contains("is-open"))renderCart();});
+  function init(){injectStylesAndShell();attachCardButtons();updateCount();observer.observe($("#products")||document.body,{childList:true,subtree:true});loadCategorySettings().then(()=>{updateCount();if($("#ssv-cart-layer")?.classList.contains("is-open"))renderCart();}).catch(()=>{categorySettings={categorySareesEnabled:false,categoryDressesEnabled:false,categoryJewelryEnabled:false};categorySettingsReady=false;updateCount();if($("#ssv-cart-layer")?.classList.contains("is-open"))renderCart();});}
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init,{once:true});else init();
 })();

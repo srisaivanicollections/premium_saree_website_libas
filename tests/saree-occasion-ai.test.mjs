@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { selectOccasionPrediction, isConfidentOccasionPrediction, selectColourPrediction, isConfidentColourPrediction } from "../saree-occasion-ai.js";
 
 const prompts = {
@@ -45,21 +46,39 @@ test("supports dress-specific prompt labels", () => {
 
 test("selects a known dominant colour from image prompt predictions", () => {
   const result = selectColourPrediction([
-    { label: "a product photo of a saree whose main visible fabric or material colour is red", score: 0.42 },
-    { label: "a product photo of a saree whose main visible fabric or material colour is pink", score: 0.24 },
-    { label: "a product photo of a saree whose main visible fabric or material colour is blue", score: 0.10 }
+    { label: "a product photo of a saree whose main visible fabric or material colour is red", score: 0.62 },
+    { label: "a product photo of a saree whose main visible fabric or material colour is pink", score: 0.20 },
+    { label: "a product photo of a saree whose main visible fabric or material colour is blue", score: 0.08 }
   ]);
-  assert.deepEqual(result, { label: "Red", score: 0.42, margin: 0.18 });
+  assert.deepEqual(result, { label: "Red", score: 0.62, margin: 0.42 });
   assert.equal(isConfidentColourPrediction(result), true);
 });
 
 test("rejects uncertain or unknown colour predictions", () => {
   assert.equal(isConfidentColourPrediction({ label: "Red", score: 0.19, margin: 0.2 }), false);
-  assert.equal(isConfidentColourPrediction({ label: "Red", score: 0.8, margin: 0.044 }), false);
+  assert.equal(isConfidentColourPrediction({ label: "Red", score: 0.8, margin: 0.299 }), false);
   assert.equal(isConfidentColourPrediction({ label: "Turquoise", score: 0.99, margin: 0.5 }), false);
+});
+
+test("keeps a known risky printed-dress prediction for manual review", () => {
+  // The Blue frock was previously predicted as Gold at score 0.3783 / margin 0.27.
+  assert.equal(isConfidentColourPrediction({ label: "Gold", score: 0.3783, margin: 0.27 }), false);
 });
 
 test("rejects empty and malformed colour model outputs", () => {
   assert.throws(() => selectColourPrediction([]), /no colour predictions/i);
   assert.throws(() => selectColourPrediction([{ label: null, score: "NaN" }]), /invalid colour predictions/i);
+});
+
+
+test("blocks checkout submission when no cart products remain enabled", () => {
+  const checkout = readFileSync(new URL("../checkout.js", import.meta.url), "utf8");
+  assert.match(checkout, /function visibleCart\(\)\{return cart\.filter\(row=>\{const product=getProduct\(row\.id\);return !!product&&isCategoryEnabled\(product\.category\);\}\);\}/,
+    "checkout must derive submitted rows from products in currently enabled categories");
+  assert.match(checkout, /const orderCart=visibleCart\(\);\s*if\(!orderCart\.length\)\{showStatus\("Your cart has no currently available products\."\);return\}/,
+    "checkout must stop before submission when every cart item is disabled");
+  assert.match(checkout, /items:orderCart\.map\(row=>\(\{id:row\.id,quantity:row\.quantity\}\)\)/,
+    "the worker payload must use only the validated visible cart, never the raw cart");
+  assert.match(checkout, /window\.addEventListener\("ssv:settings-updated",event=>\{const next=event\.detail\?\.settings;[\s\S]*?categorySettings=\{\.\.\.next\};categorySettingsReady=true;[\s\S]*?renderCart\(\);\}\);/,
+    "a category settings update must refresh checkout eligibility and the visible cart");
 });
