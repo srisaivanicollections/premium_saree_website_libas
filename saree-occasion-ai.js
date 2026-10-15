@@ -42,11 +42,14 @@ function normalizeCategory(category) {
 function scoreMap(predictions, labelForPrompt) {
   if (!Array.isArray(predictions) || !predictions.length) throw new Error("The image model returned no predictions.");
   const result = new Map();
+  let validPredictionCount = 0;
   for (const item of predictions) {
     if (!item || typeof item.label !== "string" || !Number.isFinite(Number(item.score))) continue;
+    validPredictionCount++;
     const label = labelForPrompt.get(item.label);
     if (label && (!result.has(label) || Number(item.score) > result.get(label))) result.set(label, Number(item.score));
   }
+  if (!validPredictionCount) throw new Error("The image model returned invalid predictions.");
   if (!result.size) throw new Error("The image model returned no known labels.");
   return result;
 }
@@ -161,7 +164,8 @@ export function selectOccasionPrediction(predictions, itemType = "saree") {
   if (!Array.isArray(predictions) || !predictions.length) throw new Error("The image model returned no predictions.");
   const labelByPrompt = new Map(LABELS.map(item => ["a " + itemType + " " + item.description, item.label]));
   const scores = scoreMap(predictions, labelByPrompt);
-  const ranked = [...scores].map(([label, score], stableIndex) => ({ label, score, stableIndex }))
+  const ranked = LABELS.map((item, stableIndex) => ({ label: item.label, score: scores.get(item.label), stableIndex }))
+    .filter(item => Number.isFinite(item.score))
     .sort((a, b) => b.score - a.score || a.stableIndex - b.stableIndex);
   const top = chooseTop(ranked);
   return { label: top.tied[0].label, labels: top.tied.map(item => item.label), score: top.best.score, margin: top.margin,
@@ -174,7 +178,9 @@ export function isConfidentOccasionPrediction(result) {
 }
 export function selectColourPrediction(predictions) {
   if (!Array.isArray(predictions) || !predictions.length) throw new Error("The image model returned no colour predictions.");
-  const normalized = predictions.filter(item => item && typeof item.label === "string" && Number.isFinite(Number(item.score)))
+  const valid = predictions.filter(item => item && typeof item.label === "string" && Number.isFinite(Number(item.score)));
+  if (!valid.length) throw new Error("The image model returned invalid colour predictions.");
+  const normalized = valid
     .map(item => ({ ...item, colour: COLOURS.find(colour => item.label.toLowerCase().includes("colour is " + colour.toLowerCase())) || "" }))
     .filter(item => item.colour)
     .sort((a, b) => Number(b.score) - Number(a.score) || COLOURS.indexOf(a.colour) - COLOURS.indexOf(b.colour));
