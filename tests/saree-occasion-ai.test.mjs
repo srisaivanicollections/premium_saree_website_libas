@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { selectOccasionPrediction, isConfidentOccasionPrediction, selectColourPrediction, isConfidentColourPrediction } from "../saree-occasion-ai.js";
 
 const prompts = {
@@ -67,4 +68,17 @@ test("keeps a known risky printed-dress prediction for manual review", () => {
 test("rejects empty and malformed colour model outputs", () => {
   assert.throws(() => selectColourPrediction([]), /no colour predictions/i);
   assert.throws(() => selectColourPrediction([{ label: null, score: "NaN" }]), /invalid colour predictions/i);
+});
+
+
+test("blocks checkout submission when no cart products remain enabled", () => {
+  const checkout = readFileSync(new URL("../checkout.js", import.meta.url), "utf8");
+  assert.match(checkout, /function visibleCart\(\)\{return cart\.filter\(row=>\{const product=getProduct\(row\.id\);return !!product&&isCategoryEnabled\(product\.category\);\}\);\}/,
+    "checkout must derive submitted rows from products in currently enabled categories");
+  assert.match(checkout, /const orderCart=visibleCart\(\);\s*if\(!orderCart\.length\)\{showStatus\("Your cart has no currently available products\."\);return\}/,
+    "checkout must stop before submission when every cart item is disabled");
+  assert.match(checkout, /items:orderCart\.map\(row=>\(\{id:row\.id,quantity:row\.quantity\}\)\)/,
+    "the worker payload must use only the validated visible cart, never the raw cart");
+  assert.match(checkout, /window\.addEventListener\("ssv:settings-updated",event=>\{const next=event\.detail\?\.settings;[\s\S]*?categorySettings=\{\.\.\.next\};categorySettingsReady=true;[\s\S]*?renderCart\(\);\}\);/,
+    "a category settings update must refresh checkout eligibility and the visible cart");
 });
