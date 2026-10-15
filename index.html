@@ -10882,6 +10882,7 @@ async function ssvEnrichFinderCatalogue({allMissing=false,productId=null,onProgr
     }
     paint("Enrich Finder: "+(i+1)+" of "+queue.length+" products checked · "+imageProcessed+" images processed · "+occasionsSaved+" occasions saved · "+coloursSaved+" colours saved · "+occasionUncertain+" occasion uncertain · "+colourUncertain+" colour uncertain · "+processed+" products updated · "+skipped+" skipped/uncertain · "+failed+" failed");if(typeof onProgress==="function")onProgress({index:i+1,total:queue.length,product:candidate,phase:i+1===queue.length?"Finishing and verifying saved metadata…":"Analysing product images…"});
    }
+   if(typeof onProgress==="function")onProgress({index:queue.length,total:queue.length,phase:"Finalising results…"});
    const summary="Enrich Finder results: "+imageProcessed+" of "+queue.length+" images processed · "+occasionsSaved+"/"+occasionMissingCount+" missing occasions saved · "+coloursSaved+"/"+colourMissingCount+" missing colours saved · "+processed+" products updated · "+skipped+" skipped/uncertain · "+failed+" failed.";
    let refreshFailed=false;
    try{
