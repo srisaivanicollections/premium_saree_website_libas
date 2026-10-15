@@ -250,10 +250,9 @@ jobs:
               while (toggleState.settingsReads <= beforeDisabledSettingsRead && Date.now() < disabledSettingsDeadline) await togglePage.waitForTimeout(25);
               assert.ok(toggleState.settingsReads > beforeDisabledSettingsRead, label + ": disabled category settings reloaded");
               assert.equal(await togglePage.locator('[data-tab="' + category + '"]').count(), 0, label + ": disabled " + category + " tab is hidden");
-              await togglePage.locator('[data-tab="All"]').click();
-              assert.equal(await togglePage.locator('#products [data-product-id]').count(), productsFixture.filter(p => p.category !== category).length, label + ": All Products excludes disabled " + category);
-              await togglePage.locator('[data-tab="Best Seller"]').click();
-              assert.equal(await togglePage.locator('#products [data-product-id]').count(), productsFixture.filter(p => p.category !== category && (p.bestSeller === true || p.bestSeller === "true" || p.bestSeller === 1 || p.bestSeller === "1")).length, label + ": Best Seller excludes disabled " + category);
+              assert.equal(await togglePage.locator('[data-tab="All"]').count(), 0, label + ": All tab remains removed");
+              assert.equal(await togglePage.locator('[data-tab="Best Seller"]').count(), 0, label + ": Best Seller filter remains removed");
+              assert.equal(await togglePage.locator('#products [data-product-id]').count(), productsFixture.filter(p => p.category !== category).length, label + ": default catalogue excludes disabled " + category);
               await togglePage.locator("#ssv-smart-finder-trigger").click();
               assert.equal(await togglePage.locator('#ssv-finder-category option[value="' + category + '"]').count(), 0, label + ": Finder excludes disabled " + category);
               await togglePage.locator(".ssv-finder-close").click();
