@@ -107,7 +107,7 @@ test("Enrich Finder reports saved counts, a deduplicated review count, and actio
   assert.match(adminSource, /colour\.textContent=String\(result\.coloursSaved\)/);
   assert.match(adminSource, /const reviewCount=reviewIds\.size/);
   assert.match(adminSource, /uncertain occasion predictions/);
-  assert.match(adminSource, /No occasion was saved for those products/);
+  assert.match(adminSource, /Their highest-scoring occasion\(s\) were saved automatically/);
   assert.match(adminSource, /Processing failures:/);
 });
 
@@ -142,12 +142,14 @@ test("A failed final catalogue refresh preserves partial-save results and warns 
 });
 
 
-test("uncertain occasion enrichment hides rankings and automatically saves only confident tied matches", () => {
+test("occasion enrichment always saves highest-scoring matches, including low-confidence ties", () => {
   assert.match(aiSource, /const tieTolerance = 0\.0005/);
   assert.match(aiSource, /const nextDistinct = ranked\.find/);
   assert.match(aiSource, /const labels = Array\.isArray\(result\?\.labels\)/);
   assert.match(adminSource, /occasionLabels=\[\.\.\.new Set/);
-  assert.match(adminSource, /const addOccasion=needsOccasion&&!!occasion\?\.confident&&occasionLabels\.length>0/);
+  assert.match(adminSource, /const addOccasion=needsOccasion&&occasionLabels\.length>0/);
+  assert.doesNotMatch(adminSource, /const addOccasion=needsOccasion&&!!occasion\?\.confident/);
+  assert.match(adminSource, /if\(needsOccasion&&!occasion\?\.confident\)occasionUncertain\+\+/);
   assert.match(adminSource, /next\.occasions=occasionLabels/);
   assert.match(adminSource, /occasionLabels\.every\(value=>savedProduct\.occasions\.includes\(value\)\)/);
   assert.doesNotMatch(adminSource, /SAVE SELECTED OCCASIONS/);
