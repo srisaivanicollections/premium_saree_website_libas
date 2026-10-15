@@ -345,7 +345,7 @@ jobs:
                 return enabled && productsFixture.some(product => String(product.category || "").trim().toLowerCase() === category.toLowerCase());
               });
               const expectedDefaultCategory = enabledCategoryNames[0] || "";
-              const hasDefaultCategoryBehavior = await page.evaluate(async () => /function ssvDefaultStorefrontCategory/.test(await (await fetch("/app.js")).text()));
+              const hasDefaultCategoryBehavior = await page.evaluate(async () => /function ssvDefaultStorefrontCategory/.test(await (await fetch("/index.html")).text()));
               if (hasDefaultCategoryBehavior) {
                 assert.equal(await page.locator("#tabs button.active").getAttribute("data-tab"), expectedDefaultCategory, label + ": first populated enabled category is selected on load");
                 const expectedDefaultCount = productsFixture.filter(product => String(product.category || "").trim().toLowerCase() === expectedDefaultCategory.toLowerCase()).length;
@@ -373,14 +373,22 @@ jobs:
               assert.equal(await page.locator("#products .pill-best").count(), expectedBestSellerBadges, label + ": original Best Seller ribbons remain on the same products");
 
               for (const [index, category] of ["Sarees", "Dresses", "Jewellery"].entries()) {
+                const key = ({ Sarees: "categorySareesEnabled", Dresses: "categoryDressesEnabled", Jewellery: "categoryJewelryEnabled" })[category];
+                const value = settingsFixture[key];
+                const enabled = !(value === false || value === "false" || value === 0 || value === "0");
+                if (!enabled) continue;
                 await runCategoryToggleJourney(label, context, category, index);
                 await runDisabledOnlyCheckoutSafety(label, browser, category, viewport, mobile);
               }
 
               await page.locator('[data-tab="Dresses"]').click();
               assert.equal(await page.locator("#products [data-product-id]").count(), 2, label + ": Dresses category filter");
-              await page.locator('[data-tab="Jewellery"]').click();
-              assert.equal(await page.locator("#products [data-product-id]").count(), 1, label + ": Jewellery category filter");
+              if (enabledCategoryNames.includes("Jewellery")) {
+                await page.locator('[data-tab="Jewellery"]').click();
+                assert.equal(await page.locator("#products [data-product-id]").count(), 1, label + ": Jewellery category filter");
+              } else {
+                assert.equal(await page.locator('[data-tab="Jewellery"]').count(), 0, label + ": disabled Jewellery tab stays hidden");
+              }
 
               await page.locator("#ssv-smart-finder-trigger").click();
               const finderPanelBox = await page.locator("#ssv-smart-finder-panel").boundingBox();
@@ -391,7 +399,13 @@ jobs:
               await page.locator('[data-recovery="all"]').waitFor();
               await page.locator('[data-recovery="all"]').click();
               await page.locator("#ssv-smart-finder-panel").waitFor({ state: "hidden" });
-              assert.equal(await page.locator("#products [data-product-id]").count(), 6, label + ": Browse All must show the full enabled catalogue");
+              const expectedEnabledProductCount = productsFixture.filter(product => {
+                const category = String(product.category || "").trim().toLowerCase();
+                const key = ({ sarees: "categorySareesEnabled", dresses: "categoryDressesEnabled", jewellery: "categoryJewelryEnabled", jewelry: "categoryJewelryEnabled" })[category];
+                const value = key ? settingsFixture[key] : undefined;
+                return !key || !(value === false || value === "false" || value === 0 || value === "0");
+              }).length;
+              assert.equal(await page.locator("#products [data-product-id]").count(), expectedEnabledProductCount, label + ": Browse All must show the full enabled catalogue");
 
               await page.locator("#ssv-smart-finder-trigger").click();
               await page.locator("#ssv-finder-category").selectOption("Dresses");
@@ -406,8 +420,12 @@ jobs:
               await page.waitForFunction(() => document.querySelector(".ssv-finder-result h3")?.textContent.trim() === "Printed frock");
               assert.equal(await page.locator(".ssv-finder-result h3").count(), 1, label + ": colour filter returns only the matching product");
               assert.equal((await page.locator(".ssv-finder-result h3").innerText()).trim(), "Printed frock", label + ": recorded colour filter");
-              await page.locator("#ssv-finder-category").selectOption("Jewellery");
-              assert.equal(await page.locator("#ssv-finder-color-field").isVisible(), false, label + ": Jewellery must hide colour");
+              if (enabledCategoryNames.includes("Jewellery")) {
+                await page.locator("#ssv-finder-category").selectOption("Jewellery");
+                assert.equal(await page.locator("#ssv-finder-color-field").isVisible(), false, label + ": Jewellery must hide colour");
+              } else {
+                assert.equal(await page.locator('#ssv-finder-category option[value="Jewellery"]').count(), 0, label + ": Finder excludes disabled Jewellery");
+              }
               await page.locator("#ssv-finder-budget").fill("");
               await page.locator("#ssv-finder-form button[type='submit']").click();
               const add = page.locator(".ssv-finder-result .ssv-finder-add");
