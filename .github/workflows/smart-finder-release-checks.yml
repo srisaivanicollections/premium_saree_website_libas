@@ -78,6 +78,7 @@ jobs:
           assert.match(page, /colourMetadata=\{source:"ai"/, "Non-Jewellery AI colour results must record their provenance");
           assert.match(page, /const tabs=\["All","Best Seller",\.\.\.enabled\]/, "All Products and Best Seller collections must remain available alongside enabled categories");
           assert.match(page, /if\(!categorySettingsReady\)return false/, "Storefront must fail closed until category settings are verified");
+          assert.match(page, /window\.addEventListener\("ssv:settings-updated",event=>\{if\(event\.detail\?\.settings/, "Successful Admin settings refresh must restore storefront category visibility");
           assert.match(page, /if\(categorySettingsReady\)window\.dispatchEvent\(new CustomEvent\("ssv:settings-updated"/, "Fallback settings must not be broadcast as authoritative");
           assert.match(page, /selectedCategory==="best seller"\?"best seller"/, "Best Seller selection must bypass category normalization");
           assert.match(checkout, /if\(!categorySettingsReady\)return false/, "Cart must fail closed until category settings are loaded");
