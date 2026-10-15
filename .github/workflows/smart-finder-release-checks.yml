@@ -427,7 +427,7 @@ jobs:
               await page.locator("#ssv-finder-budget").fill("");
               await page.locator("#ssv-finder-form button[type='submit']").click();
               const add = page.locator(".ssv-finder-result .ssv-finder-add");
-              for (let i = 0; i < 11; i++) await add.click();
+              for (let i = 0; i < 11; i++) await add.first().click();
               assert.match(await page.locator("#ssv-finder-message").innerText(), /up to 10/i, label + ": 10-item limit message");
               await page.locator(".ssv-finder-close").click();
               await page.locator("#ssv-smart-finder-panel").waitFor({ state: "hidden" });
