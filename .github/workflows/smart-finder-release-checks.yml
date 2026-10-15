@@ -270,7 +270,7 @@ jobs:
               assert.ok(toggleState.settingsReads > beforeEnabledSettingsRead, label + ": re-enabled category settings reloaded");
               await togglePage.locator("#ssv-cart-trigger").click();
               await togglePage.locator(".ssv-cart-item").first().waitFor({ state: "visible" });
-              assert.equal(await togglePage.locator(".ssv-cart-item").count(), 1, label + ": cart row returns when " + category + " is re-enabled);
+              assert.equal(await togglePage.locator(".ssv-cart-item").count(), 1, label + ": cart row returns when " + category + " is re-enabled");
               console.log("PASS " + label + ": category OFF/ON hides catalogue, Best Seller, Finder and cart rows without deleting saved cart data.");
             } finally {
               await togglePage.close();
