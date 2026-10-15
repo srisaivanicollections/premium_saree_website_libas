@@ -350,7 +350,15 @@ jobs:
               }
               assert.equal(await page.locator('[data-tab="All"]').count(), 0, label + ": All tab is absent");
               assert.equal(await page.locator('[data-tab="Best Seller"]').count(), 0, label + ": Best Seller filter is absent");
-              const expectedBestSellerBadges = productsFixture.filter(p => p.bestSeller === true || p.bestSeller === "true" || p.bestSeller === 1 || p.bestSeller === "1").length;
+              const expectedBadgeProducts = hasDefaultCategoryBehavior
+                ? productsFixture.filter(product => String(product.category || "").trim().toLowerCase() === expectedDefaultCategory.toLowerCase())
+                : productsFixture.filter(product => {
+                    const category = String(product.category || "").trim().toLowerCase();
+                    const key = ({ sarees: "categorySareesEnabled", dresses: "categoryDressesEnabled", jewellery: "categoryJewelryEnabled", jewelry: "categoryJewelryEnabled" })[category];
+                    const value = key ? settingsFixture[key] : undefined;
+                    return !key || !(value === false || value === "false" || value === 0 || value === "0");
+                  });
+              const expectedBestSellerBadges = expectedBadgeProducts.filter(p => p.bestSeller === true || p.bestSeller === "true" || p.bestSeller === 1 || p.bestSeller === "1").length;
               assert.equal(await page.locator("#products .pill-best").count(), expectedBestSellerBadges, label + ": original Best Seller ribbons remain on the same products");
 
               for (const [index, category] of ["Sarees", "Dresses", "Jewellery"].entries()) {
