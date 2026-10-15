@@ -223,6 +223,59 @@ jobs:
             return state;
           }
 
+          async function runCategoryToggleJourney(label, context) {
+            const togglePage = await context.newPage();
+            const toggleState = await installMocks(togglePage);
+            try {
+              await togglePage.goto("http://127.0.0.1:4173/");
+              await togglePage.locator("#products [data-product-id]").first().waitFor();
+              await togglePage.locator("#ssv-smart-finder-trigger").click();
+              await togglePage.locator("#ssv-finder-category").selectOption("Dresses");
+              await togglePage.locator("#ssv-finder-budget").fill("");
+              await togglePage.locator("#ssv-finder-form button[type='submit']").click();
+              await togglePage.locator(".ssv-finder-result .ssv-finder-add").first().waitFor();
+              const settingsReadyDeadline = Date.now() + 5000;
+              while (toggleState.settingsReads < 2 && Date.now() < settingsReadyDeadline) await togglePage.waitForTimeout(25);
+              assert.ok(toggleState.settingsReads >= 2, label + ": storefront and cart settings loaded before adding");
+              await togglePage.locator(".ssv-finder-result .ssv-finder-add").first().click();
+              await togglePage.waitForFunction(() => JSON.parse(localStorage.getItem("ssv_guest_cart_v1") || "[]").length > 0);
+              await togglePage.locator(".ssv-finder-close").click();
+
+              toggleState.settings.categoryDressesEnabled = false;
+              const beforeDisabledSettingsRead = toggleState.settingsReads;
+              await togglePage.reload();
+              await togglePage.locator("#products [data-product-id]").first().waitFor();
+              const disabledSettingsDeadline = Date.now() + 5000;
+              while (toggleState.settingsReads <= beforeDisabledSettingsRead && Date.now() < disabledSettingsDeadline) await togglePage.waitForTimeout(25);
+              assert.ok(toggleState.settingsReads > beforeDisabledSettingsRead, label + ": disabled category settings reloaded");
+              assert.equal(await togglePage.locator('[data-tab="Dresses"]').count(), 0, label + ": disabled Dresses tab is hidden");
+              await togglePage.locator('[data-tab="All"]').click();
+              assert.equal(await togglePage.locator('#products [data-product-id]').count(), productsFixture.filter(p => p.category !== "Dresses").length, label + ": All Products excludes disabled category");
+              await togglePage.locator('[data-tab="Best Seller"]').click();
+              assert.equal(await togglePage.locator('#products [data-product-id]').count(), productsFixture.filter(p => p.category !== "Dresses" && (p.bestSeller === true || p.bestSeller === "true" || p.bestSeller === 1 || p.bestSeller === "1")).length, label + ": Best Seller excludes disabled category");
+              await togglePage.locator("#ssv-smart-finder-trigger").click();
+              assert.equal(await togglePage.locator('#ssv-finder-category option[value="Dresses"]').count(), 0, label + ": Finder excludes disabled category");
+              await togglePage.locator(".ssv-finder-close").click();
+              await togglePage.locator("#ssv-cart-trigger").click();
+              assert.equal(await togglePage.locator(".ssv-cart-item").count(), 0, label + ": disabled-category cart row is not visible");
+              assert.equal(toggleState.workerActions.filter(action => action === "submitOrder").length, 0, label + ": disabled category cannot submit an order");
+
+              toggleState.settings.categoryDressesEnabled = true;
+              const beforeEnabledSettingsRead = toggleState.settingsReads;
+              await togglePage.reload();
+              await togglePage.locator("#products [data-product-id]").first().waitFor();
+              const enabledSettingsDeadline = Date.now() + 5000;
+              while (toggleState.settingsReads <= beforeEnabledSettingsRead && Date.now() < enabledSettingsDeadline) await togglePage.waitForTimeout(25);
+              assert.ok(toggleState.settingsReads > beforeEnabledSettingsRead, label + ": re-enabled category settings reloaded");
+              await togglePage.locator("#ssv-cart-trigger").click();
+              await togglePage.locator(".ssv-cart-item").first().waitFor({ state: "visible" });
+              assert.equal(await togglePage.locator(".ssv-cart-item").count(), 1, label + ": cart row returns when category is re-enabled");
+              console.log("PASS " + label + ": category OFF/ON hides catalogue, Best Seller, Finder and cart rows without deleting saved cart data.");
+            } finally {
+              await togglePage.close();
+            }
+          }
+
           async function runJourney(label, viewport, mobile) {
             const browser = await chromium.launch({ headless: true });
             const context = await browser.newContext({ viewport, isMobile: mobile, hasTouch: mobile });
@@ -240,47 +293,7 @@ jobs:
               assert.equal(await page.locator('#products [data-product-id]').count(), productsFixture.filter(p => p.bestSeller === true || p.bestSeller === "true" || p.bestSeller === 1 || p.bestSeller === "1").length, label + ": Best Seller collection");
               await page.locator('[data-tab="All"]').click();
 
-              // Category OFF hides every customer-facing surface without deleting cart rows.
-              await page.locator("#ssv-smart-finder-trigger").click();
-              await page.locator("#ssv-finder-category").selectOption("Dresses");
-              await page.locator("#ssv-finder-budget").fill("");
-              await page.locator("#ssv-finder-form button[type='submit']").click();
-              const settingsReadyDeadline = Date.now() + 5000;
-              while (state.settingsReads < 2 && Date.now() < settingsReadyDeadline) await page.waitForTimeout(25);
-              assert.ok(state.settingsReads >= 2, label + ": storefront and cart settings loaded before adding");
-              await page.locator(".ssv-finder-result .ssv-finder-add").first().click();
-              assert.ok(JSON.parse(await page.evaluate(() => localStorage.getItem("ssv_guest_cart_v1") || "[]")).length, label + ": cart row created before category disable");
-              await page.locator(".ssv-finder-close").click();
-              state.settings.categoryDressesEnabled = false;
-              const beforeDisabledSettingsRead = state.settingsReads;
-              await page.reload();
-              await page.locator("#products [data-product-id]").first().waitFor();
-              const disabledSettingsDeadline = Date.now() + 5000;
-              while (state.settingsReads <= beforeDisabledSettingsRead && Date.now() < disabledSettingsDeadline) await page.waitForTimeout(25);
-              assert.ok(state.settingsReads > beforeDisabledSettingsRead, label + ": disabled category settings reloaded");
-              assert.equal(await page.locator('[data-tab="Dresses"]').count(), 0, label + ": disabled Dresses tab is hidden");
-              await page.locator('[data-tab="All"]').click();
-              assert.equal(await page.locator('#products [data-product-id]').count(), productsFixture.filter(p => p.category !== "Dresses").length, label + ": All Products excludes disabled category");
-              await page.locator('[data-tab="Best Seller"]').click();
-              assert.equal(await page.locator('#products [data-product-id]').count(), productsFixture.filter(p => p.category !== "Dresses" && (p.bestSeller === true || p.bestSeller === "true" || p.bestSeller === 1 || p.bestSeller === "1")).length, label + ": Best Seller excludes disabled category");
-              await page.locator("#ssv-smart-finder-trigger").click();
-              assert.equal(await page.locator('#ssv-finder-category option[value="Dresses"]').count(), 0, label + ": Finder excludes disabled category");
-              await page.locator(".ssv-finder-close").click();
-              await page.locator("#ssv-cart-trigger").click();
-              assert.equal(await page.locator(".ssv-cart-item").count(), 0, label + ": disabled-category cart row is not visible");
-              assert.equal(state.workerActions.filter(action => action === "submitOrder").length, 0, label + ": disabled category cannot submit an order");
-              state.settings.categoryDressesEnabled = true;
-              const beforeEnabledSettingsRead = state.settingsReads;
-              await page.reload();
-              await page.locator("#products [data-product-id]").first().waitFor();
-              const enabledSettingsDeadline = Date.now() + 5000;
-              while (state.settingsReads <= beforeEnabledSettingsRead && Date.now() < enabledSettingsDeadline) await page.waitForTimeout(25);
-              assert.ok(state.settingsReads > beforeEnabledSettingsRead, label + ": re-enabled category settings reloaded");
-              await page.locator("#ssv-cart-trigger").click();
-              assert.equal(await page.locator(".ssv-cart-item").count(), 1, label + ": cart row returns when category is re-enabled");
-              await page.evaluate(() => localStorage.clear());
-              await page.reload();
-              await page.locator("#products [data-product-id]").first().waitFor();
+              await runCategoryToggleJourney(label, context);
 
               await page.locator('[data-tab="Dresses"]').click();
               assert.equal(await page.locator("#products [data-product-id]").count(), 2, label + ": Dresses category filter");
