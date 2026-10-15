@@ -31,5 +31,6 @@ test("live GitHub Pages storefront selects the first populated enabled category 
   assert.match(liveSource, /if\(categorySettingsReady\)\{category=ssvDefaultStorefrontCategory\(products\);window\.dispatchEvent\(new CustomEvent\("ssv:settings-updated"/, "Active inline storefront must select the default category before first render, not rely only on app.js");
   assert.match(liveSource, /if\(categorySettingsReady&&category!=="All"&&!enabled\.includes\(category\)\)category=ssvDefaultStorefrontCategory\(products\)/);
   assert.match(liveSource, /if\(clear\)clear\.onclick=\(\)=>\{category=ssvDefaultStorefrontCategory\(products\)/);
+  assert.match(liveSource, /if\(catalogReset\)catalogReset\.onclick=\(\)=>\{\s*category=ssvDefaultStorefrontCategory\(products\);/, "Reset must restore the first populated enabled category");
   assert.match(liveSource, /showAllProducts\(\)\{category="All"/);
 });
