@@ -10355,37 +10355,7 @@ function ssvRenderEnrichFinderSummary(result){
  if(review){review.textContent=String(reviewCount);review.dataset.hasResult="true";}
  if(status){status.textContent=(result.refreshFailed?"Partial results":"Complete")+" · "+result.imageProcessed+" images analysed · "+result.occasionsSaved+" occasions saved · "+result.coloursSaved+" colours saved"+(reviewCount?" · "+reviewCount+" need review":"");status.setAttribute("data-state",result.failed||result.refreshFailed?"error":"success");}
  if(details){
-  details.replaceChildren();const suggestions=Array.isArray(result.reviewSuggestions)?result.reviewSuggestions:[];
-  suggestions.forEach(suggestion=>{
-   const card=document.createElement("section");card.className="ssv-enrich-review-card";card.style.cssText="margin-top:14px;padding:14px;border:1px solid #E4D8C5;background:#fffdf9";
-   const identity=document.createElement("div");identity.className="ssv-enrich-review-identity";identity.style.cssText="display:flex;align-items:center;gap:12px;min-width:0;margin-bottom:10px";const preview=document.createElement("img");preview.className="ssv-enrich-review-image";preview.src=String(suggestion.image||"");preview.alt=suggestion.name+" product image";preview.loading="lazy";preview.style.cssText="width:76px;height:96px;flex:0 0 76px;object-fit:contain;background:#FAF7F2;border:1px solid #E4D8C5";preview.onerror=()=>{preview.hidden=true;};identity.append(preview);const identityCopy=document.createElement("div");identityCopy.style.cssText="min-width:0;overflow-wrap:anywhere";const title=document.createElement("h4");title.textContent=suggestion.name;title.style.cssText="margin:0 0 4px;font-size:16px;font-weight:600;overflow-wrap:anywhere";const productMeta=document.createElement("p");productMeta.textContent="Product "+suggestion.id+(suggestion.category?" · "+suggestion.category:"");productMeta.style.cssText="margin:0;font-size:12px;color:#6f665b;overflow-wrap:anywhere";identityCopy.append(title,productMeta);identity.append(identityCopy);card.append(identity);
-   const note=document.createElement("p");note.textContent="Occasion prediction is uncertain. Review the ranked suggestions and select every occasion supported by the product. Scores are ranking signals, not calibrated probabilities.";note.style.cssText="margin:0 0 10px;font-size:13px;line-height:1.5;color:#6f665b";card.append(note);
-   const rankings=Array.isArray(suggestion.rankings)?suggestion.rankings:[];
-   const scoreStore=window.__ssvOccasionReviewScores||(window.__ssvOccasionReviewScores={});scoreStore[String(suggestion.id)]=rankings;
-   if(!rankings.length){const empty=document.createElement("p");empty.textContent="No valid occasion rankings were returned. Check the product image and analyse again.";card.append(empty);}
-   else{
-    const list=document.createElement("div");list.style.cssText="display:grid;gap:8px;margin-bottom:12px";
-    rankings.forEach((item,index)=>{
-     const label=document.createElement("label");label.style.cssText="display:flex;align-items:center;gap:9px;font-size:14px;line-height:1.35;cursor:pointer";
-     const checkbox=document.createElement("input");checkbox.type="checkbox";checkbox.value=item.label;checkbox.dataset.score=String(item.score);checkbox.style.cssText="width:18px;height:18px;accent-color:#80653f;flex:0 0 auto";const selectionStore=window.__ssvOccasionReviewSelections||(window.__ssvOccasionReviewSelections={});checkbox.checked=(selectionStore[String(suggestion.id)]||[]).includes(item.label);checkbox.addEventListener("change",()=>{selectionStore[String(suggestion.id)]=[...list.querySelectorAll('input[type="checkbox"]:checked')].map(input=>input.value);});
-     const copy=document.createElement("span");copy.textContent=(index+1)+". "+item.label+" · model score "+Number(item.score).toFixed(3);
-     label.append(checkbox,copy);list.append(label);
-    });card.append(list);
-    const save=document.createElement("button");save.type="button";save.className="btn dark";save.textContent="SAVE SELECTED OCCASIONS";save.style.cssText="width:100%;min-height:42px";save.onclick=async()=>{
-     const selected=[...list.querySelectorAll('input[type="checkbox"]:checked')].map(input=>input.value);
-     if(!selected.length){note.textContent="Select one or more occasions before saving.";note.style.color="#9b2c2c";return;}
-     save.disabled=true;save.textContent="SAVING REVIEWED TAGS…";
-     try{
-      await ssvSaveReviewedOccasions(suggestion.id,suggestion.image,selected);
-      card.replaceChildren();const done=document.createElement("p");done.textContent="Saved reviewed occasions for "+suggestion.name+": "+selected.join(", ")+". Existing colour and other product details were preserved.";done.style.cssText="margin:0;color:#42634d;line-height:1.5";card.append(done);
-      const remaining=new Set((result.uncertainProductIds||[]).map(String));if(!(result.uncertainColourProductIds||[]).map(String).includes(String(suggestion.id)))remaining.delete(String(suggestion.id));result.uncertainProductIds=[...remaining];result.reviewSuggestions=(Array.isArray(result.reviewSuggestions)?result.reviewSuggestions:[]).filter(item=>String(item.id)!==String(suggestion.id));result.occasionsSaved+=selected.length;delete (window.__ssvOccasionReviewSelections||{})[String(suggestion.id)];
-      ssvRenderEnrichFinderSummary(result);ssvRefreshEnrichFinderCounts();
-     }catch(error){note.textContent="Could not save reviewed occasions. "+ssvFinderFailureReason(error);note.style.color="#9b2c2c";save.disabled=false;save.textContent="RETRY SAVE";}
-    };
-    card.append(save);
-   }
-   details.append(card);
-  });
+  details.replaceChildren();if(Number(result.occasionUncertain)>0){const note=document.createElement("p");note.className="ssv-enrich-occasion-review-note";note.textContent=String(result.occasionUncertain)+" product(s) had uncertain occasion predictions. No occasion was saved for those products; review their metadata in the catalogue.";note.style.cssText="margin:10px 0;padding:12px;border:1px solid #E4D8C5;background:#FAF7F2;color:#6f6252;font-size:13px;line-height:1.5";details.append(note);}
   const colourSuggestions=Array.isArray(result.colourReviewSuggestions)?result.colourReviewSuggestions:[];
   colourSuggestions.forEach(suggestion=>{
    const card=document.createElement("section");card.className="ssv-enrich-review-card ssv-enrich-colour-review-card";
