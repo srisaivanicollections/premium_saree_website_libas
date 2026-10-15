@@ -80,7 +80,7 @@ jobs:
           assert.match(page, /if\(!categorySettingsReady\)return false/, "Storefront must fail closed until category settings are verified");
           assert.match(page, /window\.addEventListener\("ssv:settings-updated",event=>\{if\(event\.detail\?\.settings/, "Successful Admin settings refresh must restore storefront category visibility");
           assert.match(page, /if\(categorySettingsReady\)window\.dispatchEvent\(new CustomEvent\("ssv:settings-updated"/, "Fallback settings must not be broadcast as authoritative");
-          assert.match(page, /selectedCategory==="best seller"\?"best seller"/, "Best Seller selection must bypass category normalization");
+          assert.match(page, /==="best seller"\?"best seller":normalizeCategoryName\(category\)/, "Best Seller selection must bypass category normalization");
           assert.match(checkout, /if\(!categorySettingsReady\)return false/, "Cart must fail closed until category settings are loaded");
           assert.match(checkout, /if\(!categorySettingsReady\)\{showStatus\(/, "Checkout submission must wait for verified category settings");
           assert.match(page, /attempt<3&&!saved/, "Occasion metadata writes must retry GitHub SHA conflicts");
