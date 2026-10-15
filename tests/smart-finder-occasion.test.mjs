@@ -94,13 +94,14 @@ test("closing and reopening the enrichment popup does not cancel or duplicate a 
   assert.match(adminSource, /function ssvRenderEnrichFinderSummary\(result\)/);
 });
 
-test("Enrich Finder reports field-level saved counts and uncertain/failed product IDs", () => {
+test("Enrich Finder reports saved counts, a deduplicated review count, and actionable diagnostics", () => {
   assert.match(adminSource, /occasionMissingCount=queue\.filter/);
   assert.match(adminSource, /colourMissingCount=queue\.filter/);
-  assert.match(adminSource, /occasion\.textContent=result\.occasionsSaved\+" \/ "\+result\.occasionMissingCount/);
-  assert.match(adminSource, /colour\.textContent=result\.coloursSaved\+" \/ "\+result\.colourMissingCount/);
-  assert.match(adminSource, /Uncertain predictions: product IDs/);
-  assert.match(adminSource, /Failed products:/);
+  assert.match(adminSource, /occasion\.textContent=String\(result\.occasionsSaved\)/);
+  assert.match(adminSource, /colour\.textContent=String\(result\.coloursSaved\)/);
+  assert.match(adminSource, /const reviewCount=reviewIds\.size/);
+  assert.match(adminSource, /uncertain predictions and need manual review/);
+  assert.match(adminSource, /Processing failures:/);
 });
 
 test("ambiguous catalogue writes are re-read before reporting an unknown outcome", () => {
@@ -129,6 +130,6 @@ test("A failed final catalogue refresh preserves partial-save results and warns 
   assert.match(adminSource, /let refreshFailed=false/);
   assert.match(adminSource, /Final catalogue refresh failed\. Some saves may already be complete\. Refresh the catalogue before retrying\./);
   assert.match(adminSource, /refreshFailed\};/);
-  assert.match(adminSource, /result\.refreshFailed\?"Partial results: ":"Complete: "/);
+  assert.match(adminSource, /result\.refreshFailed\?"Partial results":"Complete"/);
   assert.match(adminSource, /result\.failed\|\|result\.refreshFailed\?"error":"success"/);
 });
