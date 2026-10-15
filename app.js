@@ -396,7 +396,8 @@ function apply(){all(".brand b").forEach(x=>x.textContent=settings.name||"SRI SA
 
 
 function ssvDefaultStorefrontCategory(items=products){const list=Array.isArray(items)?items:[];const enabled=["Sarees","Dresses","Jewellery"].filter(name=>{const key=({Sarees:"categorySareesEnabled",Dresses:"categoryDressesEnabled",Jewellery:"categoryJewelryEnabled"})[name];const value=settings[key];return !(value===false||value==="false"||value===0||value==="0");});for(const name of enabled){if(list.some(p=>String(p?.category||"").trim().toLowerCase()===name.toLowerCase()))return name;}const first=list.find(p=>String(p?.category||"").trim()&&!["Sarees","Dresses","Jewellery"].includes(String(p.category).trim()));return first?String(first.category).trim():(enabled[0]||"Sarees");}
-function renderTabs(){$("#tabs").innerHTML=["All","Sarees","Dresses","Jewellery","Best Seller"].map(c=>'<button class="'+(category===c?"active":"")+'" data-tab="'+c+'">'+c.toUpperCase()+"</button>").join("")}
+function isStorefrontCategoryEnabled(name){const key=({Sarees:"categorySareesEnabled",Dresses:"categoryDressesEnabled",Jewellery:"categoryJewelryEnabled"})[name];const value=key?settings[key]:undefined;return !(value===false||value==="false"||value===0||value==="0");}
+function renderTabs(){const enabled=["Sarees","Dresses","Jewellery"].filter(name=>isStorefrontCategoryEnabled(name)&&products.some(p=>String(p?.category||"").trim().toLowerCase()===name.toLowerCase()));if(!enabled.includes(category))category=ssvDefaultStorefrontCategory(products);$("#tabs").innerHTML=enabled.map(c=>'<button class="'+(category===c?"active":"")+'" data-tab="'+c+'">'+c.toUpperCase()+'</button>').join("")}
 function render(){
   renderTabs();
   const grid=$("#products");
@@ -408,11 +409,8 @@ function render(){
   const q=$("#search").value.trim().toLowerCase(),pf=$("#price").value;
   let list=products.filter(p=>{
     const productCategory=String(p.category||"").trim().toLowerCase();
-    const selectedCategory=String(category||"All").trim().toLowerCase();
-    const isBestSeller=p.bestSeller===true||p.bestSeller==="true"||p.bestSeller===1||p.bestSeller==="1";
-    const matchesCollection=
-      selectedCategory==="all" ||
-      (selectedCategory==="best seller" ? isBestSeller : productCategory===selectedCategory);
+    const selectedCategory=String(category||ssvDefaultStorefrontCategory(products)).trim().toLowerCase();
+    const matchesCollection=isStorefrontCategoryEnabled(String(p.category||"").trim())&&productCategory===selectedCategory;
     const matchesSearch=
       !q ||
       String(p.name||"").toLowerCase().includes(q) ||
