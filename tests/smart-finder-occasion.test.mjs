@@ -175,7 +175,7 @@ test("manual occasion review shows product image and identity with mobile-safe r
 test("Enrich Finder keeps ranked occasion suggestions for a single uncertain product image", () => {
   assert.match(aiSource, /const predictions = await classifier\(url,/);
   assert.match(aiSource, /rankings: ranked/);
-  assert.match(adminSource, /if\(needsOccasion&&!addOccasion\)\{[\s\S]*?rankings:[\s\S]*?reviewSuggestions\.push/);
+  assert.match(adminSource, /if\(needsOccasion&&!addOccasion\)\{[\s\S]*?const ranked=Array\.isArray\(occasion\?\.rankings\)/);\n  assert.match(adminSource, /reviewSuggestions\.push\(\{[\s\S]*?rankings:ranked/);
   assert.match(adminSource, /Occasion prediction is uncertain\. Review the ranked suggestions/);
   assert.match(adminSource, /SAVE SELECTED OCCASIONS/);
 });
@@ -187,4 +187,13 @@ test("final TOP PICK sizing and popup animation rules override legacy CSS, while
   assert.match(adminSource, /\.ssv-enrich-popup-backdrop:not\(\[hidden\]\).*animation:ssvEnrichBackdropIn/);
   assert.match(adminSource, /\.ssv-enrich-popup-backdrop:not\(\[hidden\]\) \.ssv-enrich-popup\{animation:ssvEnrichPanelIn/);
   assert.match(adminSource, /@media\(prefers-reduced-motion:reduce\)/);
+});
+
+
+test("Enrich Finder exposes real processing progress and honours reduced motion", () => {
+  assert.match(adminSource, /id="adminEnrichProgressTrack"/);
+  assert.match(adminSource, /onProgress:ssvUpdateEnrichProgress/);
+  assert.match(adminSource, /index:i\+1,total:queue\.length,product:candidate/);
+  assert.match(adminSource, /@keyframes ssvEnrichGoldFlow/);
+  assert.match(adminSource, /prefers-reduced-motion:reduce\)\{\.ssv-enrich-scan-icon/);
 });
