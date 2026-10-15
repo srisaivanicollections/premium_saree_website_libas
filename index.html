@@ -14763,4 +14763,28 @@ if ("serviceWorker" in navigator) {
 @media(prefers-reduced-motion:reduce){.ssv-enrich-popup-backdrop,.ssv-enrich-popup,#admin .admin-enrich-finder-link,#admin .admin-enrich-finder-link span,#admin #adminEnrichFinder:disabled::after,#adminEnrichFinderPopup .ssv-enrich-count-grid>div{animation:none!important;transition:none!important}}
 </style>
 
+
+<style id="ssv-enrich-finder-final-polish-20261015">
+/* Final source of truth for TOP PICK sizing, after legacy badge overrides. */
+#shop #products > article.product-card > .product-image > .badges > .badge.best{
+  box-sizing:border-box!important;display:inline-flex!important;align-items:center!important;
+  min-height:22px!important;max-width:calc(100% - 4px)!important;padding:4px 7px!important;
+  font-size:8px!important;line-height:1.2!important;letter-spacing:.10em!important;
+  font-weight:600!important;white-space:nowrap!important;
+}
+@media(max-width:600px){
+  #shop #products > article.product-card > .product-image > .badges > .badge.best{
+    min-height:20px!important;padding:3px 5px!important;font-size:8px!important;
+    line-height:1.2!important;letter-spacing:.06em!important;
+  }
+}
+/* Ensure the entrance animation replays whenever the hidden popup is reopened. */
+.ssv-enrich-popup-backdrop:not([hidden]){animation:ssvEnrichBackdropIn .20s ease both!important}
+.ssv-enrich-popup-backdrop:not([hidden]) .ssv-enrich-popup{animation:ssvEnrichPanelIn .24s cubic-bezier(.2,.75,.25,1) both!important}
+@media(prefers-reduced-motion:reduce){
+ .ssv-enrich-popup-backdrop:not([hidden]),
+ .ssv-enrich-popup-backdrop:not([hidden]) .ssv-enrich-popup{animation:none!important}
+}
+</style>
+
 </html>
