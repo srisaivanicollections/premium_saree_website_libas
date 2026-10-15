@@ -9791,7 +9791,7 @@ async function load(){
   delete settings.githubToken;
   // Never broadcast fallback settings as if category availability were verified.
   // Finder and cart remain fail-closed until a successful settings read or Admin refresh.
-  if(categorySettingsReady){category=ssvDefaultStorefrontCategory(products);window.dispatchEvent(new CustomEvent("ssv:settings-updated",{detail:{settings:{...settings}}}));}
+  if(categorySettingsReady){if(category==="All"||!isCategoryEnabled(category))category=ssvDefaultStorefrontCategory(products);window.dispatchEvent(new CustomEvent("ssv:settings-updated",{detail:{settings:{...settings}}}));}
 
   try{
     apply();
@@ -9970,15 +9970,15 @@ function apply(){
 }
 function normalizeCategoryName(name){const value=String(name||"").trim().toLowerCase();if(value==="jewellery"||value==="jewelry")return "Jewellery";if(value==="sarees")return "Sarees";if(value==="dresses")return "Dresses";return "";}
 function isCategoryEnabled(name){if(!categorySettingsReady)return false;const normalized=normalizeCategoryName(name);const key=({Sarees:"categorySareesEnabled",Dresses:"categoryDressesEnabled",Jewellery:"categoryJewelryEnabled"})[normalized];return !!key&&!(settings[key]===false||settings[key]==="false"||settings[key]===0||settings[key]==="0")}
-function ssvDefaultStorefrontCategory(items=products){const enabled=["Sarees","Dresses","Jewellery"].filter(isCategoryEnabled);for(const name of enabled){if((Array.isArray(items)?items:[]).some(p=>normalizeCategoryName(p.category)===name))return name;}const first=(Array.isArray(items)?items:[]).find(p=>normalizeCategoryName(p.category)&&isCategoryEnabled(p.category));return first?normalizeCategoryName(first.category):(enabled[0]||"All");}
 window.addEventListener("ssv:settings-updated",event=>{if(event.detail?.settings&&typeof event.detail.settings==="object"){categorySettingsReady=true;if(category==="All"||!isCategoryEnabled(category))category=ssvDefaultStorefrontCategory(products);}});
-function renderTabs(){const enabled=["Sarees","Dresses","Jewellery"].filter(isCategoryEnabled);if(categorySettingsReady&&category!=="All"&&!enabled.includes(category))category=ssvDefaultStorefrontCategory(products);$("#tabs").innerHTML=enabled.map(c=>'<button class="'+(category===c?"active":"")+'" data-tab="'+c+'">'+(c==="Jewellery"?"JEWELLERY":c.toUpperCase())+"</button>").join("")}
+function ssvDefaultStorefrontCategory(items=products){const list=Array.isArray(items)?items:[];const enabled=["Sarees","Dresses","Jewellery"].filter(isCategoryEnabled);for(const name of enabled){if(list.some(p=>normalizeCategoryName(p?.category).toLowerCase()===name.toLowerCase()))return name;}return enabled[0]||"Sarees";}
+function renderTabs(){const enabled=["Sarees","Dresses","Jewellery"].filter(isCategoryEnabled);if(categorySettingsReady&&(category==="All"||!enabled.includes(category)||!products.some(p=>normalizeCategoryName(p?.category).toLowerCase()===normalizeCategoryName(category).toLowerCase())))category=ssvDefaultStorefrontCategory(products);$("#tabs").innerHTML=enabled.map(c=>'<button class="'+(category===c?"active":"")+'" data-tab="'+c+'">'+(c==="Jewellery"?"JEWELLERY":c.toUpperCase())+"</button>").join("")}
 function render(){
   renderTabs();
   const grid=$("#products");
   if(!grid)return;
   if(!Array.isArray(products)||products.length===0){
-    $("#products").innerHTML='<div class="lux-empty"><strong>No styles found</strong><span>'+esc(settings.emptyCatalogText||"Try another search or browse the full collection.")+'</span><br><button type="button" class="btn dark" id="clearCatalogFilters">'+esc(settings.viewAllLabel||"VIEW ALL STYLES")+'</button></div>'; const clear=$("#clearCatalogFilters"); if(clear)clear.onclick=()=>{const search=$("#search"),price=$("#price");if(search)search.value="";if(price)price.value="";catalogPage=0;syncCatalogClear?.();syncCatalogSortIcon?.();render()};
+    $("#products").innerHTML='<div class="lux-empty"><strong>No styles found</strong><span>'+esc(settings.emptyCatalogText||"Try another search or browse the full collection.")+'</span><br><button type="button" class="btn dark" id="clearCatalogFilters">'+esc(settings.viewAllLabel||"VIEW ALL STYLES")+'</button></div>'; const clear=$("#clearCatalogFilters"); if(clear)clear.onclick=()=>{category=ssvDefaultStorefrontCategory(products);const search=$("#search"),price=$("#price");if(search)search.value="";if(price)price.value="";catalogPage=0;syncCatalogClear?.();syncCatalogSortIcon?.();render()};
     return;
   }
   const q=$("#search").value.trim().toLowerCase(),pf=$("#price").value;
@@ -10037,7 +10037,7 @@ function render(){
   if(!list.length){
     grid.innerHTML='<div class="lux-empty"><strong>No styles found</strong><span>'+esc(settings.emptyCatalogText||"Try another search or browse the full collection.")+'</span><br><button type="button" class="btn dark" id="clearCatalogFilters">'+esc(settings.viewAllLabel||"VIEW ALL STYLES")+'</button></div>';
     const clear=$("#clearCatalogFilters");
-    if(clear)clear.onclick=()=>{category=ssvDefaultStorefrontCategory(products);$("#search").value="";$("#price").value="";render()};
+    if(clear)clear.onclick=()=>{category="All";$("#search").value="";$("#price").value="";render()};
     return;
   }
   grid.innerHTML=pageItems.map(p=>{
@@ -11593,7 +11593,7 @@ const syncCatalogSortIcon=()=>{
 syncCatalogSortIcon();
 if(catalogSort)catalogSort.onchange=()=>{syncCatalogSortIcon();catalogPage=0;render()};if(catalogClear)catalogClear.onclick=()=>{if(!catalogSearch)return;catalogSearch.value="";catalogSearch.dispatchEvent(new Event("input",{bubbles:true}));catalogSearch.focus()};let catalogResetPulseTimer=0;
 if(catalogReset)catalogReset.onclick=()=>{
-  category=ssvDefaultStorefrontCategory(products);
+  if(category!=="All"&&!isCategoryEnabled(category)){const enabled=["Sarees","Dresses","Jewellery"].filter(isCategoryEnabled);category=enabled[0]||"";}
   if(catalogSearch)catalogSearch.value="";
   if(catalogSort){catalogSort.value="";syncCatalogSortIcon();}
   syncCatalogClear();
