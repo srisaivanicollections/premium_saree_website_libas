@@ -111,6 +111,16 @@ test("closing and reopening the enrichment popup does not cancel or duplicate a 
   assert.match(adminSource, /function ssvRenderEnrichFinderSummary\(result\)/);
 });
 
+test("Enrich Finder popup keeps model rankings and product IDs internal", () => {
+  const start = adminSource.indexOf("function ssvRenderEnrichFinderSummary(result)");
+  const end = adminSource.indexOf("function showView(v)", start);
+  assert.ok(start >= 0 && end > start, "summary renderer must be present");
+  const popupSummary = adminSource.slice(start, end);
+  assert.doesNotMatch(popupSummary, /model score|Product "\+suggestion\.id|Product "\+item\.id/);
+  assert.match(popupSummary, /option\.textContent=value/);
+  assert.match(popupSummary, /Colour review/);
+});
+
 test("Enrich Finder reports saved counts, a deduplicated review count, and actionable diagnostics", () => {
   assert.match(adminSource, /occasionMissingCount=queue\.filter/);
   assert.match(adminSource, /colourMissingCount=queue\.filter/);
