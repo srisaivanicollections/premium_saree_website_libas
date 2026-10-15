@@ -103,6 +103,7 @@ export async function createOccasionScanner() {
       for (let pass = 0; pass < MAX_INFERENCE_PASSES; pass++) {
         passes = pass + 1;
         const currentOccasionPrompts = occasionPrompts(itemType, pass);
+        // Runtime/image/model errors in the primary occasion inference propagate to Admin diagnostics.
         const predictions = await classifier(url, currentOccasionPrompts);
         const occasionScores = scoresByPrompt(predictions, currentOccasionPrompts);
         occasionRuns.push(occasionScores.map(item => item.score));
@@ -125,10 +126,11 @@ export async function createOccasionScanner() {
         if (occasion.confident && colour?.confident) break;
       }
 
-      const combined = { occasion: { ...occasion, passes }, colour: colour ? { ...colour, passes } : null, colourError, passes };
+      const combined = { occasion, colour, colourError };
+      combined.passes = passes;
       // Cache only complete confident results. Transient failures and uncertain
       // predictions remain retryable, and Admin can report real failures.
-      if (occasion?.confident && colour?.confident) resultCache.set(cacheKey, combined);
+      if (occasion.confident && colour?.confident) resultCache.set(cacheKey, combined);
       return combined;
     }
   };
