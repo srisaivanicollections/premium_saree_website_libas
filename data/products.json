@@ -11,12 +11,28 @@
     "newArrival": true,
     "bestSeller": true,
     "availability": true,
-    "occasions": [],
+    "occasions": [
+      "Traditional"
+    ],
     "colourMetadata": {
       "source": "ai",
       "model": "CLIP-ViT-B-32",
       "score": 0.5472,
       "margin": 0.3079,
+      "image": "assets/products/1791912682188-614f0db1e8dc-WhatsApp-Image-2026-10-13-at-10.57.14-PM.jpeg",
+      "version": 1
+    },
+    "occasionMetadata": {
+      "source": "ai",
+      "model": "CLIP-ViT-B-32",
+      "score": 0.3922,
+      "margin": 0.0186,
+      "scores": [
+        {
+          "label": "Traditional",
+          "score": 0.3922
+        }
+      ],
       "image": "assets/products/1791912682188-614f0db1e8dc-WhatsApp-Image-2026-10-13-at-10.57.14-PM.jpeg",
       "version": 1
     }
