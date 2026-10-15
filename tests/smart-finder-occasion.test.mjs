@@ -195,11 +195,11 @@ test("low-confidence occasions are counted while their top matches are saved wit
 });
 
  
-test("uncertain occasion feedback is compact and review cards remain for uncertain colours", () => {
-  assert.match(adminSource, /ssv-enrich-occasion-review-note/);
-  assert.match(adminSource, /Choose the product's actual visible colour/);
-  assert.match(adminSource, /max-width:100vw/);
-  assert.match(adminSource, /overflow-wrap:anywhere/);
+test("manual colour-review UI and save workflow are removed", () => {
+  assert.doesNotMatch(adminSource, /ssvSaveReviewedColour/);
+  assert.doesNotMatch(adminSource, /colourReviewSuggestions/);
+  assert.doesNotMatch(adminSource, /SAVE REVIEWED COLOUR/);
+  assert.doesNotMatch(adminSource, /Choose the product's actual visible colour/);
 });
 
 test("Enrich Finder close animation and final badge sizing overrides exist", () => {
