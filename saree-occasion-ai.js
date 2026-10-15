@@ -103,18 +103,28 @@ export function selectOccasionPrediction(predictions, itemType = "saree") {
     .map((item, index) => ({
       label: labelByPrompt.get(item.label) || "",
       score: Number(item.score),
-      margin: Number(item.score) - Number(sorted[index + 1]?.score || 0),
       rank: index + 1
     }))
     .filter(item => item.label);
   if (!ranked.length) throw new Error("The image model returned no known occasion labels.");
   const best = ranked[0];
-  return { label: best.label, score: best.score, margin: best.margin, rankings: ranked };
+  const tieTolerance = 0.0005;
+  const labels = ranked.filter(item => Math.abs(item.score - best.score) <= tieTolerance).map(item => item.label);
+  const nextDistinct = ranked.find(item => item.score < best.score - tieTolerance);
+  const margin = best.score - Number(nextDistinct?.score || 0);
+  return {
+    label: best.label, labels, score: best.score, margin,
+    rankings: ranked.map((item, index) => ({
+      ...item,
+      margin: index === 0 ? margin : item.score - Number(ranked[index + 1]?.score || 0)
+    }))
+  };
 }
 
 export function isConfidentOccasionPrediction(result) {
+  const labels = Array.isArray(result?.labels) && result.labels.length ? result.labels : [result?.label];
   return Boolean(result &&
-    LABELS.some(item => item.label === result.label) &&
+    labels.every(label => LABELS.some(item => item.label === label)) &&
     Number.isFinite(result.score) && result.score >= 0.30 &&
     Number.isFinite(result.margin) && result.margin >= 0.07);
 }
