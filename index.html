@@ -9954,7 +9954,7 @@ function apply(){
 }
 function normalizeCategoryName(name){const value=String(name||"").trim().toLowerCase();if(value==="jewellery"||value==="jewelry")return "Jewellery";if(value==="sarees")return "Sarees";if(value==="dresses")return "Dresses";return "";}
 function isCategoryEnabled(name){const normalized=normalizeCategoryName(name);const key=({Sarees:"categorySareesEnabled",Dresses:"categoryDressesEnabled",Jewellery:"categoryJewelryEnabled"})[normalized];return !!key&&!(settings[key]===false||settings[key]==="false"||settings[key]===0||settings[key]==="0")}
-function renderTabs(){const enabled=["Sarees","Dresses","Jewellery"].filter(isCategoryEnabled);if(category!=="All"&&!enabled.includes(category))category=enabled[0]||"";$("#tabs").innerHTML=enabled.map(c=>'<button class="'+(category===c?"active":"")+'" data-tab="'+c+'">'+(c==="Jewellery"?"JEWELLERY":c.toUpperCase())+"</button>").join("")}
+function renderTabs(){const enabled=["Sarees","Dresses","Jewellery"].filter(isCategoryEnabled);if(category!=="All"&&category!=="Best Seller"&&!enabled.includes(category))category="All";const tabs=["All","Best Seller",...enabled];$("#tabs").innerHTML=tabs.map(c=>'<button class="'+(category===c?"active":"")+'" data-tab="'+c+'">'+(c==="Jewellery"?"JEWELLERY":c.toUpperCase())+"</button>").join("")}
 function render(){
   renderTabs();
   const grid=$("#products");
@@ -9966,7 +9966,7 @@ function render(){
   const q=$("#search").value.trim().toLowerCase(),pf=$("#price").value;
   let list=products.filter(p=>{
     const productCategory=normalizeCategoryName(p.category).toLowerCase();
-    const selectedCategory=String(category||"All").trim().toLowerCase()==="all"?"all":normalizeCategoryName(category).toLowerCase();
+    const selectedCategory=String(category||"All").trim().toLowerCase()==="all"?"all":String(category||"").trim().toLowerCase()==="best seller"?"best seller":normalizeCategoryName(category).toLowerCase();
     const isBestSeller=p.bestSeller===true||p.bestSeller==="true"||p.bestSeller===1||p.bestSeller==="1";
     const matchesCollection=
       selectedCategory==="all" ||
@@ -10749,7 +10749,7 @@ async function ssvEnrichFinderCatalogue({allMissing=false,productId=null}={}){
      const candidateNeeds=ssvEnrichFieldNeeds(candidate);
      const needsOccasion=candidateNeeds.occasion,needsColour=candidateNeeds.colour;
      const addOccasion=needsOccasion&&!!occasion?.confident&&!!label;
-     const isJewellery=["Jewellery","Jewelry"].includes(String(candidate.category||""));const colourToSave=isJewellery?"Gold":colour?.label;const addColour=needsColour&&(isJewellery||(!!colour?.confident&&SSV_FINDER_COLOURS.has(colour.label)));
+     const isJewellery=normalizeCategoryName(candidate.category)==="Jewellery";const colourToSave=isJewellery?"Gold":colour?.label;const addColour=needsColour&&(isJewellery||(!!colour?.confident&&SSV_FINDER_COLOURS.has(colour.label)));
      if(needsOccasion&&!addOccasion)occasionUncertain++;
      if(needsColour&&!addColour)colourUncertain++;
      if((needsOccasion&&!addOccasion)||(needsColour&&!addColour))if(!uncertainProductIds.includes(candidate.id))uncertainProductIds.push(candidate.id);
@@ -11428,7 +11428,7 @@ window.addEventListener("pageshow",()=>{
 
 window.SSVStorefront=Object.freeze({showAllProducts(){category="All";const search=$("#search");if(search)search.value="";catalogPage=0;syncCatalogClear?.();render();}});
 all("[data-view]").forEach(b=>b.onclick=()=>showView(b.dataset.view));
-document.addEventListener("click",async e=>{const t=e.target.closest("[data-tab]");if(t){if(!isCategoryEnabled(t.dataset.tab))return;category=t.dataset.tab;catalogPage=0;render()}const c=e.target.closest("[data-cat]");if(c){if(!isCategoryEnabled(c.dataset.cat))return;category=c.dataset.cat;catalogPage=0;$("#nav").classList.remove("open");render()}const eb=e.target.closest(".edit");if(eb)edit(Number(eb.dataset.id));if(e.target.id==="saveSettings"){
+document.addEventListener("click",async e=>{const t=e.target.closest("[data-tab]");if(t){const selected=String(t.dataset.tab||"").trim(),special=selected.toLowerCase();if(!["all","best seller"].includes(special)&&!isCategoryEnabled(selected))return;category=special==="all"?"All":special==="best seller"?"Best Seller":normalizeCategoryName(selected);catalogPage=0;render()}const c=e.target.closest("[data-cat]");if(c){const selected=String(c.dataset.cat||"").trim(),special=selected.toLowerCase();if(!["all","best seller"].includes(special)&&!isCategoryEnabled(selected))return;category=special==="all"?"All":special==="best seller"?"Best Seller":normalizeCategoryName(selected);catalogPage=0;$("#nav").classList.remove("open");render()}const eb=e.target.closest(".edit");if(eb)edit(Number(eb.dataset.id));if(e.target.id==="saveSettings"){
   e.preventDefault();
   if(!settingsAuthoritativeLoaded){
     showAdminToast("Settings are locked because the latest GitHub settings were not verified. Retry the settings read before editing.","error");
