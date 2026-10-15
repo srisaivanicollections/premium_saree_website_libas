@@ -90,6 +90,17 @@ test("Enrich Finder is a Products-page text link that opens a closable popup, no
   assert.match(adminSource, /event\.key==="Escape"&&!popup\.hidden/);
 });
 
+test("Enrich Finder link removes the icon underline and safety copy matches current save rules", () => {
+  const styleStart = adminSource.indexOf('<style id="ssv-enrich-finder-ui-review-20261015">');
+  const bodyEnd = adminSource.lastIndexOf("</body>");
+  assert.ok(styleStart >= 0 && bodyEnd > styleStart, "Enrich Finder override styles must be inside the document body");
+  const styleEnd = adminSource.indexOf("</style>", styleStart);
+  assert.ok(styleEnd > styleStart && styleEnd < bodyEnd, "Enrich Finder override styles must close before </body>");
+  assert.match(adminSource.slice(styleStart, styleEnd), /text-decoration:none!important/);
+  assert.match(adminSource, /Missing occasions use the highest-scoring match\(es\)\. Colour values follow catalogue rules, and saved changes are verified\./);
+  assert.doesNotMatch(adminSource, /Only confident predictions for fields that are still missing are saved\./);
+});
+
 test("closing and reopening the enrichment popup does not cancel or duplicate a running save", () => {
   assert.match(adminSource, /if\(button\.disabled\|\|ssvFinderEnrichmentPromise\)return/);
   assert.match(adminSource, /if\(ssvFinderEnrichmentPromise&&button\)\{button\.disabled=true/);
@@ -100,13 +111,24 @@ test("closing and reopening the enrichment popup does not cancel or duplicate a 
   assert.match(adminSource, /function ssvRenderEnrichFinderSummary\(result\)/);
 });
 
+test("Enrich Finder popup keeps model rankings and product IDs internal", () => {
+  const start = adminSource.indexOf("function ssvRenderEnrichFinderSummary(result)");
+  const end = adminSource.indexOf("function showView(v)", start);
+  assert.ok(start >= 0 && end > start, "summary renderer must be present");
+  const popupSummary = adminSource.slice(start, end);
+  assert.doesNotMatch(popupSummary, /model score|Product "\+suggestion\.id|Product "\+item\.id/);
+  assert.match(popupSummary, /option\.textContent=value/);
+  assert.match(popupSummary, /Colour review/);
+});
+
 test("Enrich Finder reports saved counts, a deduplicated review count, and actionable diagnostics", () => {
   assert.match(adminSource, /occasionMissingCount=queue\.filter/);
   assert.match(adminSource, /colourMissingCount=queue\.filter/);
   assert.match(adminSource, /occasion\.textContent=String\(result\.occasionsSaved\)/);
   assert.match(adminSource, /colour\.textContent=String\(result\.coloursSaved\)/);
   assert.match(adminSource, /const reviewCount=reviewIds\.size/);
-  assert.match(adminSource, /Occasion prediction is uncertain\. Review the ranked suggestions/);
+  assert.match(adminSource, /low-confidence occasion predictions/);
+  assert.match(adminSource, /Their highest-scoring occasion\(s\) were saved automatically/);
   assert.match(adminSource, /Processing failures:/);
 });
 
@@ -141,39 +163,42 @@ test("A failed final catalogue refresh preserves partial-save results and warns 
 });
 
 
-test("uncertain occasion enrichment retains all ranked suggestions and exposes manual multi-occasion saving", () => {
-  assert.match(aiSource, /rankings: ranked/);
-  assert.match(adminSource, /reviewSuggestions\.push\(\{id:candidate\.id,name:/);
-  assert.match(adminSource, /SAVE SELECTED OCCASIONS/);
-  assert.match(adminSource, /occasion prediction is uncertain/i);
-  assert.match(adminSource, /ssvSaveReviewedOccasions\(productId,imagePath,selectedLabels\)/);
-  assert.match(adminSource, /source:"ai-reviewed"/);
-  assert.match(adminSource, /if\(!ssvHasNoOccasionMetadata\(current\)\|\|ssvHasOccasionDecision\(current\)\)/);
-  assert.match(adminSource, /The product image changed since analysis/);
-  assert.match(adminSource, /This product category is currently disabled/);
+test("occasion enrichment always saves highest-scoring matches, including low-confidence ties", () => {
+  assert.match(aiSource, /const tieTolerance = 0\.0005/);
+  assert.match(aiSource, /const nextDistinct = ranked\.find/);
+  assert.match(aiSource, /const labels = Array\.isArray\(result\?\.labels\)/);
+  assert.match(adminSource, /occasionLabels=\[\.\.\.new Set/);
+  assert.match(adminSource, /const addOccasion=needsOccasion&&occasionLabels\.length>0/);
+  assert.doesNotMatch(adminSource, /const addOccasion=needsOccasion&&!!occasion\?\.confident/);
+  assert.match(adminSource, /if\(needsOccasion&&!occasion\?\.confident\)occasionUncertain\+\+/);
+  assert.match(adminSource, /next\.occasions=occasionLabels/);
+  assert.match(adminSource, /occasionLabels\.every\(value=>savedProduct\.occasions\.includes\(value\)\)/);
+  assert.doesNotMatch(adminSource, /SAVE SELECTED OCCASIONS/);
+  assert.doesNotMatch(adminSource, /reviewSuggestions\.push\(\{id:candidate\.id,name:/);
 });
 
-test("manual occasion review preserves existing product fields and verifies the saved image and tags", () => {
-  assert.match(adminSource, /const next=\{\.\.\.current,occasions:labels\}/);
+test("automatic multi-occasion save preserves product fields and verifies all tied occasions", () => {
+  assert.match(adminSource, /const next=\{\.\.\.current\}/);
+  assert.match(adminSource, /next\.occasions=occasionLabels/);
   assert.match(adminSource, /await githubWriteJson\("data\/products\.json"/);
-  assert.match(adminSource, /JSON\.stringify\(saved\.occasions\)!==JSON\.stringify\(labels\)/);
-  assert.match(adminSource, /saved\.occasionMetadata\?\.source!=="ai-reviewed"/);
+  assert.match(adminSource, /occasionLabels\.every\(value=>savedProduct\.occasions\.includes\(value\)\)/);
+  assert.match(adminSource, /persisted\?\.occasionMetadata\?\.image===String\(current\.image\)/);
 });
 
 
-test("concurrent occasion review saves filter the latest result list instead of a stale captured array", () => {
-  assert.ok(adminSource.includes('result.reviewSuggestions=(Array.isArray(result.reviewSuggestions)?result.reviewSuggestions:[]).filter(item=>String(item.id)!==String(suggestion.id));'));
-  assert.ok(!adminSource.includes('result.reviewSuggestions=suggestions.filter(item=>String(item.id)!==String(suggestion.id));'));
+test("low-confidence occasions are counted while their top matches are saved without ranking cards", () => {
+  assert.match(adminSource, /if\(needsOccasion&&!occasion\?\.confident\)occasionUncertain\+\+/);
+  assert.match(adminSource, /const addOccasion=needsOccasion&&occasionLabels\.length>0/);
+  assert.match(adminSource, /low-confidence occasion predictions/);
+  assert.doesNotMatch(adminSource, /SAVE SELECTED OCCASIONS/);
+  assert.doesNotMatch(adminSource, /reviewSuggestions\.push\(\{id:candidate\.id,name:/);
 });
 
  
-test("manual occasion review shows product image and identity with mobile-safe review controls", () => {
-  assert.match(adminSource, /ssv-enrich-review-image/);
-  assert.match(adminSource, /preview\.src=String\(suggestion\.image\|\|\"\"\)/);
-  assert.match(adminSource, /suggestion\.name\+" product image"/);
-  assert.match(adminSource, /suggestion\.category\?" · "\+suggestion\.category/);
+test("uncertain occasion feedback is compact and review cards remain for uncertain colours", () => {
+  assert.match(adminSource, /ssv-enrich-occasion-review-note/);
+  assert.match(adminSource, /Choose the product's actual visible colour/);
   assert.match(adminSource, /max-width:100vw/);
-  assert.match(adminSource, /ssv-enrich-review-card button\{min-height:44px/);
   assert.match(adminSource, /overflow-wrap:anywhere/);
 });
 
@@ -188,14 +213,13 @@ test("Enrich Finder close animation and final badge sizing overrides exist", () 
 });
 
 
-test("Enrich Finder keeps ranked occasion suggestions for a single uncertain product image", () => {
+test("Enrich Finder returns occasion rankings internally without exposing them for uncertain results", () => {
   assert.match(aiSource, /const predictions = await classifier\(url,/);
   assert.match(aiSource, /rankings: ranked/);
-  assert.match(adminSource, /if\(needsOccasion&&!addOccasion\)\{[\s\S]*?const ranked=Array\.isArray\(occasion\?\.rankings\)/);
-  assert.match(adminSource, /reviewSuggestions\.push\(\{id:candidate\.id,name:/);
-  assert.match(adminSource, /rankings:ranked/);
-  assert.match(adminSource, /Occasion prediction is uncertain\. Review the ranked suggestions/);
-  assert.match(adminSource, /SAVE SELECTED OCCASIONS/);
+  assert.match(aiSource, /const labels = ranked/);
+  assert.match(adminSource, /low-confidence occasion predictions/);
+  assert.doesNotMatch(adminSource, /SAVE SELECTED OCCASIONS/);
+  assert.doesNotMatch(adminSource, /Occasion prediction is uncertain\. Review the ranked suggestions/);
 });
 
 test("TOP PICK sizing targets the rendered Smart Finder badge without adding popup entrance animation", () => {
@@ -324,4 +348,10 @@ test("small result sets remain unchanged and do not invent a budget-friendly opt
   const ranked = [{ id: 1, price: 1000 }, { id: 2, price: 2000 }, { id: 3, price: 3000 }];
   assert.deepEqual(ensureBudgetFriendlyInTopThree(ranked), ranked);
   assert.deepEqual(ensureBudgetFriendlyInTopThree([]), []);
+});
+
+test("Enrich Finder progress and failure details never expose product IDs", () => {
+  assert.match(adminSource, /paint\(summary\+\(failures\.length\?\" Details: \"\+failures\.map\(item=>item\.reason\)/);
+  assert.doesNotMatch(adminSource, /failures\.map\(item=>\"Product \"\+item\.id/);
+  assert.match(adminSource, /console\.error\(\"Finder enrichment failed for product \"\+candidate\.id/);
 });

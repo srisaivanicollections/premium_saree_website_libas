@@ -103,18 +103,28 @@ export function selectOccasionPrediction(predictions, itemType = "saree") {
     .map((item, index) => ({
       label: labelByPrompt.get(item.label) || "",
       score: Number(item.score),
-      margin: Number(item.score) - Number(sorted[index + 1]?.score || 0),
       rank: index + 1
     }))
     .filter(item => item.label);
   if (!ranked.length) throw new Error("The image model returned no known occasion labels.");
   const best = ranked[0];
-  return { label: best.label, score: best.score, margin: best.margin, rankings: ranked };
+  const tieTolerance = 0.0005;
+  const labels = ranked.filter(item => Math.abs(item.score - best.score) <= tieTolerance).map(item => item.label);
+  const nextDistinct = ranked.find(item => item.score < best.score - tieTolerance);
+  const margin = best.score - Number(nextDistinct?.score || 0);
+  return {
+    label: best.label, labels, score: best.score, margin,
+    rankings: ranked.map((item, index) => ({
+      ...item,
+      margin: index === 0 ? margin : item.score - Number(ranked[index + 1]?.score || 0)
+    }))
+  };
 }
 
 export function isConfidentOccasionPrediction(result) {
+  const labels = Array.isArray(result?.labels) && result.labels.length ? result.labels : [result?.label];
   return Boolean(result &&
-    LABELS.some(item => item.label === result.label) &&
+    labels.every(label => LABELS.some(item => item.label === label)) &&
     Number.isFinite(result.score) && result.score >= 0.30 &&
     Number.isFinite(result.margin) && result.margin >= 0.07);
 }
@@ -125,8 +135,19 @@ export function selectColourPrediction(predictions) {
     .map(item => ({ ...item, colour: COLOURS.find(colour => item.label.toLowerCase().includes("colour is " + colour.toLowerCase())) || "" }))
     .sort((a, b) => Number(b.score) - Number(a.score));
   if (!normalized.length) throw new Error("The image model returned invalid colour predictions.");
-  const best = normalized[0];
-  return { label: best.colour, score: Number(best.score), margin: Number(best.score) - Number(normalized[1]?.score || 0) };
+  const ranked = normalized.filter(item => item.colour).map((item, index) => ({
+    label: item.colour,
+    score: Number(item.score),
+    rank: index + 1
+  }));
+  const best = ranked[0];
+  if (!best) throw new Error("The image model returned no known colour labels.");
+  return {
+    label: best.label,
+    score: best.score,
+    margin: best.score - Number(ranked[1]?.score || 0),
+    rankings: ranked
+  };
 }
 
 export function isConfidentColourPrediction(result) {

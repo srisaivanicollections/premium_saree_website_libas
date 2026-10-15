@@ -21,6 +21,29 @@ test("selects the highest valid known occasion prediction", () => {
   assert.equal(isConfidentOccasionPrediction(result), true);
 });
 
+test("returns all tied top occasions and measures confidence against the next distinct score", () => {
+  const result = selectOccasionPrediction([
+    { label: prompts.festive, score: 0.392 },
+    { label: prompts.wedding, score: 0.392 },
+    { label: prompts.daily, score: 0.102 },
+    { label: "a saree intended for party wear, evening events or cocktail occasions", score: 0.072 }
+  ]);
+  assert.deepEqual(result.labels, ["festive", "wedding"]);
+  assert.equal(result.label, "festive");
+  assert.ok(Math.abs(result.margin - 0.29) < 1e-12);
+  assert.equal(isConfidentOccasionPrediction(result), true);
+});
+
+test("keeps tied but low-confidence occasions uncertain", () => {
+  const result = selectOccasionPrediction([
+    { label: prompts.festive, score: 0.292 },
+    { label: prompts.wedding, score: 0.292 },
+    { label: prompts.daily, score: 0.102 }
+  ]);
+  assert.deepEqual(result.labels, ["festive", "wedding"]);
+  assert.equal(isConfidentOccasionPrediction(result), false);
+});
+
 test("rejects a low-confidence prediction", () => {
   assert.equal(isConfidentOccasionPrediction({ label: "wedding", score: 0.29, margin: 0.2 }), false);
   assert.equal(isConfidentOccasionPrediction({ label: "wedding", score: 0.8, margin: 0.069 }), false);
@@ -50,7 +73,14 @@ test("selects a known dominant colour from image prompt predictions", () => {
     { label: "a product photo of a saree whose main visible fabric or material colour is pink", score: 0.20 },
     { label: "a product photo of a saree whose main visible fabric or material colour is blue", score: 0.08 }
   ]);
-  assert.deepEqual(result, { label: "Red", score: 0.62, margin: 0.42 });
+  assert.deepEqual(result, {
+    label: "Red", score: 0.62, margin: 0.42,
+    rankings: [
+      { label: "Red", score: 0.62, rank: 1 },
+      { label: "Pink", score: 0.2, rank: 2 },
+      { label: "Blue", score: 0.08, rank: 3 }
+    ]
+  });
   assert.equal(isConfidentColourPrediction(result), true);
 });
 
@@ -96,4 +126,26 @@ test("returns all known occasions ranked for manual review when top predictions 
   assert.ok(result.rankings[0].score >= result.rankings[1].score);
   assert.equal(result.label, "festive");
   assert.equal(isConfidentOccasionPrediction(result), false, "close top scores should remain reviewable");
+});
+
+
+test("exposes ranked uncertain colours for safe Admin review", () => {
+  const scanner = readFileSync(new URL("../saree-occasion-ai.js", import.meta.url), "utf8");
+  const admin = readFileSync(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(scanner, /rankings: ranked/);
+  assert.match(admin, /colourReviewSuggestions/);
+  assert.match(admin, /occasionLabels\.every/);
+  const summary = admin.slice(admin.indexOf("function ssvRenderEnrichFinderSummary"), admin.indexOf("function ssvRenderEnrichFinderSummary") + 7000);
+  assert.doesNotMatch(summary, /SAVE SELECTED OCCASIONS/);
+  assert.match(summary, /low-confidence occasion predictions/);
+  assert.match(admin, /async function ssvSaveReviewedColour/);
+  assert.ok(admin.includes('saved.colourMetadata?.source!=="ai-reviewed"'));
+  assert.match(admin, /ssv-enrich-finder-ui-review-20261015/);
+  assert.ok(admin.includes("max-height:calc(100dvh - env(safe-area-inset-top"));
+});
+
+test("preserves unsaved colour selections when another review is saved", () => {
+  const admin = readFileSync(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(admin, /__ssvColourReviewSelections/);
+  assert.doesNotMatch(admin, /SAVE SELECTED OCCASIONS/);
 });
