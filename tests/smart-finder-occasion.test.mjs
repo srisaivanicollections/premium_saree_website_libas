@@ -106,7 +106,7 @@ test("Enrich Finder reports saved counts, a deduplicated review count, and actio
   assert.match(adminSource, /occasion\.textContent=String\(result\.occasionsSaved\)/);
   assert.match(adminSource, /colour\.textContent=String\(result\.coloursSaved\)/);
   assert.match(adminSource, /const reviewCount=reviewIds\.size/);
-  assert.match(adminSource, /uncertain occasion predictions/);
+  assert.match(adminSource, /low-confidence occasion predictions/);
   assert.match(adminSource, /Their highest-scoring occasion\(s\) were saved automatically/);
   assert.match(adminSource, /Processing failures:/);
 });
@@ -167,7 +167,7 @@ test("automatic multi-occasion save preserves product fields and verifies all ti
 
 test("uncertain occasion results stay in the review count without creating ranking cards", () => {
   assert.match(adminSource, /if\(needsOccasion&&!addOccasion\)occasionUncertain\+\+/);
-  assert.match(adminSource, /uncertain occasion predictions/);
+  assert.match(adminSource, /low-confidence occasion predictions/);
   assert.doesNotMatch(adminSource, /SAVE SELECTED OCCASIONS/);
   assert.doesNotMatch(adminSource, /reviewSuggestions\.push\(\{id:candidate\.id,name:/);
 });
@@ -195,7 +195,7 @@ test("Enrich Finder returns occasion rankings internally without exposing them f
   assert.match(aiSource, /const predictions = await classifier\(url,/);
   assert.match(aiSource, /rankings: ranked/);
   assert.match(aiSource, /const labels = ranked/);
-  assert.match(adminSource, /uncertain occasion predictions/);
+  assert.match(adminSource, /low-confidence occasion predictions/);
   assert.doesNotMatch(adminSource, /SAVE SELECTED OCCASIONS/);
   assert.doesNotMatch(adminSource, /Occasion prediction is uncertain\. Review the ranked suggestions/);
 });
