@@ -99,24 +99,19 @@ export function selectOccasionPrediction(predictions, itemType = "saree") {
     .filter(item => item && typeof item.label === "string" && Number.isFinite(Number(item.score)))
     .sort((a, b) => Number(b.score) - Number(a.score));
   if (!sorted.length) throw new Error("The image model returned invalid predictions.");
-  const ranked = sorted
-    .map((item, index) => ({
-      label: labelByPrompt.get(item.label) || "",
-      score: Number(item.score),
-      margin: Number(item.score) - Number(sorted[index + 1]?.score || 0),
-      rank: index + 1
-    }))
-    .filter(item => item.label);
+  const ranked = sorted.map((item,index)=>({label:labelByPrompt.get(item.label)||"",score:Number(item.score),rank:index+1})).filter(item=>item.label);
   if (!ranked.length) throw new Error("The image model returned no known occasion labels.");
-  const best = ranked[0];
-  return { label: best.label, score: best.score, margin: best.margin, rankings: ranked };
+  const best=ranked[0],tieTolerance=0.0005;
+  const labels=ranked.filter(item=>Math.abs(item.score-best.score)<=tieTolerance).map(item=>item.label);
+  const nextDistinct=ranked.find(item=>item.score<best.score-tieTolerance);
+  const margin=best.score-(nextDistinct?.score||0);
+  return {label:best.label,labels,score:best.score,margin,rankings:ranked.map((item,index)=>({...item,margin:index===0?margin:item.score-Number(ranked[index+1]?.score||0)}))};
 }
 
 export function isConfidentOccasionPrediction(result) {
-  return Boolean(result &&
-    LABELS.some(item => item.label === result.label) &&
-    Number.isFinite(result.score) && result.score >= 0.30 &&
-    Number.isFinite(result.margin) && result.margin >= 0.07);
+  const labels=Array.isArray(result?.labels)&&result.labels.length?result.labels:[result?.label];
+  return Boolean(result && labels.every(label=>LABELS.some(item=>item.label===label)) &&
+    Number.isFinite(result.score)&&result.score>=0.30&&Number.isFinite(result.margin)&&result.margin>=0.07);
 }
 
 export function selectColourPrediction(predictions) {
