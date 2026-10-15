@@ -10320,7 +10320,7 @@ function ssvRenderEnrichFinderSummary(result){
   suggestions.forEach(suggestion=>{
    const card=document.createElement("section");card.className="ssv-enrich-review-card";card.style.cssText="margin-top:14px;padding:14px;border:1px solid #E4D8C5;background:#fffdf9";
    const title=document.createElement("h4");title.textContent=suggestion.name+" · Product "+suggestion.id;title.style.cssText="margin:0 0 6px;font-size:16px;font-weight:600";card.append(title);
-   const note=document.createElement("p");note.textContent="Occasion prediction is uncertain. Review the ranked suggestions and select every occasion supported by the product.";note.style.cssText="margin:0 0 10px;font-size:13px;line-height:1.5;color:#6f665b";card.append(note);
+   const note=document.createElement("p");note.textContent="Occasion prediction is uncertain. Review the ranked suggestions and select every occasion supported by the product. Scores are ranking signals, not calibrated probabilities.";note.style.cssText="margin:0 0 10px;font-size:13px;line-height:1.5;color:#6f665b";card.append(note);
    const rankings=Array.isArray(suggestion.rankings)?suggestion.rankings:[];
    const scoreStore=window.__ssvOccasionReviewScores||(window.__ssvOccasionReviewScores={});scoreStore[String(suggestion.id)]=rankings;
    if(!rankings.length){const empty=document.createElement("p");empty.textContent="No valid occasion rankings were returned. Check the product image and analyse again.";card.append(empty);}
@@ -10339,7 +10339,7 @@ function ssvRenderEnrichFinderSummary(result){
      try{
       await ssvSaveReviewedOccasions(suggestion.id,suggestion.image,selected);
       card.replaceChildren();const done=document.createElement("p");done.textContent="Saved reviewed occasions for "+suggestion.name+": "+selected.join(", ")+". Existing colour and other product details were preserved.";done.style.cssText="margin:0;color:#42634d;line-height:1.5";card.append(done);
-      const remaining=new Set((result.uncertainProductIds||[]).map(String));remaining.delete(String(suggestion.id));result.uncertainProductIds=[...remaining];result.reviewSuggestions=suggestions.filter(item=>String(item.id)!==String(suggestion.id));result.occasionsSaved+=selected.length;
+      const remaining=new Set((result.uncertainProductIds||[]).map(String));if(!(result.uncertainColourProductIds||[]).map(String).includes(String(suggestion.id)))remaining.delete(String(suggestion.id));result.uncertainProductIds=[...remaining];result.reviewSuggestions=suggestions.filter(item=>String(item.id)!==String(suggestion.id));result.occasionsSaved+=selected.length;
       ssvRenderEnrichFinderSummary(result);ssvRefreshEnrichFinderCounts();
      }catch(error){note.textContent="Could not save reviewed occasions. "+ssvFinderFailureReason(error);note.style.color="#9b2c2c";save.disabled=false;save.textContent="RETRY SAVE";}
     };
@@ -10347,6 +10347,8 @@ function ssvRenderEnrichFinderSummary(result){
    }
    details.append(card);
   });
+  const colourReviewIds=Array.isArray(result.uncertainColourProductIds)?result.uncertainColourProductIds:[];
+  if(colourReviewIds.length){const colourReview=document.createElement("p");colourReview.textContent=colourReviewIds.length+" product(s) also had uncertain colour predictions. No uncertain colour was auto-saved; check those products manually.";colourReview.style.cssText="margin-top:12px;line-height:1.5";details.append(colourReview);}
   const failures=Array.isArray(result.failures)?result.failures:[];
   if(failures.length){const failure=document.createElement("p");failure.textContent="Processing failures: "+failures.slice(0,5).map(item=>"Product "+item.id+": "+item.reason).join(" | ")+(failures.length>5?" · "+(failures.length-5)+" more failure(s).":"");failure.style.cssText="margin-top:12px;overflow-wrap:anywhere";details.append(failure);}
   if(result.refreshFailed){const warning=document.createElement("p");warning.textContent="Final catalogue refresh failed. Refresh before retrying.";details.append(warning);}
@@ -10797,7 +10799,7 @@ function ssvFinderFailureReason(error){
 async function ssvEnrichFinderCatalogue({allMissing=false,productId=null}={}){
  if(ssvFinderEnrichmentPromise)return ssvFinderEnrichmentPromise;
  ssvFinderEnrichmentPromise=(async()=>{
-  const status=$("#adminEnrichFinderStatus")||$("#adminProductResults");let processed=0,skipped=0,failed=0,occasionsSaved=0,coloursSaved=0,occasionUncertain=0,colourUncertain=0;const failures=[],uncertainProductIds=[],reviewSuggestions=[];
+  const status=$("#adminEnrichFinderStatus")||$("#adminProductResults");let processed=0,skipped=0,failed=0,occasionsSaved=0,coloursSaved=0,occasionUncertain=0,colourUncertain=0;const failures=[],uncertainProductIds=[],uncertainColourProductIds=[],reviewSuggestions=[];
   const paint=(message)=>{if(status)status.textContent=message;};
   try{
    const module=await import("./saree-occasion-ai.js"),scanner=await module.createOccasionScanner(),initial=await githubReadJson("data/products.json");
@@ -10817,7 +10819,7 @@ async function ssvEnrichFinderCatalogue({allMissing=false,productId=null}={}){
      const addOccasion=needsOccasion&&!!occasion?.confident&&!!label;
      const isJewellery=normalizeCategoryName(candidate.category)==="Jewellery";const colourToSave=isJewellery?"Gold":colour?.label;const addColour=needsColour&&(isJewellery||(!!colour?.confident&&SSV_FINDER_COLOURS.has(colour.label)));
      if(needsOccasion&&!addOccasion)occasionUncertain++;
-     if(needsColour&&!addColour)colourUncertain++;
+     if(needsColour&&!addColour){colourUncertain++;if(!uncertainColourProductIds.includes(candidate.id))uncertainColourProductIds.push(candidate.id);}
      if(needsOccasion&&!addOccasion){
       const ranked=Array.isArray(occasion?.rankings)?occasion.rankings.filter(item=>SSV_OCCASION_LABELS.has(ssvOccasionLabel(item.label))&&Number.isFinite(Number(item.score))).map(item=>({label:ssvOccasionLabel(item.label),score:Number(item.score),rank:Number(item.rank)||0})).sort((a,b)=>a.rank-b.rank):[];
       reviewSuggestions.push({id:candidate.id,name:String(candidate.name||("Product "+candidate.id)),image:String(candidate.image||""),category:String(candidate.category||""),reason:"Occasion prediction did not meet the automatic-save confidence threshold.",rankings:ranked});
@@ -10892,7 +10894,7 @@ async function ssvEnrichFinderCatalogue({allMissing=false,productId=null}={}){
     failures.push({id:"catalogue refresh",reason:refreshMessage});
     paint(summary+" WARNING: "+refreshMessage);
    }
-   return {processed,skipped,failed,imageProcessed,occasionsSaved,coloursSaved,occasionMissingCount,colourMissingCount,occasionUncertain,colourUncertain,uncertainProductIds,reviewSuggestions,failures,refreshFailed};
+   return {processed,skipped,failed,imageProcessed,occasionsSaved,coloursSaved,occasionMissingCount,colourMissingCount,occasionUncertain,colourUncertain,uncertainProductIds,uncertainColourProductIds,reviewSuggestions,failures,refreshFailed};
   }finally{ssvFinderEnrichmentPromise=null;}
  })();return ssvFinderEnrichmentPromise;
 }
