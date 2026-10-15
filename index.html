@@ -11402,7 +11402,12 @@ async function verifyAdminOtp(){
       products=catalog.value;
       githubOriginalIds=new Set(products.map(p=>Number(p.id)));
     }catch(catalogError){
-      setStorageStatus(catalogError?.message||"The latest GitHub product catalogue could not be loaded on this device.");
+      if(catalogError?.status===401||catalogError?.status===403){
+        setStorageStatus("The saved GitHub token is invalid or lacks repository access. Connect a valid token to continue.");
+        showGithubStorageSetup();
+      }else{
+        setStorageStatus(catalogError?.message||"The latest GitHub product catalogue could not be loaded on this device.");
+      }
       return false;
     }
     try{
