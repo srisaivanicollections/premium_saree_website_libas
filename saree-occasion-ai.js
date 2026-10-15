@@ -125,8 +125,19 @@ export function selectColourPrediction(predictions) {
     .map(item => ({ ...item, colour: COLOURS.find(colour => item.label.toLowerCase().includes("colour is " + colour.toLowerCase())) || "" }))
     .sort((a, b) => Number(b.score) - Number(a.score));
   if (!normalized.length) throw new Error("The image model returned invalid colour predictions.");
-  const best = normalized[0];
-  return { label: best.colour, score: Number(best.score), margin: Number(best.score) - Number(normalized[1]?.score || 0) };
+  const ranked = normalized.filter(item => item.colour).map((item, index) => ({
+    label: item.colour,
+    score: Number(item.score),
+    rank: index + 1
+  }));
+  const best = ranked[0];
+  if (!best) throw new Error("The image model returned no known colour labels.");
+  return {
+    label: best.label,
+    score: best.score,
+    margin: best.score - Number(ranked[1]?.score || 0),
+    rankings: ranked
+  };
 }
 
 export function isConfidentColourPrediction(result) {
