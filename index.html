@@ -10419,6 +10419,16 @@ function showView(v){
         list.scrollTop=0;
       }));
     };
+    // Keep the current Admin Products view synchronized after verified Enrich Finder saves.
+    // This callback is replaced whenever the Products view is rebuilt, so it never targets stale DOM.
+    window.__ssvRefreshAdminProductsAfterEnrichment=()=>{
+      if(!results.isConnected||!list.isConnected||!colorFilter.isConnected)return;
+      const selectedColor=colorFilter.value;
+      const availableColors=[...new Set(products.filter(p=>isCategoryEnabled(p.category)).map(p=>String(p.color||"").trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+      colorFilter.innerHTML='<option value="">All</option><option value="__none">Colour not set</option>'+availableColors.map(color=>'<option value="'+esc(color)+'">'+esc(color)+'</option>').join("");
+      colorFilter.value=selectedColor===""||selectedColor==="__none"||availableColors.some(color=>color.toLowerCase()===selectedColor.toLowerCase())?selectedColor:"";
+      renderAdminProductList();
+    };
     const resetAdminProductPage=()=>{adminProductPage=1;renderAdminProductList();};
     searchInput.addEventListener("input",resetAdminProductPage);
     [categoryFilter,colorFilter,statusFilter,sortFilter].forEach(control=>control.addEventListener("change",resetAdminProductPage));
@@ -10869,6 +10879,12 @@ async function ssvEnrichFinderCatalogue({allMissing=false,productId=null,onProgr
     const refreshed=await githubReadJsonFresh("data/products.json");
     if(!Array.isArray(refreshed.value))throw new Error("Product catalogue is invalid.");
     products=refreshed.value;githubOriginalIds=new Set(products.map(p=>Number(p.id)));
+    // Reuse the established storefront renderer and the active Admin Products renderer.
+    // The fresh, verified GitHub read above is authoritative; these calls only refresh presentation.
+    let catalogueRenderError=null;
+    try{if(typeof render==="function")render();}catch(renderError){catalogueRenderError=renderError;console.error("Storefront catalogue render failed after Enrich Finder refresh:",renderError);}
+    try{if(typeof window.__ssvRefreshAdminProductsAfterEnrichment==="function")window.__ssvRefreshAdminProductsAfterEnrichment();}catch(adminRenderError){catalogueRenderError=catalogueRenderError||adminRenderError;console.error("Admin Products render failed after Enrich Finder refresh:",adminRenderError);}
+    if(catalogueRenderError)throw new Error("The latest catalogue data was read, but one or more product views could not be refreshed. Close and reopen Products after checking the page.");
     paint(summary+(failures.length?" Details: "+failures.map(item=>item.reason).join(" · "):""));
    }catch(refreshError){
     refreshFailed=true;
@@ -14779,7 +14795,7 @@ if ("serviceWorker" in navigator) {
 
 <style id="ssv-admin-enrich-finder-actions-fix-20261014">
 #admin .admin-products-heading-actions{display:flex!important;flex:0 1 auto!important;align-items:center!important;justify-content:flex-end!important;flex-wrap:wrap!important;gap:12px!important;min-width:0!important;margin-left:auto!important}
-#admin .admin-products-heading-actions>#adminEnrichFinderLink{display:inline-flex!important;align-items:center!important;gap:5px!important;min-height:40px!important;padding:8px 0!important;border:0!important;background:transparent!important;color:#80653f!important;font:600 11px/1.3 Montserrat,Inter,Arial,sans-serif!important;letter-spacing:.02em!important;text-decoration:underline!important;text-underline-offset:4px!important;white-space:nowrap!important;cursor:pointer}
+#admin .admin-products-heading-actions>#adminEnrichFinderLink{display:inline-flex!important;align-items:center!important;gap:5px!important;min-height:40px!important;padding:8px 0!important;border:0!important;background:transparent!important;color:#80653f!important;font:600 11px/1.3 Montserrat,Inter,Arial,sans-serif!important;letter-spacing:.02em!important;text-decoration:none!important;white-space:nowrap!important;cursor:pointer}
 #admin .admin-products-heading-actions>#adminEnrichFinderLink:hover{color:#493A2B!important}
 #admin .admin-products-heading-actions>#adminAddProduct{display:inline-flex!important;flex:0 0 auto!important;align-items:center!important;justify-content:center!important;width:auto!important;min-width:0!important;min-height:42px!important;margin:0!important;padding:0 12px!important;white-space:nowrap!important;box-sizing:border-box!important}
 .ssv-enrich-popup-backdrop{position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(28,25,23,.58);backdrop-filter:blur(3px);animation:ssvEnrichBackdropIn .2s ease both}

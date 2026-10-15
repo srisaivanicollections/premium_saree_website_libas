@@ -71,6 +71,9 @@ jobs:
           assert.match(page, /id="adminEnrichFinderClose" aria-label="Close Enrich Finder"/, "Enrich Finder popup must provide a close control");
           assert.doesNotMatch(page, /data-view="enrich">ENRICH FINDER/, "Enrich Finder must not occupy a separate Admin tab");
           assert.match(page, /occasionMissingCount=queue\.filter[\s\S]*?colourMissingCount=queue\.filter/, "Enrich Finder must count missing occasion and colour fields separately");
+          assert.match(page, /window\.__ssvRefreshAdminProductsAfterEnrichment=\(\)=>/, "Enrich Finder refresh must rerender the active Admin Products list without discarding its filters");
+          assert.match(page, /products=refreshed\.value;githubOriginalIds=new Set\(products\.map\(p=>Number\(p\.id\)\)\);[\s\S]*?window\.__ssvRefreshAdminProductsAfterEnrichment\(\)/, "Product views must refresh only after the fresh authoritative catalogue read");
+          assert.doesNotMatch(page, /#admin \.admin-products-heading-actions>#adminEnrichFinderLink\{[^}]*text-decoration:underline!important/, "Enrich Finder link must not force an underline below its arrow");
           assert.match(page, /#admin \.admin-products-heading-actions\s*\{[\s\S]*?display:flex!important;[\s\S]*?flex-wrap:wrap!important;/, "Admin catalogue actions must have a wrapping flex layout");
           assert.match(page, /#admin \.admin-products-heading-actions>#adminEnrichFinderLink/, "Enrich Finder text link must have a scoped style override");
           assert.match(page, /@media\(max-width:600px\)[\s\S]*?#admin \.admin-products-heading-actions\s*\{[\s\S]*?width:100%!important;[\s\S]*?justify-content:space-between!important;/, "Enrich Finder link and Add Product must remain visible in the mobile action row");
