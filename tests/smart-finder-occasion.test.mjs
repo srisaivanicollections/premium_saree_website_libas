@@ -122,13 +122,12 @@ test("Enrich Finder summary keeps diagnostics concise and removes manual colour 
 });
 
 test("Enrich Finder reports saved counts, actual failures, and actionable diagnostics", () => {
-  assert.match(adminSource, /occasionMissingCount=queue\.filter/);
-  assert.match(adminSource, /colourMissingCount=queue\.filter/);
-  assert.match(adminSource, /occasion\.textContent=String\(result\.occasionsSaved\)/);
-  assert.match(adminSource, /colour\.textContent=String\(result\.coloursSaved\)/);
-  assert.match(adminSource, /const reviewCount=reviewIds\.size/);
-  assert.match(adminSource, /low-confidence occasion predictions/);
-  assert.match(adminSource, /Their highest-scoring occasion\(s\) were saved automatically/);
+  assert.match(adminSource, /occasionMissingCount=queue\\.filter/);
+  assert.match(adminSource, /colourMissingCount=queue\\.filter/);
+  assert.match(adminSource, /occasion\\.textContent=String\\(result\\.occasionsSaved\\)/);
+  assert.match(adminSource, /colour\\.textContent=String\\(result\\.coloursSaved\\)/);
+  assert.match(adminSource, /review\\.textContent=String\\(failures\\.length\\)/);
+  assert.doesNotMatch(adminSource, /low-confidence occasion predictions|Their highest-scoring occasion/);
   assert.match(adminSource, /Processing failures:/);
 });
 
@@ -186,15 +185,13 @@ test("automatic multi-occasion save preserves product fields and verifies all ti
 });
 
 
-test("low-confidence occasions are counted while their top matches are saved without ranking cards", () => {
-  assert.match(adminSource, /if\(needsOccasion&&!occasion\?\.confident\)occasionUncertain\+\+/);
-  assert.match(adminSource, /const addOccasion=needsOccasion&&occasionLabels\.length>0/);
-  assert.match(adminSource, /low-confidence occasion predictions/);
-  assert.doesNotMatch(adminSource, /SAVE SELECTED OCCASIONS/);
-  assert.doesNotMatch(adminSource, /reviewSuggestions\.push\(\{id:candidate\.id,name:/);
+test("low-confidence occasions are saved automatically without review cards", () => {
+  assert.match(adminSource, /if\\(needsOccasion&&!occasion\\?\\.confident\\)occasionUncertain\\+\\+/);
+  assert.match(adminSource, /const addOccasion=needsOccasion&&occasionLabels\\.length>0/);
+  assert.doesNotMatch(adminSource, /low-confidence occasion predictions|SAVE SELECTED OCCASIONS/);
+  assert.doesNotMatch(adminSource, /reviewSuggestions\\.push\\(\\{id:candidate\\.id,name:/);
 });
 
- 
 test("uncertain predictions are handled in code without manual colour review UI", () => {
   assert.doesNotMatch(adminSource, /ssv-enrich-occasion-review-note/);
   assert.doesNotMatch(adminSource, /Choose the product's actual visible colour/);
