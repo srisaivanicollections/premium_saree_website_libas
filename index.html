@@ -10339,7 +10339,7 @@ function ssvRenderEnrichFinderSummary(result){
      try{
       await ssvSaveReviewedOccasions(suggestion.id,suggestion.image,selected);
       card.replaceChildren();const done=document.createElement("p");done.textContent="Saved reviewed occasions for "+suggestion.name+": "+selected.join(", ")+". Existing colour and other product details were preserved.";done.style.cssText="margin:0;color:#42634d;line-height:1.5";card.append(done);
-      const remaining=new Set((result.uncertainProductIds||[]).map(String));if(!(result.uncertainColourProductIds||[]).map(String).includes(String(suggestion.id)))remaining.delete(String(suggestion.id));result.uncertainProductIds=[...remaining];result.reviewSuggestions=suggestions.filter(item=>String(item.id)!==String(suggestion.id));result.occasionsSaved+=selected.length;
+      const remaining=new Set((result.uncertainProductIds||[]).map(String));if(!(result.uncertainColourProductIds||[]).map(String).includes(String(suggestion.id)))remaining.delete(String(suggestion.id));result.uncertainProductIds=[...remaining];result.reviewSuggestions=(Array.isArray(result.reviewSuggestions)?result.reviewSuggestions:[]).filter(item=>String(item.id)!==String(suggestion.id));result.occasionsSaved+=selected.length;
       ssvRenderEnrichFinderSummary(result);ssvRefreshEnrichFinderCounts();
      }catch(error){note.textContent="Could not save reviewed occasions. "+ssvFinderFailureReason(error);note.style.color="#9b2c2c";save.disabled=false;save.textContent="RETRY SAVE";}
     };
@@ -14712,9 +14712,9 @@ if ("serviceWorker" in navigator) {
 #admin .admin-products-heading-actions>#adminEnrichFinderLink{display:inline-flex!important;align-items:center!important;gap:5px!important;min-height:40px!important;padding:8px 0!important;border:0!important;background:transparent!important;color:#80653f!important;font:600 11px/1.3 Montserrat,Inter,Arial,sans-serif!important;letter-spacing:.02em!important;text-decoration:underline!important;text-underline-offset:4px!important;white-space:nowrap!important;cursor:pointer}
 #admin .admin-products-heading-actions>#adminEnrichFinderLink:hover{color:#493A2B!important}
 #admin .admin-products-heading-actions>#adminAddProduct{display:inline-flex!important;flex:0 0 auto!important;align-items:center!important;justify-content:center!important;width:auto!important;min-width:0!important;min-height:42px!important;margin:0!important;padding:0 12px!important;white-space:nowrap!important;box-sizing:border-box!important}
-.ssv-enrich-popup-backdrop{position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(28,25,23,.58);backdrop-filter:blur(3px)}
+.ssv-enrich-popup-backdrop{position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(28,25,23,.58);backdrop-filter:blur(3px);animation:ssvEnrichBackdropIn .2s ease both}
 .ssv-enrich-popup-backdrop[hidden]{display:none!important}
-.ssv-enrich-popup{position:relative;width:min(620px,100%);max-height:min(88vh,800px);overflow:auto;overscroll-behavior:contain;padding:30px 28px 26px;background:#FAF7F2;color:#1C1917;border:1px solid #E4D8C5;box-shadow:0 22px 70px rgba(0,0,0,.28)}
+.ssv-enrich-popup{position:relative;width:min(620px,100%);max-height:min(88vh,800px);overflow:auto;overscroll-behavior:contain;padding:30px 28px 26px;background:#FAF7F2;color:#1C1917;border:1px solid #E4D8C5;box-shadow:0 22px 70px rgba(0,0,0,.28);animation:ssvEnrichPanelIn .28s cubic-bezier(.2,.75,.25,1) both}
 .ssv-enrich-popup h3{margin:0 38px 10px 0;font:500 28px/1.15 "Cormorant Garamond",Georgia,serif}
 .ssv-enrich-popup p{line-height:1.55}
 .ssv-enrich-popup-close{position:absolute;top:12px;right:12px;width:40px;height:40px;border:1px solid #E4D8C5;background:transparent;color:#1C1917;font-size:28px;line-height:1;cursor:pointer}
@@ -14750,12 +14750,12 @@ if ("serviceWorker" in navigator) {
 #adminEnrichFinderPopup .ssv-enrich-count-grid>div{animation:ssvFinderFadeIn .35s ease both}
 #adminEnrichFinderPopup .ssv-enrich-count-grid>div:nth-child(2){animation-delay:.06s}
 #adminEnrichFinderPopup .ssv-enrich-count-grid>div:nth-child(3){animation-delay:.12s}
-@keyframes ssvFinderShimmer{to{transform:translateX(100%)}}
+@keyframes ssvEnrichBackdropIn{from{opacity:0}to{opacity:1}}\n@keyframes ssvEnrichPanelIn{from{opacity:0;transform:translateY(12px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}\n@keyframes ssvFinderShimmer{to{transform:translateX(100%)}}
 @keyframes ssvFinderFadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
 #admin.modal:not(.hidden) #adminClose{display:none!important}
 #admin.modal:not(.hidden):has(#login:not(.hidden)) #adminClose{display:inline-flex!important}
 #admin.modal:not(.hidden):has(#studio.admin-view-add) #adminClose{display:inline-flex!important}
-@media(prefers-reduced-motion:reduce){#admin .admin-enrich-finder-link,#admin .admin-enrich-finder-link span,#admin #adminEnrichFinder:disabled::after,#adminEnrichFinderPopup .ssv-enrich-count-grid>div{animation:none!important;transition:none!important}}
+@media(prefers-reduced-motion:reduce){.ssv-enrich-popup-backdrop,.ssv-enrich-popup,#admin .admin-enrich-finder-link,#admin .admin-enrich-finder-link span,#admin #adminEnrichFinder:disabled::after,#adminEnrichFinderPopup .ssv-enrich-count-grid>div{animation:none!important;transition:none!important}}
 </style>
 
 </html>
