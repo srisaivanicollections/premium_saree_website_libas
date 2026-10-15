@@ -345,7 +345,7 @@ jobs:
                 return enabled && productsFixture.some(product => String(product.category || "").trim().toLowerCase() === category.toLowerCase());
               });
               const expectedDefaultCategory = enabledCategoryNames[0] || "";
-              const hasDefaultCategoryBehavior = /function ssvDefaultStorefrontCategory/.test(page);
+              const hasDefaultCategoryBehavior = await page.evaluate(async () => /function ssvDefaultStorefrontCategory/.test(await (await fetch("/app.js")).text()));
               if (hasDefaultCategoryBehavior) {
                 assert.equal(await page.locator("#tabs button.active").getAttribute("data-tab"), expectedDefaultCategory, label + ": first populated enabled category is selected on load");
                 const expectedDefaultCount = productsFixture.filter(product => String(product.category || "").trim().toLowerCase() === expectedDefaultCategory.toLowerCase()).length;
