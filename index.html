@@ -10254,7 +10254,7 @@ function ssvEnrichMissingCounts(items){
 function ssvEnsureEnrichFinderPopup(){
   let popup=$("#adminEnrichFinderPopup");if(popup)return popup;
   popup=document.createElement("div");popup.id="adminEnrichFinderPopup";popup.className="ssv-enrich-popup-backdrop";popup.hidden=true;
-  popup.innerHTML='<section class="ssv-enrich-popup" role="dialog" aria-modal="true" aria-labelledby="adminEnrichTitle" aria-describedby="adminEnrichIntro"><button type="button" class="ssv-enrich-popup-close" id="adminEnrichFinderClose" aria-label="Close Enrich Finder">×</button><p class="eyebrow">SMART SAREE FINDER</p><h3 id="adminEnrichTitle">Enrich Finder</h3><p id="adminEnrichIntro">Analyse product images to suggest missing occasion and colour metadata. Existing occasion tags, colour values, product images and unrelated product fields are preserved.</p><div class="ssv-enrich-count-grid"><div><strong id="adminEnrichOccasionCount">0</strong><span>OCCASIONS SAVED</span></div><div><strong id="adminEnrichColourCount">0</strong><span>COLOURS SAVED</span></div><div><strong id="adminEnrichReviewCount">0</strong><span>NEEDS REVIEW</span></div></div><div id="adminEnrichProcessing" class="ssv-enrich-processing" hidden aria-live="polite"><div class="ssv-enrich-processing-heading"><span class="ssv-enrich-scan-icon" aria-hidden="true">✦</span><strong id="adminEnrichProcessingLabel">Preparing image analysis…</strong></div><div class="ssv-enrich-progress-track" role="progressbar" aria-label="Products analysed" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="adminEnrichProgressTrack"><span id="adminEnrichProgressFill"></span></div><div class="ssv-enrich-progress-meta"><span id="adminEnrichProgressText">Preparing…</span><span id="adminEnrichProgressPercent">0%</span></div><div class="ssv-enrich-current-product" id="adminEnrichCurrentProduct" hidden><img id="adminEnrichCurrentImage" alt="" /><div><strong id="adminEnrichCurrentName">Preparing product…</strong><span id="adminEnrichCurrentStep">Waiting to analyse</span></div><span class="ssv-enrich-live-dots" aria-hidden="true"><i></i><i></i><i></i></span></div><p class="ssv-enrich-processing-note"><span aria-hidden="true">✦</span> Analysing products and saving only verified missing metadata.</p></div><p class="ssv-enrich-safety-note">Only confident predictions for fields that are still missing are saved.</p><button type="button" class="btn dark" id="adminEnrichFinder">ANALYSE MISSING METADATA</button><p id="adminEnrichFinderStatus" role="status" aria-live="polite" style="margin-top:16px;overflow-wrap:anywhere">Ready to analyse missing occasion and colour details.</p><div id="adminEnrichFinderFailures" aria-live="polite"></div></section>';
+  popup.innerHTML='<section class="ssv-enrich-popup" role="dialog" aria-modal="true" aria-labelledby="adminEnrichTitle" aria-describedby="adminEnrichIntro"><button type="button" class="ssv-enrich-popup-close" id="adminEnrichFinderClose" aria-label="Close Enrich Finder">×</button><p class="eyebrow">SMART SAREE FINDER</p><h3 id="adminEnrichTitle">Enrich Finder</h3><p id="adminEnrichIntro">Analyse product images to suggest missing occasion and colour metadata. Existing occasion tags, colour values, product images and unrelated product fields are preserved.</p><div class="ssv-enrich-count-grid"><div><strong id="adminEnrichOccasionCount">0</strong><span>OCCASIONS SAVED</span></div><div><strong id="adminEnrichColourCount">0</strong><span>COLOURS SAVED</span></div><div><strong id="adminEnrichReviewCount">0</strong><span>NEEDS REVIEW</span></div></div><div id="adminEnrichProcessing" class="ssv-enrich-processing" hidden aria-live="polite"><div class="ssv-enrich-processing-heading"><span class="ssv-enrich-scan-icon" aria-hidden="true">✦</span><strong id="adminEnrichProcessingLabel">Preparing image analysis…</strong></div><div class="ssv-enrich-progress-track" role="progressbar" aria-label="Products analysed" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="adminEnrichProgressTrack"><span id="adminEnrichProgressFill"></span></div><div class="ssv-enrich-progress-meta"><span id="adminEnrichProgressText">Preparing…</span><span id="adminEnrichProgressPercent">0%</span></div><div class="ssv-enrich-current-product" id="adminEnrichCurrentProduct" hidden><img id="adminEnrichCurrentImage" alt="" /><div><strong id="adminEnrichCurrentName">Preparing product…</strong><span id="adminEnrichCurrentStep">Waiting to analyse</span></div><span class="ssv-enrich-live-dots" aria-hidden="true"><i></i><i></i><i></i></span></div><p class="ssv-enrich-processing-note"><span aria-hidden="true">✦</span> Analysing products and saving only verified missing metadata.</p></div><p class="ssv-enrich-safety-note">Missing occasions use the highest-scoring match(es). Colour values follow catalogue rules, and saved changes are verified.</p><button type="button" class="btn dark" id="adminEnrichFinder">ANALYSE MISSING METADATA</button><p id="adminEnrichFinderStatus" role="status" aria-live="polite" style="margin-top:16px;overflow-wrap:anywhere">Ready to analyse missing occasion and colour details.</p><div id="adminEnrichFinderFailures" aria-live="polite"></div></section>';
   document.body.appendChild(popup);
   const focusableSelector='a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
   const close=()=>{if(popup.hidden||popup.classList.contains("is-closing"))return;const finish=()=>{if(popup._closeHandler){popup.removeEventListener("animationend",popup._closeHandler);popup._closeHandler=null;}if(popup._closeTimer){clearTimeout(popup._closeTimer);popup._closeTimer=null;}popup.hidden=true;popup.classList.remove("is-closing");const opener=popup._opener;if(opener&&opener.isConnected)opener.focus();};if(window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches){finish();return;}popup.classList.add("is-closing");let finished=false;const onEnd=event=>{if(event.target!==popup||finished)return;finished=true;finish();};popup._closeHandler=onEnd;popup.addEventListener("animationend",onEnd);popup._closeTimer=setTimeout(()=>{if(finished)return;finished=true;popup._closeTimer=null;finish();},220);};
@@ -14767,6 +14767,63 @@ if ("serviceWorker" in navigator) {
 @media(max-width:600px){#shop #products > article.product-card > .product-image > .badges > .badge,#shop .product-card .product-image > .badges > .badge,.lux-item-media .ssv-badge-pill,.ssv-finder-image-wrap>.ssv-finder-top-pick{min-height:20px!important;padding:4px 6px!important;font-size:7.5px!important;line-height:1.2!important;letter-spacing:.1em!important}}
 @media(prefers-reduced-motion:reduce){.ssv-enrich-popup-backdrop,.ssv-enrich-popup-backdrop.is-closing,.ssv-enrich-popup-backdrop.is-closing .ssv-enrich-popup{animation:none!important}}
 </style>
+
+<style id="ssv-enrich-finder-ui-review-20261015">
+#admin .admin-products-heading-actions>#adminEnrichFinderLink{
+ min-height:44px!important;padding:10px 10px!important;border:1px solid rgba(179,142,93,.48)!important;border-radius:2px!important;
+ background:rgba(255,255,255,.34)!important;gap:8px!important;font-size:11px!important;letter-spacing:.035em!important;
+ text-decoration:none!important;transition:background .18s ease,border-color .18s ease,color .18s ease,transform .18s ease!important
+}
+#admin .admin-products-heading-actions>#adminEnrichFinderLink:hover{background:#F1E8D9!important;border-color:#B38E5D!important;color:#493A2B!important}
+#admin .admin-products-heading-actions>#adminEnrichFinderLink:active{transform:translateY(1px)!important}
+#admin .admin-products-heading-actions>#adminEnrichFinderLink:focus-visible{outline:2px solid #80653f!important;outline-offset:3px!important}
+#admin .admin-products-heading-actions>#adminEnrichFinderLink[aria-disabled="true"]{opacity:.58;pointer-events:none}
+.ssv-enrich-popup-backdrop{padding:clamp(10px,2.5vw,24px)!important;overscroll-behavior:contain!important}
+.ssv-enrich-popup{width:min(680px,100%)!important;max-height:min(88vh,860px)!important;max-height:min(88dvh,860px)!important;overflow:auto!important;overscroll-behavior:contain!important;padding:26px clamp(16px,3vw,30px) 22px!important;scrollbar-gutter:stable;scroll-padding-block:64px 20px}
+.ssv-enrich-popup-close{position:sticky!important;float:right!important;top:0!important;z-index:3!important;margin:-7px -8px 2px 12px!important;display:inline-grid!important;place-items:center!important;border-radius:2px!important;background:#FAF7F2!important;font-size:26px!important}
+.ssv-enrich-popup h3{clear:none!important;font-size:clamp(27px,4vw,34px)!important}
+.ssv-enrich-popup #adminEnrichIntro{margin:0 0 12px!important;font-size:13px!important;color:#6F6252!important}
+.ssv-enrich-count-grid{gap:8px!important;margin:14px 0 10px!important}
+.ssv-enrich-count-grid>div{padding:11px 12px!important}
+.ssv-enrich-count-grid strong{font-size:clamp(18px,3vw,22px)!important}
+.ssv-enrich-count-grid span{font-size:9px!important;letter-spacing:.06em!important}
+#adminEnrichFinderPopup #adminEnrichFinder{position:relative;overflow:hidden;min-height:46px;width:100%;margin-top:8px}
+#adminEnrichFinderPopup #adminEnrichFinder:focus-visible,#adminEnrichFinderPopup .ssv-enrich-review-card button:focus-visible{outline:2px solid #80653f;outline-offset:3px}
+#adminEnrichFinderPopup #adminEnrichFinderStatus{margin:12px 0!important;font-size:12px!important;line-height:1.5!important}
+#adminEnrichFinderFailures{display:grid;gap:10px}
+#adminEnrichFinderFailures .ssv-enrich-review-card{margin:0!important;padding:13px!important;border-radius:2px}
+#adminEnrichFinderFailures .ssv-enrich-review-card h4{font-family:"Cormorant Garamond",Georgia,serif;font-size:20px!important;line-height:1.15}
+#adminEnrichFinderFailures .ssv-enrich-review-card label{min-height:38px;gap:10px!important}
+#adminEnrichFinderFailures .ssv-enrich-review-card label input{margin:0;accent-color:#80653f}
+#adminEnrichFinderFailures .ssv-enrich-review-card label span{font-size:13px;line-height:1.35}
+#adminEnrichFinderFailures .ssv-enrich-review-card button{margin-top:2px}
+#adminEnrichFinderPopup .ssv-enrich-processing{padding:12px!important;margin:10px 0!important}
+#adminEnrichFinderPopup .ssv-enrich-current-product{min-width:0}
+@media(max-width:600px){
+ .ssv-enrich-popup-backdrop{align-items:flex-end!important;padding:0!important}
+ .ssv-enrich-popup{width:100%!important;max-width:100vw!important;max-height:calc(100vh - env(safe-area-inset-top,0px))!important;max-height:calc(100dvh - env(safe-area-inset-top,0px))!important;padding:18px 14px calc(16px + env(safe-area-inset-bottom,0px))!important;border-left:0!important;border-right:0!important;border-bottom:0!important;border-radius:12px 12px 0 0!important}
+ .ssv-enrich-popup-close{top:0!important;margin:-4px -3px 0 8px!important;width:40px!important;height:40px!important}
+ .ssv-enrich-popup .eyebrow{font-size:9px!important}
+ .ssv-enrich-popup h3{margin:0 46px 7px 0!important;font-size:29px!important}
+ .ssv-enrich-popup #adminEnrichIntro{font-size:12px!important;line-height:1.45!important}
+ .ssv-enrich-count-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:6px!important;margin:12px 0 8px!important}
+ .ssv-enrich-count-grid>div{padding:9px 7px!important}
+ .ssv-enrich-count-grid strong{font-size:18px!important}
+ .ssv-enrich-count-grid span{font-size:7.5px!important;line-height:1.3!important}
+ .ssv-enrich-safety-note{margin:8px 0!important;font-size:11px!important}
+ #adminEnrichFinderPopup #adminEnrichFinder{min-height:46px!important;margin-top:6px!important;font-size:11px!important}
+ #adminEnrichFinderPopup #adminEnrichFinderStatus{margin:10px 0!important}
+ #adminEnrichFinderFailures .ssv-enrich-review-card{padding:11px!important}
+ #adminEnrichFinderFailures .ssv-enrich-review-card h4{font-size:19px!important}
+ #adminEnrichFinderFailures .ssv-enrich-review-card label{min-height:40px!important}
+ #adminEnrichFinderFailures .ssv-enrich-review-card label span{font-size:13px!important}
+ #adminEnrichFinderFailures .ssv-enrich-review-card button{min-height:44px!important}
+}
+@media(min-width:601px) and (max-width:800px){.ssv-enrich-popup{max-height:86vh!important;padding:22px 22px 18px!important}}
+@media(prefers-reduced-motion:reduce){
+ #admin .admin-products-heading-actions>#adminEnrichFinderLink,.ssv-enrich-popup-backdrop,.ssv-enrich-popup,.ssv-enrich-popup-backdrop *{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+}
+</style>
 </body>
 
 <style id="sv-review-mobile-full-card-fix-20261013">
@@ -14892,59 +14949,4 @@ if ("serviceWorker" in navigator) {
 </style>
 </html>
 
-<style id="ssv-enrich-finder-ui-review-20261015">
-#admin .admin-products-heading-actions>#adminEnrichFinderLink{
- min-height:44px!important;padding:10px 10px!important;border:1px solid rgba(179,142,93,.48)!important;border-radius:2px!important;
- background:rgba(255,255,255,.34)!important;gap:8px!important;font-size:11px!important;letter-spacing:.035em!important;
- text-decoration:none!important;transition:background .18s ease,border-color .18s ease,color .18s ease,transform .18s ease!important
-}
-#admin .admin-products-heading-actions>#adminEnrichFinderLink:hover{background:#F1E8D9!important;border-color:#B38E5D!important;color:#493A2B!important}
-#admin .admin-products-heading-actions>#adminEnrichFinderLink:active{transform:translateY(1px)!important}
-#admin .admin-products-heading-actions>#adminEnrichFinderLink:focus-visible{outline:2px solid #80653f!important;outline-offset:3px!important}
-#admin .admin-products-heading-actions>#adminEnrichFinderLink[aria-disabled="true"]{opacity:.58;pointer-events:none}
-.ssv-enrich-popup-backdrop{padding:clamp(10px,2.5vw,24px)!important;overscroll-behavior:contain!important}
-.ssv-enrich-popup{width:min(680px,100%)!important;max-height:min(88vh,860px)!important;max-height:min(88dvh,860px)!important;overflow:auto!important;overscroll-behavior:contain!important;padding:26px clamp(16px,3vw,30px) 22px!important;scrollbar-gutter:stable;scroll-padding-block:64px 20px}
-.ssv-enrich-popup-close{position:sticky!important;float:right!important;top:0!important;z-index:3!important;margin:-7px -8px 2px 12px!important;display:inline-grid!important;place-items:center!important;border-radius:2px!important;background:#FAF7F2!important;font-size:26px!important}
-.ssv-enrich-popup h3{clear:none!important;font-size:clamp(27px,4vw,34px)!important}
-.ssv-enrich-popup #adminEnrichIntro{margin:0 0 12px!important;font-size:13px!important;color:#6F6252!important}
-.ssv-enrich-count-grid{gap:8px!important;margin:14px 0 10px!important}
-.ssv-enrich-count-grid>div{padding:11px 12px!important}
-.ssv-enrich-count-grid strong{font-size:clamp(18px,3vw,22px)!important}
-.ssv-enrich-count-grid span{font-size:9px!important;letter-spacing:.06em!important}
-#adminEnrichFinderPopup #adminEnrichFinder{position:relative;overflow:hidden;min-height:46px;width:100%;margin-top:8px}
-#adminEnrichFinderPopup #adminEnrichFinder:focus-visible,#adminEnrichFinderPopup .ssv-enrich-review-card button:focus-visible{outline:2px solid #80653f;outline-offset:3px}
-#adminEnrichFinderPopup #adminEnrichFinderStatus{margin:12px 0!important;font-size:12px!important;line-height:1.5!important}
-#adminEnrichFinderFailures{display:grid;gap:10px}
-#adminEnrichFinderFailures .ssv-enrich-review-card{margin:0!important;padding:13px!important;border-radius:2px}
-#adminEnrichFinderFailures .ssv-enrich-review-card h4{font-family:"Cormorant Garamond",Georgia,serif;font-size:20px!important;line-height:1.15}
-#adminEnrichFinderFailures .ssv-enrich-review-card label{min-height:38px;gap:10px!important}
-#adminEnrichFinderFailures .ssv-enrich-review-card label input{margin:0;accent-color:#80653f}
-#adminEnrichFinderFailures .ssv-enrich-review-card label span{font-size:13px;line-height:1.35}
-#adminEnrichFinderFailures .ssv-enrich-review-card button{margin-top:2px}
-#adminEnrichFinderPopup .ssv-enrich-processing{padding:12px!important;margin:10px 0!important}
-#adminEnrichFinderPopup .ssv-enrich-current-product{min-width:0}
-@media(max-width:600px){
- .ssv-enrich-popup-backdrop{align-items:flex-end!important;padding:0!important}
- .ssv-enrich-popup{width:100%!important;max-width:100vw!important;max-height:calc(100vh - env(safe-area-inset-top,0px))!important;max-height:calc(100dvh - env(safe-area-inset-top,0px))!important;padding:18px 14px calc(16px + env(safe-area-inset-bottom,0px))!important;border-left:0!important;border-right:0!important;border-bottom:0!important;border-radius:12px 12px 0 0!important}
- .ssv-enrich-popup-close{top:0!important;margin:-4px -3px 0 8px!important;width:40px!important;height:40px!important}
- .ssv-enrich-popup .eyebrow{font-size:9px!important}
- .ssv-enrich-popup h3{margin:0 46px 7px 0!important;font-size:29px!important}
- .ssv-enrich-popup #adminEnrichIntro{font-size:12px!important;line-height:1.45!important}
- .ssv-enrich-count-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:6px!important;margin:12px 0 8px!important}
- .ssv-enrich-count-grid>div{padding:9px 7px!important}
- .ssv-enrich-count-grid strong{font-size:18px!important}
- .ssv-enrich-count-grid span{font-size:7.5px!important;line-height:1.3!important}
- .ssv-enrich-safety-note{margin:8px 0!important;font-size:11px!important}
- #adminEnrichFinderPopup #adminEnrichFinder{min-height:46px!important;margin-top:6px!important;font-size:11px!important}
- #adminEnrichFinderPopup #adminEnrichFinderStatus{margin:10px 0!important}
- #adminEnrichFinderFailures .ssv-enrich-review-card{padding:11px!important}
- #adminEnrichFinderFailures .ssv-enrich-review-card h4{font-size:19px!important}
- #adminEnrichFinderFailures .ssv-enrich-review-card label{min-height:40px!important}
- #adminEnrichFinderFailures .ssv-enrich-review-card label span{font-size:13px!important}
- #adminEnrichFinderFailures .ssv-enrich-review-card button{min-height:44px!important}
-}
-@media(min-width:601px) and (max-width:800px){.ssv-enrich-popup{max-height:86vh!important;padding:22px 22px 18px!important}}
-@media(prefers-reduced-motion:reduce){
- #admin .admin-products-heading-actions>#adminEnrichFinderLink,.ssv-enrich-popup-backdrop,.ssv-enrich-popup,.ssv-enrich-popup-backdrop *{animation:none!important;transition:none!important;scroll-behavior:auto!important}
-}
-</style>
+
