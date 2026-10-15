@@ -9381,7 +9381,7 @@ function getSavedGithubToken(){
     return /^(ghp_|github_pat_|gho_|ghu_|ghs_|ghr_)[A-Za-z0-9_]+$/.test(String(value||"").trim());
   };
 
-  const extractToken=(raw)=>{
+  const extractToken=(raw,allowOpaqueCanonical=false)=>{
     const value=String(raw||"").trim();
     if(isGithubToken(value))return value;
 
@@ -9403,11 +9403,15 @@ function getSavedGithubToken(){
       }
     }catch(_){}
 
-    return "";
+    // The canonical key is written only after a successful GitHub API
+    // verification. Accept its opaque value here so a future GitHub token
+    // prefix does not make an already-saved token look missing. GitHub API
+    // requests remain the authority for whether that token is still usable.
+    return allowOpaqueCanonical&&value?value:"";
   };
 
   const read=(storage,key)=>{
-    try{return extractToken(storage.getItem(key));}catch(_){return "";}
+    try{return extractToken(storage.getItem(key),key===GITHUB_TOKEN_KEY);}catch(_){return "";}
   };
 
   // 1. Known keys used by current and previous versions.
@@ -9484,6 +9488,14 @@ async function githubRequest(path,options={}){
   if(!r.ok){
     const error=new Error(d.message||"GitHub request failed");
     error.status=r.status;
+    const message=String(d.message||"");
+    error.rateLimited=r.status===403&&(
+      /rate limit|secondary rate limit|abuse detection/i.test(message)||
+      r.headers.get("x-ratelimit-remaining")==="0"||
+      Boolean(r.headers.get("retry-after"))
+    );
+    error.retryAfter=r.headers.get("retry-after")||"";
+    error.rateLimitReset=r.headers.get("x-ratelimit-reset")||"";
     throw error;
   }
   return d;
@@ -9958,8 +9970,8 @@ function apply(){
 }
 function normalizeCategoryName(name){const value=String(name||"").trim().toLowerCase();if(value==="jewellery"||value==="jewelry")return "Jewellery";if(value==="sarees")return "Sarees";if(value==="dresses")return "Dresses";return "";}
 function isCategoryEnabled(name){if(!categorySettingsReady)return false;const normalized=normalizeCategoryName(name);const key=({Sarees:"categorySareesEnabled",Dresses:"categoryDressesEnabled",Jewellery:"categoryJewelryEnabled"})[normalized];return !!key&&!(settings[key]===false||settings[key]==="false"||settings[key]===0||settings[key]==="0")}
-window.addEventListener("ssv:settings-updated",event=>{if(event.detail?.settings&&typeof event.detail.settings==="object"){categorySettingsReady=true;if(category==="All"||!isCategoryEnabled(category))category=ssvDefaultStorefrontCategory(products);}});
 function ssvDefaultStorefrontCategory(items=products){const enabled=["Sarees","Dresses","Jewellery"].filter(isCategoryEnabled);for(const name of enabled){if((Array.isArray(items)?items:[]).some(p=>normalizeCategoryName(p.category)===name))return name;}const first=(Array.isArray(items)?items:[]).find(p=>normalizeCategoryName(p.category)&&isCategoryEnabled(p.category));return first?normalizeCategoryName(first.category):(enabled[0]||"All");}
+window.addEventListener("ssv:settings-updated",event=>{if(event.detail?.settings&&typeof event.detail.settings==="object"){categorySettingsReady=true;if(category==="All"||!isCategoryEnabled(category))category=ssvDefaultStorefrontCategory(products);}});
 function renderTabs(){const enabled=["Sarees","Dresses","Jewellery"].filter(isCategoryEnabled);if(categorySettingsReady&&category!=="All"&&!enabled.includes(category))category=ssvDefaultStorefrontCategory(products);$("#tabs").innerHTML=enabled.map(c=>'<button class="'+(category===c?"active":"")+'" data-tab="'+c+'">'+(c==="Jewellery"?"JEWELLERY":c.toUpperCase())+"</button>").join("")}
 function render(){
   renderTabs();
@@ -11399,7 +11411,16 @@ async function verifyAdminOtp(){
       products=catalog.value;
       githubOriginalIds=new Set(products.map(p=>Number(p.id)));
     }catch(catalogError){
-      setStorageStatus(catalogError?.message||"The latest GitHub product catalogue could not be loaded on this device.");
+      if(catalogError?.status===401||(catalogError?.status===403&&!catalogError?.rateLimited)){
+        setStorageStatus("The saved GitHub token is invalid or lacks repository access. Connect a valid token to continue.");
+        showGithubStorageSetup();
+      }else if(catalogError?.rateLimited){
+        let waitSeconds=Number(catalogError.retryAfter)||0;
+        if(!waitSeconds&&Number(catalogError.rateLimitReset)>0)waitSeconds=Math.max(0,Number(catalogError.rateLimitReset)-Math.floor(Date.now()/1000));
+        setStorageStatus("GitHub API rate limit reached. Wait"+(waitSeconds>0?" about "+Math.ceil(waitSeconds/60)+" minute(s)":" a little")+" before retrying. Your saved token has not been changed.");
+      }else{
+        setStorageStatus(catalogError?.message||"The latest GitHub product catalogue could not be loaded on this device.");
+      }
       return false;
     }
     try{
