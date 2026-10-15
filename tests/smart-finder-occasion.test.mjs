@@ -163,9 +163,9 @@ test("A failed final catalogue refresh preserves partial-save results and warns 
 
 
 test("occasion enrichment always saves highest-scoring matches, including low-confidence ties", () => {
-  assert.match(aiSource, /const tieTolerance = 0\.0005/);
-  assert.match(aiSource, /const nextDistinct = ranked\.find/);
-  assert.match(aiSource, /const labels = Array\.isArray\(result\?\.labels\)/);
+  assert.match(aiSource, /const OCCASION_TIE_TOLERANCE = 0\.0005/);
+  assert.match(aiSource, /const nextDistinct = scores\.find/);
+  assert.match(aiSource, /const top = chooseTop\(ranked\)/);
   assert.match(adminSource, /occasionLabels=\[\.\.\.new Set/);
   assert.match(adminSource, /const addOccasion=needsOccasion&&occasionLabels\.length>0/);
   assert.doesNotMatch(adminSource, /const addOccasion=needsOccasion&&!!occasion\?\.confident/);
