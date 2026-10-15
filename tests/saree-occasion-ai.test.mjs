@@ -112,9 +112,9 @@ test("exposes ranked uncertain colours for safe Admin review", () => {
   assert.match(scanner, /rankings: ranked/);
   assert.match(admin, /colourReviewSuggestions/);
   assert.match(admin, /async function ssvSaveReviewedColour/);
-  assert.match(admin, /saved\\.colourMetadata\\?\\.source!==\\"ai-reviewed\\"/);
+  assert.ok(admin.includes('saved.colourMetadata?.source!=="ai-reviewed"'));
   assert.match(admin, /ssv-enrich-finder-ui-review-20261015/);
-  assert.match(admin, /max-height:calc\\(100dvh - env\\(safe-area-inset-top/);
+  assert.ok(admin.includes("max-height:calc(100dvh - env(safe-area-inset-top"));
 });
 
 test("preserves unsaved review selections when another review is saved", () => {
