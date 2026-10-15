@@ -113,8 +113,8 @@ async function inferColour(classifier, url, itemType) {
   for (let pass = 0; pass < MAX_PASSES; pass++) {
     const prompts = promptSets[pass];
     const mapping = new Map(prompts.map(([prompt, colour]) => [prompt, colour]));
-    const predictions = await classifier(url, prompts.map(([prompt]) => prompt));
-    passMaps.push(scoreMap(predictions, mapping));
+    const colourPredictions = await classifier(url, prompts.map(([prompt]) => prompt));
+    passMaps.push(scoreMap(colourPredictions, mapping));
     const ranked = aggregateScores(passMaps, COLOURS);
     const top = chooseTop(ranked, 0.000001);
     if (isReliable(top, 0.40, 0.30)) break;
@@ -139,21 +139,20 @@ export async function createOccasionScanner() {
       const itemType = normalizeCategory(category);
       const cacheKey = url + "|" + itemType + "|" + MODEL_ID;
       if (!options.retry && resultCache.has(cacheKey)) return resultCache.get(cacheKey);
-      // Keep occasion and colour independent: a failure in one must not invent the other.
-      const [occasionResult, colourResult] = await Promise.allSettled([
-        inferCategory(classifier, url, itemType),
-        inferColour(classifier, url, itemType)
-      ]);
-      if (occasionResult.status === "rejected" && colourResult.status === "rejected") {
-        throw new Error("Occasion and colour inference failed: " + String(occasionResult.reason?.message || occasionResult.reason) + "; " + String(colourResult.reason?.message || colourResult.reason));
+
+      // Runtime/image/model errors deliberately propagate for occasion inference.
+      const occasion = await inferCategory(classifier, url, itemType);
+      // Keep colour inference independent so a colour failure never erases occasion results.
+      let colour = null;
+      let colourError = null;
+      try {
+        colour = await inferColour(classifier, url, itemType);
+      } catch (error) {
+        colourError = error;
       }
-      const combined = {
-        occasion: occasionResult.status === "fulfilled" ? occasionResult.value : null,
-        occasionError: occasionResult.status === "rejected" ? occasionResult.reason : null,
-        colour: colourResult.status === "fulfilled" ? colourResult.value : null,
-        colourError: colourResult.status === "rejected" ? colourResult.reason : null
-      };
-      if (combined.occasion && combined.colour) resultCache.set(cacheKey, combined);
+      const combined = { occasion, colour, colourError };
+      // Cache only reliable complete predictions; retries bypass the cache.
+      if (occasion.confident && colour?.confident) resultCache.set(cacheKey, combined);
       return combined;
     }
   };
