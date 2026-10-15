@@ -127,7 +127,7 @@
     "id": 1791751843478,
     "name": "Printed frock",
     "category": "Dresses",
-    "color": "",
+    "color": "Pink",
     "price": 800,
     "originalPrice": 1000,
     "image": "assets/products/1791751841674-b68899c92514-palmona-printed-viscose-satin-midi-dress-with-voluminous-sleeves-5633534.jpg",
@@ -143,6 +143,14 @@
       "model": "CLIP-ViT-B-32",
       "score": 0.5495,
       "margin": 0.2861,
+      "image": "assets/products/1791751841674-b68899c92514-palmona-printed-viscose-satin-midi-dress-with-voluminous-sleeves-5633534.jpg",
+      "version": 1
+    },
+    "colourMetadata": {
+      "source": "ai",
+      "model": "CLIP-ViT-B-32",
+      "score": 0.4065,
+      "margin": 0.1881,
       "image": "assets/products/1791751841674-b68899c92514-palmona-printed-viscose-satin-midi-dress-with-voluminous-sleeves-5633534.jpg",
       "version": 1
     }
