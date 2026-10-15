@@ -153,3 +153,9 @@ test("manual occasion review preserves existing product fields and verifies the 
   assert.match(adminSource, /JSON\.stringify\(saved\.occasions\)!==JSON\.stringify\(labels\)/);
   assert.match(adminSource, /saved\.occasionMetadata\?\.source!=="ai-reviewed"/);
 });
+
+
+test("concurrent occasion review saves filter the latest result list instead of a stale captured array", () => {
+  assert.match(adminSource, /result\\.reviewSuggestions=\\(Array\\.isArray\\(result\\.reviewSuggestions\\)\\?result\\.reviewSuggestions:\\[\\]\\)\\.filter\\(item=>String\\(item\\.id\\)!==String\\(suggestion\\.id\\)\\)/);
+  assert.doesNotMatch(adminSource, /result\\.reviewSuggestions=suggestions\\.filter\\(item=>String\\(item\\.id\\)!==String\\(suggestion\\.id\\)\\)/);
+});
