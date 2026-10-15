@@ -10241,7 +10241,7 @@ function ssvEnrichMissingCounts(items){
 function ssvEnsureEnrichFinderPopup(){
   let popup=$("#adminEnrichFinderPopup");if(popup)return popup;
   popup=document.createElement("div");popup.id="adminEnrichFinderPopup";popup.className="ssv-enrich-popup-backdrop";popup.hidden=true;
-  popup.innerHTML='<section class="ssv-enrich-popup" role="dialog" aria-modal="true" aria-labelledby="adminEnrichTitle" aria-describedby="adminEnrichIntro"><button type="button" class="ssv-enrich-popup-close" id="adminEnrichFinderClose" aria-label="Close Enrich Finder">×</button><p class="eyebrow">SMART SAREE FINDER</p><h3 id="adminEnrichTitle">Enrich Finder</h3><p id="adminEnrichIntro">Analyse product images to suggest missing occasion and colour metadata. Existing occasion tags, colour values, product images and unrelated product fields are preserved.</p><div class="ssv-enrich-count-grid"><div><strong id="adminEnrichOccasionCount">0</strong><span>OCCASIONS SAVED</span></div><div><strong id="adminEnrichColourCount">0</strong><span>COLOURS SAVED</span></div><div><strong id="adminEnrichReviewCount">0</strong><span>NEEDS REVIEW</span></div></div><p class="ssv-enrich-safety-note">Only confident predictions for fields that are still missing are saved.</p><button type="button" class="btn dark" id="adminEnrichFinder">ANALYSE MISSING METADATA</button><p id="adminEnrichFinderStatus" role="status" aria-live="polite" style="margin-top:16px;overflow-wrap:anywhere">Ready to analyse missing occasion and colour details.</p><div id="adminEnrichFinderFailures" aria-live="polite"></div></section>';
+  popup.innerHTML='<section class="ssv-enrich-popup" role="dialog" aria-modal="true" aria-labelledby="adminEnrichTitle" aria-describedby="adminEnrichIntro"><button type="button" class="ssv-enrich-popup-close" id="adminEnrichFinderClose" aria-label="Close Enrich Finder">×</button><p class="eyebrow">SMART SAREE FINDER</p><h3 id="adminEnrichTitle">Enrich Finder</h3><p id="adminEnrichIntro">Analyse product images to suggest missing occasion and colour metadata. Existing occasion tags, colour values, product images and unrelated product fields are preserved.</p><div class="ssv-enrich-count-grid"><div><strong id="adminEnrichOccasionCount">0</strong><span>OCCASIONS SAVED</span></div><div><strong id="adminEnrichColourCount">0</strong><span>COLOURS SAVED</span></div><div><strong id="adminEnrichReviewCount">0</strong><span>NEEDS REVIEW</span></div></div><div id="adminEnrichProcessing" class="ssv-enrich-processing" hidden aria-live="polite"><div class="ssv-enrich-processing-heading"><span class="ssv-enrich-scan-icon" aria-hidden="true">✦</span><strong id="adminEnrichProcessingLabel">Preparing image analysis…</strong></div><div class="ssv-enrich-progress-track" role="progressbar" aria-label="Products analysed" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="adminEnrichProgressTrack"><span id="adminEnrichProgressFill"></span></div><div class="ssv-enrich-progress-meta"><span id="adminEnrichProgressText">Preparing…</span><span id="adminEnrichProgressPercent">0%</span></div><div class="ssv-enrich-current-product" id="adminEnrichCurrentProduct" hidden><img id="adminEnrichCurrentImage" alt="" /><div><strong id="adminEnrichCurrentName">Preparing product…</strong><span id="adminEnrichCurrentStep">Waiting to analyse</span></div><span class="ssv-enrich-live-dots" aria-hidden="true"><i></i><i></i><i></i></span></div><p class="ssv-enrich-processing-note"><span aria-hidden="true">✦</span> Analysing products and saving only verified missing metadata.</p></div><p class="ssv-enrich-safety-note">Only confident predictions for fields that are still missing are saved.</p><button type="button" class="btn dark" id="adminEnrichFinder">ANALYSE MISSING METADATA</button><p id="adminEnrichFinderStatus" role="status" aria-live="polite" style="margin-top:16px;overflow-wrap:anywhere">Ready to analyse missing occasion and colour details.</p><div id="adminEnrichFinderFailures" aria-live="polite"></div></section>';
   document.body.appendChild(popup);
   const focusableSelector='a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
   const close=()=>{if(popup.hidden)return;popup.hidden=true;const opener=popup._opener;if(opener&&opener.isConnected)opener.focus();};
@@ -10260,10 +10260,10 @@ function ssvEnsureEnrichFinderPopup(){
   popup.querySelector("#adminEnrichFinder").onclick=async()=>{
     const button=popup.querySelector("#adminEnrichFinder"),status=popup.querySelector("#adminEnrichFinderStatus");
     if(button.disabled||ssvFinderEnrichmentPromise)return;
-    button.disabled=true;button.textContent="ANALYSING IMAGES…";status.removeAttribute("data-state");
-    try{const result=await ssvEnrichFinderCatalogue({allMissing:true});ssvRenderEnrichFinderSummary(result);}
+    button.disabled=true;button.textContent="ANALYSING IMAGES…";status.removeAttribute("data-state");const processing=$("#adminEnrichProcessing");if(processing)processing.hidden=false;ssvUpdateEnrichProgress({index:0,total:0,phase:"Preparing image analysis…"});
+    try{const result=await ssvEnrichFinderCatalogue({allMissing:true,onProgress:ssvUpdateEnrichProgress});ssvRenderEnrichFinderSummary(result);if(processing)processing.classList.add("is-complete");}
     catch(error){console.error("Finder enrichment could not start",error);status.textContent="Could not start enrichment. "+ssvFinderFailureReason(error);status.setAttribute("data-state","error");showAdminToast("Finder enrichment could not start. "+ssvFinderFailureReason(error),"error");}
-    finally{button.disabled=!!ssvFinderEnrichmentPromise;button.textContent=button.disabled?"ENRICHMENT RUNNING…":"ANALYSE MISSING METADATA";if(!button.disabled)ssvRefreshEnrichFinderCounts();}
+    finally{button.disabled=!!ssvFinderEnrichmentPromise;button.textContent=button.disabled?"ENRICHMENT RUNNING…":"ANALYSE MISSING METADATA";if(!button.disabled){ssvRefreshEnrichFinderCounts();const processing=$("#adminEnrichProcessing");if(processing)processing.hidden=true;}}
   };
   document.addEventListener("keydown",event=>{if(event.key==="Escape"&&!popup.hidden)close();});
   return popup;
@@ -10796,7 +10796,8 @@ function ssvFinderFailureReason(error){
  if(/image/i.test(message)&&/load|fetch|url|missing|unsupported/i.test(message))return "Product image could not be loaded: "+message;
  return (status?"GitHub/API "+status+": ":"")+message||"Unknown error. Check browser console.";
 }
-async function ssvEnrichFinderCatalogue({allMissing=false,productId=null}={}){
+function ssvUpdateEnrichProgress({index=0,total=0,product=null,phase="Analysing product images…"}={}){const panel=$("#adminEnrichProcessing");if(!panel)return;const fill=$("#adminEnrichProgressFill"),track=$("#adminEnrichProgressTrack"),percent=$("#adminEnrichProgressPercent"),text=$("#adminEnrichProgressText"),label=$("#adminEnrichProcessingLabel"),current=$("#adminEnrichCurrentProduct"),img=$("#adminEnrichCurrentImage"),name=$("#adminEnrichCurrentName"),step=$("#adminEnrichCurrentStep");const done=Math.max(0,Math.min(Number(index)||0,Number(total)||0));const pct=total?Math.round(done/total*100):0;if(fill)fill.style.width=pct+"%";if(track)track.setAttribute("aria-valuenow",String(pct));if(percent)percent.textContent=pct+"%";if(text)text.textContent=total?(done+" of "+total+" products processed"):"Preparing catalogue…";if(label)label.textContent=phase;if(product&&current){current.hidden=false;if(img){img.src=String(product.image||"");img.alt=String(product.name||"Current product");img.onerror=()=>{img.hidden=true;};img.hidden=false;}if(name)name.textContent=String(product.name||("Product "+product.id));if(step)step.textContent="Product "+Math.min(done+1,total)+" of "+total+" · analysing";}else if(!total&&current)current.hidden=true;}
+async function ssvEnrichFinderCatalogue({allMissing=false,productId=null,onProgress=null}={}){
  if(ssvFinderEnrichmentPromise)return ssvFinderEnrichmentPromise;
  ssvFinderEnrichmentPromise=(async()=>{
   const status=$("#adminEnrichFinderStatus")||$("#adminProductResults");let processed=0,skipped=0,failed=0,occasionsSaved=0,coloursSaved=0,occasionUncertain=0,colourUncertain=0;const failures=[],uncertainProductIds=[],uncertainColourProductIds=[],reviewSuggestions=[];
@@ -10805,11 +10806,11 @@ async function ssvEnrichFinderCatalogue({allMissing=false,productId=null}={}){
    const module=await import("./saree-occasion-ai.js"),scanner=await module.createOccasionScanner(),initial=await githubReadJson("data/products.json");
    if(!Array.isArray(initial.value))throw new Error("Product catalogue is invalid.");
    const candidates=initial.value.filter(p=>isCategoryEnabled(p.category)&&(!productId||Number(p.id)===Number(productId))&&(ssvEnrichFieldNeeds(p).occasion||ssvEnrichFieldNeeds(p).colour));
-   const queue=allMissing?candidates:candidates.slice(0,1);
+   const queue=allMissing?candidates:candidates.slice(0,1);if(typeof onProgress==="function")onProgress({index:0,total:queue.length,phase:queue.length?"Scanning product images…":"No missing metadata found"});
    const occasionMissingCount=queue.filter(p=>ssvEnrichFieldNeeds(p).occasion).length,colourMissingCount=queue.filter(p=>ssvEnrichFieldNeeds(p).colour).length;
    let imageProcessed=0;
    for(let i=0;i<queue.length;i++){
-    const candidate=queue[i];
+    const candidate=queue[i];if(typeof onProgress==="function")onProgress({index:i,total:queue.length,product:candidate,phase:"Analysing product images…"});
     try{
      await new Promise(resolve=>setTimeout(resolve,0));
      const result=await scanner.classify(candidate.image,candidate.category);imageProcessed++;
@@ -10879,7 +10880,7 @@ async function ssvEnrichFinderCatalogue({allMissing=false,productId=null}={}){
      failed++;const reason=ssvFinderFailureReason(e);failures.push({id:candidate.id,reason});
      console.error("Finder enrichment failed for product "+candidate.id,{status:e?.status||null,reason,error:e});
     }
-    paint("Enrich Finder: "+(i+1)+" of "+queue.length+" products checked · "+imageProcessed+" images processed · "+occasionsSaved+" occasions saved · "+coloursSaved+" colours saved · "+occasionUncertain+" occasion uncertain · "+colourUncertain+" colour uncertain · "+processed+" products updated · "+skipped+" skipped/uncertain · "+failed+" failed");
+    paint("Enrich Finder: "+(i+1)+" of "+queue.length+" products checked · "+imageProcessed+" images processed · "+occasionsSaved+" occasions saved · "+coloursSaved+" colours saved · "+occasionUncertain+" occasion uncertain · "+colourUncertain+" colour uncertain · "+processed+" products updated · "+skipped+" skipped/uncertain · "+failed+" failed");if(typeof onProgress==="function")onProgress({index:i+1,total:queue.length,product:candidate,phase:i+1===queue.length?"Finishing and verifying saved metadata…":"Analysing product images…"});
    }
    const summary="Enrich Finder results: "+imageProcessed+" of "+queue.length+" images processed · "+occasionsSaved+"/"+occasionMissingCount+" missing occasions saved · "+coloursSaved+"/"+colourMissingCount+" missing colours saved · "+processed+" products updated · "+skipped+" skipped/uncertain · "+failed+" failed.";
    let refreshFailed=false;
@@ -14787,4 +14788,33 @@ if ("serviceWorker" in navigator) {
 }
 </style>
 
+
+<style id="ssv-enrich-processing-animation-20261015">
+.ssv-enrich-processing{margin:18px 0 14px;padding:16px 14px;border:1px solid #E4D8C5;background:linear-gradient(135deg,rgba(255,255,255,.82),rgba(228,216,197,.24));overflow:hidden}
+.ssv-enrich-processing[hidden]{display:none!important}
+.ssv-enrich-processing-heading{display:flex;align-items:center;gap:9px;color:#6f5430;font-size:13px;line-height:1.4}
+.ssv-enrich-scan-icon{display:inline-flex;align-items:center;justify-content:center;color:#B38E4F;font-size:21px;animation:ssvEnrichSparkle 1.4s ease-in-out infinite}
+.ssv-enrich-progress-track{height:7px;margin-top:14px;border-radius:99px;background:#e9e1d5;overflow:hidden}
+.ssv-enrich-progress-track>span{display:block;width:0;height:100%;border-radius:inherit;background:linear-gradient(90deg,#9b7943,#d2b477,#a98245);background-size:200% 100%;transition:width .32s ease;animation:ssvEnrichGoldFlow 1.6s linear infinite}
+.ssv-enrich-progress-meta{display:flex;justify-content:space-between;gap:12px;margin-top:7px;color:#6f6252;font-size:11px;font-variant-numeric:tabular-nums}
+.ssv-enrich-current-product{display:flex;align-items:center;gap:11px;margin-top:14px;min-width:0}
+.ssv-enrich-current-product[hidden]{display:none!important}
+.ssv-enrich-current-product>img{width:48px;height:62px;flex:0 0 48px;object-fit:contain;border:1px solid #E4D8C5;background:#fff;animation:ssvEnrichImagePulse 1.8s ease-in-out infinite}
+.ssv-enrich-current-product>div{display:grid;gap:4px;min-width:0;flex:1}
+.ssv-enrich-current-product>div strong{font-size:12px;line-height:1.4;overflow-wrap:anywhere}
+.ssv-enrich-current-product>div span{font-size:11px;color:#6f6252}
+.ssv-enrich-live-dots{display:flex;gap:4px;align-items:center;flex:0 0 auto}
+.ssv-enrich-live-dots i{width:5px;height:5px;border-radius:50%;background:#c4a16b;animation:ssvEnrichDot 1s ease-in-out infinite}
+.ssv-enrich-live-dots i:nth-child(2){animation-delay:.15s}.ssv-enrich-live-dots i:nth-child(3){animation-delay:.3s}
+.ssv-enrich-processing-note{display:flex;gap:7px;align-items:flex-start;margin:13px 0 0;font-size:11px;line-height:1.5;color:#6f6252}
+.ssv-enrich-processing-note>span{color:#b38e4f}
+.ssv-enrich-processing.is-complete .ssv-enrich-scan-icon{animation:none;color:#356347}
+.ssv-enrich-processing.is-complete .ssv-enrich-progress-track>span{animation:none;background:#64866b}
+@keyframes ssvEnrichGoldFlow{from{background-position:100% 0}to{background-position:-100% 0}}
+@keyframes ssvEnrichSparkle{0%,100%{transform:rotate(0) scale(.9);opacity:.65}50%{transform:rotate(35deg) scale(1.12);opacity:1}}
+@keyframes ssvEnrichImagePulse{0%,100%{box-shadow:0 0 0 0 rgba(179,142,79,0)}50%{box-shadow:0 0 0 3px rgba(179,142,79,.16)}}
+@keyframes ssvEnrichDot{0%,60%,100%{transform:translateY(0);opacity:.45}30%{transform:translateY(-4px);opacity:1}}
+@media(max-width:600px){.ssv-enrich-processing{padding:13px 11px;margin:14px 0}.ssv-enrich-current-product>img{width:42px;height:56px;flex-basis:42px}}
+@media(prefers-reduced-motion:reduce){.ssv-enrich-scan-icon,.ssv-enrich-progress-track>span,.ssv-enrich-current-product>img,.ssv-enrich-live-dots i{animation:none!important}.ssv-enrich-progress-track>span{transition:none!important}}
+</style>
 </html>
