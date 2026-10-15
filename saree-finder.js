@@ -14,7 +14,7 @@
     trigger.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.8l1.8 6.1 6.1 1.8-6.1 1.8-1.8 6.1-1.8-6.1-6.1-1.8 6.1-1.8z"/><path d="M19 15.5l.8 2.7 2.7.8-2.7.8-.8 2.7-.8-2.7-2.7-.8 2.7-.8z"/></svg><span class="ssv-finder-trigger-label">Find My Style</span>';
     const panel=document.createElement("section");
     panel.id="ssv-smart-finder-panel";panel.className="ssv-finder-panel";panel.hidden=true;panel.tabIndex=-1;panel.setAttribute("role","dialog");panel.setAttribute("aria-modal","true");panel.setAttribute("aria-labelledby","ssv-finder-heading");
-    panel.innerHTML='<header class="ssv-finder-head"><h2 class="ssv-finder-title" id="ssv-finder-heading"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.8l1.8 6.1 6.1 1.8-6.1 1.8-1.8 6.1-1.8-6.1-6.1-1.8 6.1-1.8z"/></svg>Find My Style</h2><button type="button" class="ssv-finder-close" aria-label="Close Find My Style">×</button></header><p class="ssv-finder-intro" id="ssv-finder-intro">Choose a category, budget and optional occasion. Sarees and dresses can also be filtered by recorded colour.</p><form id="ssv-finder-form"><div class="ssv-finder-fields"><div class="ssv-finder-field"><label for="ssv-finder-category">What are you shopping for?</label><select id="ssv-finder-category" name="category"><option value="Sarees">Sarees</option><option value="Dresses">Dresses</option><option value="Jewellery">Jewellery</option></select></div><div class="ssv-finder-field"><label for="ssv-finder-budget">Your maximum budget in ₹ (optional)</label><input id="ssv-finder-budget" name="budget" type="number" min="0" step="100" inputmode="numeric" placeholder="Any budget" autocomplete="off"></div><div class="ssv-finder-field" id="ssv-finder-color-field"><label for="ssv-finder-color">Preferred colour (optional)</label><select id="ssv-finder-color" name="color"><option value="">Any colour</option></select></div><div class="ssv-finder-field" id="ssv-finder-occasion-field"><label for="ssv-finder-occasion">Occasion (optional)</label><select id="ssv-finder-occasion" name="occasion"><option value="">Any occasion</option><option value="Daily Wear">Daily wear</option><option value="Wedding">Wedding</option><option value="Festive">Festive</option><option value="Party Wear">Party wear</option><option value="Traditional">Traditional</option></select></div></div><div class="ssv-finder-actions"><button type="button" class="ssv-finder-reset" id="ssv-finder-reset">Reset</button><button type="submit" class="ssv-finder-submit">Find Matches</button></div></form><p class="ssv-finder-message" id="ssv-finder-message" role="status" aria-live="polite"></p><div class="ssv-finder-results" id="ssv-finder-results"></div><p class="ssv-finder-note">Colour and occasion use saved product details. Occasion recommendations are instant and do not download an AI model.</p>';
+    panel.innerHTML='<header class="ssv-finder-head"><h2 class="ssv-finder-title" id="ssv-finder-heading"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.8l1.8 6.1 6.1 1.8-6.1 1.8-1.8 6.1-1.8-6.1-6.1-1.8 6.1-1.8z"/></svg>Find My Style</h2><button type="button" class="ssv-finder-close" aria-label="Close Find My Style">×</button></header><p class="ssv-finder-intro" id="ssv-finder-intro">Choose a category, budget and optional occasion. Sarees and dresses can also be filtered by recorded colour.</p><form id="ssv-finder-form"><div class="ssv-finder-fields"><div class="ssv-finder-field"><label for="ssv-finder-category">What are you shopping for?</label><select id="ssv-finder-category" name="category" disabled></select></div><div class="ssv-finder-field"><label for="ssv-finder-budget">Your maximum budget in ₹ (optional)</label><input id="ssv-finder-budget" name="budget" type="number" min="0" step="100" inputmode="numeric" placeholder="Any budget" autocomplete="off"></div><div class="ssv-finder-field" id="ssv-finder-color-field"><label for="ssv-finder-color">Preferred colour (optional)</label><select id="ssv-finder-color" name="color"><option value="">Any colour</option></select></div><div class="ssv-finder-field" id="ssv-finder-occasion-field"><label for="ssv-finder-occasion">Occasion (optional)</label><select id="ssv-finder-occasion" name="occasion"><option value="">Any occasion</option></select></div></div><div class="ssv-finder-actions"><button type="button" class="ssv-finder-reset" id="ssv-finder-reset">Reset</button><button type="submit" class="ssv-finder-submit">Find Matches</button></div></form><p class="ssv-finder-message" id="ssv-finder-message" role="status" aria-live="polite"></p><div class="ssv-finder-results" id="ssv-finder-results"></div><p class="ssv-finder-note">Colour and occasion use saved product details. Occasion recommendations are instant and do not download an AI model.</p>';
     const hint=document.createElement("div");
     hint.id="ssv-finder-hint";hint.className="ssv-finder-hint";hint.setAttribute("role","status");
     hint.innerHTML='<span>Find your perfect saree <span aria-hidden="true">✨</span></span><button type="button" class="ssv-finder-hint-close" aria-label="Dismiss Finder hint">×</button>';
@@ -32,10 +32,10 @@
     const hintClose=$(".ssv-finder-hint-close",hint);
     if(hintClose)hintClose.addEventListener("click",()=>dismissHint(true));
     trigger.addEventListener("click",()=>{dismissHint(false);lastFocus=document.activeElement;setBackgroundInert(panel,true);panel.hidden=false;trigger.hidden=true;trigger.setAttribute("aria-expanded","true");$("#ssv-finder-category").focus();loadCatalogue();});
-    $("#ssv-finder-category",panel).addEventListener("change",()=>{recommendationRun++;preferences.category=$("#ssv-finder-category").value;preferences.color="";preferences.occasion="";quickFilter="";$("#ssv-finder-color").value="";syncColorField();populateColors();$("#ssv-finder-results").replaceChildren();$("#ssv-finder-intro").textContent=["jewellery","jewelry"].includes(preferences.category.toLowerCase())?"Choose your budget to find gold jewellery. No colour selection is needed.":"Choose a budget, optional recorded colour and occasion.";$("#ssv-finder-message").textContent="Category updated. Choose your preferences and find matching products.";});
+    $("#ssv-finder-category",panel).addEventListener("change",()=>{recommendationRun++;preferences.category=$("#ssv-finder-category").value;preferences.color="";preferences.occasion="";quickFilter="";$("#ssv-finder-color").value="";$("#ssv-finder-occasion").value="";syncColorField();populateColors();populateOccasions();$("#ssv-finder-results").replaceChildren();$("#ssv-finder-intro").textContent=["jewellery","jewelry"].includes(preferences.category.toLowerCase())?"Choose your budget to find gold jewellery. No colour selection is needed.":"Choose a budget, optional recorded colour and occasion.";$("#ssv-finder-message").textContent="Category updated. Choose your preferences and find matching products.";});
     $(".ssv-finder-close",panel).addEventListener("click",closePanel);
     $("#ssv-finder-form",panel).addEventListener("submit",async event=>{event.preventDefault();const submit=$("#ssv-finder-form .ssv-finder-submit",panel);submit.disabled=true;try{await loadCatalogue();if(!loaded)return;readPreferences();quickFilter="";recommend();}finally{submit.disabled=false;}});
-    $("#ssv-finder-reset",panel).addEventListener("click",()=>{recommendationRun++;preferences={category:"Sarees",budget:"",color:"",occasion:""};quickFilter="";$("#ssv-finder-form").reset();$("#ssv-finder-intro").textContent="Choose a category and budget. Sarees and dresses can also be filtered by recorded colour.";syncColorField();populateColors();$("#ssv-finder-results").replaceChildren();$("#ssv-finder-message").textContent="Preferences cleared. Choose what matters to you.";});
+    $("#ssv-finder-reset",panel).addEventListener("click",()=>{recommendationRun++;const enabled=["Sarees","Dresses","Jewellery"].filter(isCategoryEnabled);preferences={category:enabled.includes("Sarees")?"Sarees":(enabled[0]||""),budget:"",color:"",occasion:""};quickFilter="";$("#ssv-finder-form").reset();syncCategoryOptions();$("#ssv-finder-intro").textContent="Choose a category and budget. Sarees and dresses can also be filtered by recorded colour.";syncColorField();populateColors();populateOccasions();$("#ssv-finder-results").replaceChildren();$("#ssv-finder-message").textContent=enabled.length?"Preferences cleared. Choose what matters to you.":"No categories are currently available.";});
     document.addEventListener("keydown",event=>{
       if(panel.hidden)return;
       if(event.key==="Escape"){event.preventDefault();closePanel();return;}
@@ -66,7 +66,7 @@
     backgroundState=[];
   }
   function loadCatalogue(){
-    if(loaded){populateColors();return Promise.resolve(true);}
+    if(loaded)return refreshSettings().then(()=>{syncCategoryOptions();populateColors();populateOccasions();return true;}).catch(()=>{shopSettings={categorySareesEnabled:false,categoryDressesEnabled:false,categoryJewelryEnabled:false};syncCategoryOptions();$("#ssv-finder-message").textContent="Category availability could not be verified. Please try again.";return false;});
     if(loadPromise)return loadPromise;
     const message=$("#ssv-finder-message");
     message.textContent="Loading current collection…";
@@ -85,13 +85,13 @@
           seenIds.add(id);
           return true;
         });
-        try{const settingsResponse=await fetch("./data/settings.json?finder="+Date.now(),{cache:"no-store",headers:{Accept:"application/json"}});if(settingsResponse.ok){const settings=await settingsResponse.json();if(settings&&typeof settings==="object")shopSettings=settings;}}catch(_){shopSettings={};}
-        loaded=true;populateColors();
+        const settingsResponse=await fetch("./data/settings.json?finder="+Date.now(),{cache:"no-store",headers:{Accept:"application/json"}});if(!settingsResponse.ok)throw new Error("Category settings request failed.");const settings=await settingsResponse.json();if(!settings||typeof settings!=="object"||Array.isArray(settings))throw new Error("Category settings are invalid.");shopSettings=settings;
+        loaded=true;syncCategoryOptions();populateColors();populateOccasions();
         message.textContent=catalogue.length?"Choose your category and preferences, then find matching products.":"No supported products are currently available in the catalogue.";
         return true;
       }catch(error){
-        loadPromise=null;
-        message.textContent="The finder could not load the catalogue. Please try again.";
+        shopSettings={categorySareesEnabled:false,categoryDressesEnabled:false,categoryJewelryEnabled:false};syncCategoryOptions();loadPromise=null;
+        message.textContent="The finder could not verify the catalogue and category settings. Please try again."
         return false;
       }
     })();
@@ -113,22 +113,23 @@
     const category=$("#ssv-finder-category")?.value||"Sarees";
     const jewellery=["jewellery","jewelry"].includes(category.trim().toLowerCase());
     syncColorField();
-    const colors=jewellery?[]:[...new Map(catalogue.filter(p=>String(p.category||"").trim().toLowerCase()===category.toLowerCase()).map(p=>String(p.color||"").trim()).filter(Boolean).map(color=>[color.toLocaleLowerCase(),color])).values()].sort((a,b)=>a.localeCompare(b));
+    const colors=jewellery?[]:[...new Map(catalogue.filter(p=>isCategoryEnabled(p.category)&&normalizeCategoryName(p.category)===normalizeCategoryName(category)).map(p=>String(p.color||"").trim()).filter(Boolean).map(color=>[color.toLocaleLowerCase(),color])).values()].sort((a,b)=>a.localeCompare(b));
     select.innerHTML='<option value="">'+(colors.length?"Any colour":"Any colour (no recorded colours)")+'</option>'+colors.map(color=>'<option value="'+esc(color)+'">'+esc(color)+'</option>').join("");
     if(!jewellery&&colors.some(color=>color.toLowerCase()===current.toLowerCase()))select.value=colors.find(color=>color.toLowerCase()===current.toLowerCase())||"";
     if(jewellery)select.value="";
   }
+  function populateOccasions(){const select=$("#ssv-finder-occasion");if(!select)return;const current=String(select.value||"").trim().toLowerCase();const available=new Set();catalogue.filter(product=>isCategoryEnabled(product.category)&&isAvailable(product)).forEach(product=>inferOccasions(product).forEach(value=>available.add(value)));const ordered=["daily wear","wedding","festive","party wear","traditional"].filter(value=>available.has(value));select.innerHTML='<option value="">Any occasion</option>'+ordered.map(value=>'<option value="'+value+'">'+({"daily wear":"Daily wear","wedding":"Wedding","festive":"Festive","party wear":"Party wear","traditional":"Traditional"}[value])+"</option>").join("");select.value=ordered.includes(current)?current:"";if(current&&!select.value)preferences.occasion="";}
   function readPreferences(){const form=$("#ssv-finder-form");const category=form.elements.category.value;preferences={category,budget:form.elements.budget.value,color:["jewellery","jewelry"].includes(category.trim().toLowerCase())?"":form.elements.color.value,occasion:form.elements.occasion.value};}
   // Match checkout.js: reject explicit sold-out signals, but do not hide legacy
   // products merely because an optional stock field is absent.
   function isAvailable(p){return p.availability!==false&&p.inStock!==false&&p.outOfStock!==true;}
-  function isCategoryEnabled(category){
-    const key=({Sarees:"categorySareesEnabled",Dresses:"categoryDressesEnabled",Jewellery:"categoryJewelryEnabled"})[String(category||"").trim()];
-    const value=key?shopSettings[key]:undefined;
-    return value!==false&&value!=="false"&&value!==0&&value!=="0";
-  }
+  function normalizeCategoryName(category){const value=String(category||"").trim().toLowerCase();if(value==="jewellery"||value==="jewelry")return "Jewellery";if(value==="sarees")return "Sarees";if(value==="dresses")return "Dresses";return "";}
+  function isCategoryEnabled(category){const normalized=normalizeCategoryName(category);const key=({Sarees:"categorySareesEnabled",Dresses:"categoryDressesEnabled",Jewellery:"categoryJewelryEnabled"})[normalized];const value=key?shopSettings[key]:undefined;return !!key&&value!==false&&value!=="false"&&value!==0&&value!=="0";}
+  function syncCategoryOptions(){const select=$("#ssv-finder-category");if(!select)return;const previous=normalizeCategoryName(select.value||preferences.category);const enabled=["Sarees","Dresses","Jewellery"].filter(isCategoryEnabled);select.innerHTML=enabled.map(category=>'<option value="'+category+'">'+category+'</option>').join("");const selected=enabled.includes(previous)?previous:(enabled.includes("Sarees")?"Sarees":(enabled[0]||""));select.value=selected;select.disabled=!enabled.length;if(selected!==previous){preferences={...preferences,category:selected,color:"",occasion:""};quickFilter="";const color=$("#ssv-finder-color"),occasion=$("#ssv-finder-occasion"),budget=$("#ssv-finder-budget");if(color)color.value="";if(occasion)occasion.value="";if(budget)budget.value="";const results=$("#ssv-finder-results");if(results)results.replaceChildren();}if(!enabled.length){preferences={...preferences,category:"",color:"",occasion:""};const results=$("#ssv-finder-results");if(results)results.replaceChildren();const message=$("#ssv-finder-message");if(message)message.textContent="No categories are currently available.";}syncColorField();populateColors();populateOccasions();}
+  async function refreshSettings(){const response=await fetch("./data/settings.json?finder="+Date.now(),{cache:"no-store",headers:{Accept:"application/json"}});if(!response.ok)throw new Error("Category settings request failed.");const next=await response.json();if(!next||typeof next!=="object"||Array.isArray(next))throw new Error("Category settings are invalid.");shopSettings=next;return true;}
   function navigateToProduct(product){
-    const category=String(product.category||preferences.category||"Sarees");
+    const category=normalizeCategoryName(product.category||preferences.category);
+    if(!isCategoryEnabled(category)){const message=$("#ssv-finder-message");if(message)message.textContent="This category is currently unavailable.";return;}
     closePanel();
     const grid=$("#products");
     if(!grid||product.id==null)return;
@@ -154,8 +155,9 @@
   function renderMatches(){
     const resultBox=$("#ssv-finder-results"),message=$("#ssv-finder-message");
     resultBox.replaceChildren();
-    const category=preferences.category||"Sarees";
-    const categoryLabel=["jewellery","jewelry"].includes(category.toLowerCase())?"jewellery":category.toLowerCase();
+    const category=normalizeCategoryName(preferences.category);
+    if(!category||!isCategoryEnabled(category)){message.textContent="No categories are currently available, or this category has been disabled. Please choose an enabled category.";return;}
+    const categoryLabel=category.toLowerCase();
     const results=allMatches.slice(0,shownCount);
     if(!results.length){
       const jewellery=["jewellery","jewelry"].includes(category.toLowerCase());
@@ -270,8 +272,9 @@
   async function recommend(){
     const runId=++recommendationRun;
     const message=$("#ssv-finder-message");
-    const category=preferences.category||"Sarees";
-    allMatches=catalogue.filter(p=>String(p.category||"").trim().toLowerCase()===category.toLowerCase()).filter(p=>isCategoryEnabled(p.category)).filter(p=>isAvailable(p));
+    const category=normalizeCategoryName(preferences.category);
+    if(!category||!isCategoryEnabled(category)){allMatches=[];shownCount=0;renderMatches();return;}
+    allMatches=catalogue.filter(p=>normalizeCategoryName(p.category)===category).filter(p=>isCategoryEnabled(p.category)).filter(p=>isAvailable(p));
     if(quickFilter==="newArrival")allMatches=allMatches.filter(p=>p.newArrival===true);
     if(quickFilter==="bestSeller")allMatches=allMatches.filter(p=>p.bestSeller===true);
     if(preferences.budget!==""){
@@ -297,6 +300,7 @@
     if(!allMatches.length)message.textContent="";
     renderMatches();
   }
+  window.addEventListener("ssv:settings-updated",event=>{const next=event.detail?.settings;if(!next||typeof next!=="object")return;shopSettings={...next};if($("#ssv-finder-category")){recommendationRun++;syncCategoryOptions();$("#ssv-finder-results")?.replaceChildren();$("#ssv-finder-message").textContent=isCategoryEnabled(preferences.category)?"Category settings updated. Choose your preferences and find matching products.":"No categories are currently available.";}});
   function start(){try{shell();}catch(error){console.error("Smart Saree Finder could not initialize.",error);}}
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",start,{once:true});else start();
 })();
