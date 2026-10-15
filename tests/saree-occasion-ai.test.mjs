@@ -144,7 +144,8 @@ test("removes manual colour review and keeps deterministic multi-pass inference"
   assert.doesNotMatch(admin, /colourReviewSuggestions/);
   assert.doesNotMatch(admin, /SAVE REVIEWED COLOUR/);
   assert.doesNotMatch(admin, /async function ssvSaveReviewedColour/);
-  assert.match(admin, /SSV_FINDER_COLOURS\.has\(savedProduct\?\.color\)/);
+  assert.match(admin, /SSV_FINDER_COLOURS\.has\(colour\?\.label\)/);
+  assert.match(admin, /const colourVerified=!addColour/);
   assert.match(admin, /ssv-enrich-finder-ui-review-20261015/);
   assert.ok(admin.includes("max-height:calc(100dvh - env(safe-area-inset-top"));
 });
