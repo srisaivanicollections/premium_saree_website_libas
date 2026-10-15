@@ -76,12 +76,12 @@ jobs:
           assert.match(page, /occasionMetadata=\{source:"ai"/, "AI occasion results must record their provenance");
           assert.match(page, /colourMetadata=isJewellery\?\{source:"default",model:"jewellery-default"/, "Missing Jewellery colour must use the documented Gold default provenance");
           assert.match(page, /:\{source:"ai",model:"CLIP-ViT-B-32"/, "Non-Jewellery AI colour results must record their provenance");
-          assert.match(page, /let products=\[\],settings=\{\},category="All"/, "Catalogue must default to all enabled categories without an All tab");
+          assert.match(page, /let products=\[\],settings=\{\},category="Sarees"/, "Catalogue must start on the default category without an All tab");
           assert.match(page, /function renderTabs\(\)\{const enabled=\["Sarees","Dresses","Jewellery"\]\.filter\(isCategoryEnabled\);[\s\S]*?\$\("#tabs"\)\.innerHTML=enabled\.map/, "Only enabled category tabs may be rendered");
           assert.doesNotMatch(page, /data-tab=["\x27](?:All|Best Seller)["\x27]/i, "All and Best Seller must not be customer-facing catalogue tabs");
           assert.match(page, /if\(!categorySettingsReady\)return false/, "Storefront must fail closed until category settings are verified");
           assert.match(page, /window\.addEventListener\("ssv:settings-updated",event=>\{if\(event\.detail\?\.settings/, "Successful Admin settings refresh must restore storefront category visibility");
-          assert.match(page, /if\(categorySettingsReady\)\{if\(category==="All"\|\|!isCategoryEnabled\(category\)\)category=ssvDefaultStorefrontCategory\(products\);window\.dispatchEvent\(new CustomEvent\("ssv:settings-updated"/, "Verified settings select a default category before broadcasting the settings event");
+          assert.match(page, /if\(categorySettingsReady\)\{if\(category==="__browse_all__"\|\|!isCategoryEnabled\(category\)\)category=ssvDefaultStorefrontCategory\(products\);window\.dispatchEvent\(new CustomEvent\("ssv:settings-updated"/, "Verified settings select a default category before broadcasting the settings event");
           assert.doesNotMatch(page, /selectedCategory==="best seller"|special==="best seller"/, "Best Seller must not be a customer-facing catalogue filter");
           assert.match(checkout, /if\(!categorySettingsReady\)return false/, "Cart must fail closed until category settings are loaded");
           assert.match(checkout, /if\(!categorySettingsReady\)\{showStatus\(/, "Checkout submission must wait for verified category settings");
@@ -105,7 +105,7 @@ jobs:
           assert.match(finder, /Add to Bag/, "Finder must offer an explicit add-to-bag action");
           assert.match(finder, /data-recovery="all"/, "No-match state must offer a browse-all recovery action");
           assert.match(finder, /storefront\.showAllProducts\(\)/, "Browse All must call the live storefront API");
-          assert.match(page, /window\.SSVStorefront=Object\.freeze\(\{showAllProducts\(\)\{category="All"/, "Live storefront must expose a real Browse All operation");
+          assert.match(page, /window\.SSVStorefront=Object\.freeze\(\{showAllProducts\(\)\{category="__browse_all__"/, "Live storefront must expose a real Browse All operation without an All tab");
           assert.match(finder, /rawPrice===null\|\|rawPrice===undefined\|\|String\(rawPrice\)\.trim\(\)===""[\s\S]*?price<=0/, "Finder must reject missing, empty, and non-positive prices");
           assert.match(finder, /textContent="New Arrivals"/, "Finder must offer a New Arrivals shortcut");
           assert.match(finder, /textContent="Best Sellers"/, "Finder must offer a Best Sellers shortcut");
