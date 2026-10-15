@@ -224,10 +224,23 @@ const rankFinderProducts = new Function(source.slice(rankStart, rankEnd) + "\nre
 
 test("a strong bestseller stays ahead of a much cheaper new arrival with a selected budget", () => {
   const products = [
-    { id: 1, price: 1000, bestSeller: true, newArrival: false },
+    { id: 1, price: 1000, bestSeller: true, newArrival: true },
     { id: 2, price: 100, bestSeller: false, newArrival: true }
   ];
   assert.deepEqual(rankFinderProducts(products, 1000).map(product => product.id), [1, 2]);
+});
+
+test("a very large saving can overcome one merchandising tier, but not the strongest combined signal", () => {
+  const products = [
+    { id: 1, price: 990, bestSeller: true, newArrival: false },
+    { id: 2, price: 10, bestSeller: false, newArrival: true }
+  ];
+  assert.deepEqual(rankFinderProducts(products, 1000).map(product => product.id), [2, 1]);
+  const strongest = [
+    { id: 3, price: 1000, bestSeller: true, newArrival: true },
+    { id: 2, price: 100, bestSeller: false, newArrival: true }
+  ];
+  assert.deepEqual(rankFinderProducts(strongest, 1000).map(product => product.id), [3, 2]);
 });
 
 test("affordability improves ranking among equally merchandised products", () => {
