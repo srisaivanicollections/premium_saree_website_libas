@@ -76,11 +76,13 @@ jobs:
           assert.match(page, /occasionMetadata=\{source:"ai"/, "AI occasion results must record their provenance");
           assert.match(page, /colourMetadata=isJewellery\?\{source:"default",model:"jewellery-default"/, "Missing Jewellery colour must use the documented Gold default provenance");
           assert.match(page, /:\{source:"ai",model:"CLIP-ViT-B-32"/, "Non-Jewellery AI colour results must record their provenance");
-          assert.match(page, /const tabs=\["All","Best Seller",\.\.\.enabled\]/, "All Products and Best Seller collections must remain available alongside enabled categories");
+          assert.match(page, /let products=\[\],settings=\{\},category="All"/, "Catalogue must default to all enabled categories without an All tab");
+          assert.match(page, /function renderTabs\(\)\{const enabled=\["Sarees","Dresses","Jewellery"\]\.filter\(isCategoryEnabled\);[\s\S]*?\$\("#tabs"\)\.innerHTML=enabled\.map/, "Only enabled category tabs may be rendered");
+          assert.doesNotMatch(page, /data-tab=["\x27](?:All|Best Seller)["\x27]/i, "All and Best Seller must not be customer-facing catalogue tabs");
           assert.match(page, /if\(!categorySettingsReady\)return false/, "Storefront must fail closed until category settings are verified");
           assert.match(page, /window\.addEventListener\("ssv:settings-updated",event=>\{if\(event\.detail\?\.settings/, "Successful Admin settings refresh must restore storefront category visibility");
           assert.match(page, /if\(categorySettingsReady\)window\.dispatchEvent\(new CustomEvent\("ssv:settings-updated"/, "Fallback settings must not be broadcast as authoritative");
-          assert.match(page, /==="best seller"\?"best seller":normalizeCategoryName\(category\)/, "Best Seller selection must bypass category normalization");
+          assert.doesNotMatch(page, /selectedCategory==="best seller"|special==="best seller"/, "Best Seller must not be a customer-facing catalogue filter");
           assert.match(checkout, /if\(!categorySettingsReady\)return false/, "Cart must fail closed until category settings are loaded");
           assert.match(checkout, /if\(!categorySettingsReady\)\{showStatus\(/, "Checkout submission must wait for verified category settings");
           assert.match(page, /attempt<3&&!saved/, "Occasion metadata writes must retry GitHub SHA conflicts");
@@ -287,12 +289,11 @@ jobs:
               await page.locator("#products [data-product-id]").first().waitFor();
               await page.locator("#ssv-finder-hint").waitFor({ state: "visible" });
               assert.ok(await page.locator("#ssv-smart-finder-trigger").isVisible(), label + ": Finder trigger remains visible with first-load hint");
-              assert.equal(await page.locator("#products [data-product-id]").count(), 3, label + ": initial Sarees category");
-              await page.locator('[data-tab="All"]').click();
-              assert.equal(await page.locator('#products [data-product-id]').count(), productsFixture.length, label + ": All Products collection");
-              await page.locator('[data-tab="Best Seller"]').click();
-              assert.equal(await page.locator('#products [data-product-id]').count(), productsFixture.filter(p => p.bestSeller === true || p.bestSeller === "true" || p.bestSeller === 1 || p.bestSeller === "1").length, label + ": Best Seller collection");
-              await page.locator('[data-tab="All"]').click();
+              assert.equal(await page.locator("#products [data-product-id]").count(), productsFixture.length, label + ": default catalogue shows all enabled categories");
+              assert.equal(await page.locator('[data-tab="All"]').count(), 0, label + ": All tab is absent");
+              assert.equal(await page.locator('[data-tab="Best Seller"]').count(), 0, label + ": Best Seller filter is absent");
+              const expectedBestSellerBadges = productsFixture.filter(p => p.bestSeller === true || p.bestSeller === "true" || p.bestSeller === 1 || p.bestSeller === "1").length;
+              assert.equal(await page.locator("#products .pill-best").count(), expectedBestSellerBadges, label + ": original Best Seller ribbons remain on the same products");
 
               for (const [index, category] of ["Sarees", "Dresses", "Jewellery"].entries()) await runCategoryToggleJourney(label, context, category, index);
 
