@@ -274,10 +274,10 @@
       const merchandisingScore=(product.bestSeller===true?2:0)+(product.newArrival===true?1:0);
       const normalizedMerchandising=merchandisingScore/3;
       const affordabilityScore=hasBudget?Math.max(0,1-(Number(product.price)/budgetValue)):0;
-      // Relevance carries 75% of the score; affordability contributes 25%.
-      // This rewards cheaper products without allowing price alone to outweigh
-      // a stronger merchandising signal.
-      const score=hasBudget?(normalizedMerchandising*0.75)+(affordabilityScore*0.25):merchandisingScore;
+      // Relevance carries 70% of the score; affordability contributes 30%.
+      // A substantial saving can overcome one merchandising tier, but the
+      // strongest combined merchandising signal remains ahead of weaker matches.
+      const score=hasBudget?(normalizedMerchandising*0.7)+(affordabilityScore*0.3):merchandisingScore;
       return {product,merchandisingScore,score};
     }).sort((a,b)=>
       (hasBudget?b.score-a.score:b.merchandisingScore-a.merchandisingScore)||
