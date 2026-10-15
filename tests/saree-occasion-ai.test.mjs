@@ -144,8 +144,8 @@ test("exposes ranked uncertain colours for safe Admin review", () => {
   assert.ok(admin.includes("max-height:calc(100dvh - env(safe-area-inset-top"));
 });
 
-test("preserves unsaved review selections when another review is saved", () => {
+test("preserves unsaved colour selections when another review is saved", () => {
   const admin = readFileSync(new URL("../index.html", import.meta.url), "utf8");
-  assert.match(admin, /__ssvOccasionReviewSelections/);
   assert.match(admin, /__ssvColourReviewSelections/);
+  assert.doesNotMatch(admin, /SAVE SELECTED OCCASIONS/);
 });
