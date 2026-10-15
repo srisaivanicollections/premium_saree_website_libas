@@ -6,7 +6,7 @@ const GITHUB_BRANCH = "main";
 const GITHUB_TOKEN_KEY = "ssv_github_token_v1";
 const ADMIN_TOKEN_KEY = "gh_admin_token_libas";
 const LEGACY_TOKEN_KEY = "github_token";
-let products=[],settings={},category="All",adminPassword="",githubOriginalIds=new Set();
+let products=[],settings={},category="Sarees",adminPassword="",githubOriginalIds=new Set();
 function $(s){return document.querySelector(s)} function all(s){return document.querySelectorAll(s)}
 async function localLoad(){
   // GitHub is the single source of truth for catalog/settings.
@@ -329,6 +329,7 @@ async function load(){
     products=pr.value;
     githubOriginalIds=new Set(products.map(p=>Number(p.id)));
     settings=(sr.value&&typeof sr.value==="object")?{...sr.value}:{};
+    category=ssvDefaultStorefrontCategory(products);
     delete settings.githubToken;
     apply();
     render();
@@ -394,6 +395,7 @@ function productImageSrc(value){
 function apply(){all(".brand b").forEach(x=>x.textContent=settings.name||"SRI SAI VANI");const n=waNumber();$("#waMain").href=n?"https://wa.me/"+n+"?text="+encodeURIComponent("Hi Sri Sai Vani, I would like to know about your collection."): "#";$("#instagram").href=settings.instagram}
 
 
+function ssvDefaultStorefrontCategory(items=products){const list=Array.isArray(items)?items:[];const enabled=["Sarees","Dresses","Jewellery"].filter(name=>{const key=({Sarees:"categorySareesEnabled",Dresses:"categoryDressesEnabled",Jewellery:"categoryJewelryEnabled"})[name];const value=settings[key];return !(value===false||value==="false"||value===0||value==="0");});for(const name of enabled){if(list.some(p=>String(p?.category||"").trim().toLowerCase()===name.toLowerCase()))return name;}return enabled[0]||"Sarees";}
 function renderTabs(){$("#tabs").innerHTML=["All","Sarees","Dresses","Jewellery","Best Seller"].map(c=>'<button class="'+(category===c?"active":"")+'" data-tab="'+c+'">'+c.toUpperCase()+"</button>").join("")}
 function render(){
   renderTabs();
@@ -443,7 +445,7 @@ function render(){
   if(!list.length){
     grid.innerHTML='<div class="lux-empty"><strong>No pieces found</strong><br><span>Try another category or search.</span><br><button type="button" class="btn dark" id="clearCatalogFilters">CLEAR FILTERS</button></div>';
     const clear=$("#clearCatalogFilters");
-    if(clear)clear.onclick=()=>{category="All";$("#search").value="";$("#price").value="";render()};
+    if(clear)clear.onclick=()=>{category=ssvDefaultStorefrontCategory(products);$("#search").value="";$("#price").value="";render()};
     return;
   }
   grid.innerHTML=list.map(p=>{

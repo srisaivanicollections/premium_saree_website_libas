@@ -81,7 +81,7 @@ jobs:
           assert.doesNotMatch(page, /data-tab=["\x27](?:All|Best Seller)["\x27]/i, "All and Best Seller must not be customer-facing catalogue tabs");
           assert.match(page, /if\(!categorySettingsReady\)return false/, "Storefront must fail closed until category settings are verified");
           assert.match(page, /window\.addEventListener\("ssv:settings-updated",event=>\{if\(event\.detail\?\.settings/, "Successful Admin settings refresh must restore storefront category visibility");
-          assert.match(page, /if\(categorySettingsReady\)window\.dispatchEvent\(new CustomEvent\("ssv:settings-updated"/, "Fallback settings must not be broadcast as authoritative");
+          assert.match(page, /if\(categorySettingsReady\)\{if\(category==="All"\|\|!isCategoryEnabled\(category\)\)category=ssvDefaultStorefrontCategory\(products\);window\.dispatchEvent\(new CustomEvent\("ssv:settings-updated"/, "Verified settings select a default category before broadcasting the settings event");
           assert.doesNotMatch(page, /selectedCategory==="best seller"|special==="best seller"/, "Best Seller must not be a customer-facing catalogue filter");
           assert.match(checkout, /if\(!categorySettingsReady\)return false/, "Cart must fail closed until category settings are loaded");
           assert.match(checkout, /if\(!categorySettingsReady\)\{showStatus\(/, "Checkout submission must wait for verified category settings");
@@ -254,7 +254,15 @@ jobs:
               assert.equal(await togglePage.locator('[data-tab="' + category + '"]').count(), 0, label + ": disabled " + category + " tab is hidden");
               assert.equal(await togglePage.locator('[data-tab="All"]').count(), 0, label + ": All tab remains removed");
               assert.equal(await togglePage.locator('[data-tab="Best Seller"]').count(), 0, label + ": Best Seller filter remains removed");
-              assert.equal(await togglePage.locator('#products [data-product-id]').count(), productsFixture.filter(p => p.category !== category).length, label + ": default catalogue excludes disabled " + category);
+              const expectedDefaultCategory = ["Sarees", "Dresses", "Jewellery"].find(name => {
+                const key = ({ Sarees: "categorySareesEnabled", Dresses: "categoryDressesEnabled", Jewellery: "categoryJewelryEnabled" })[name];
+                const value = toggleState.settings[key];
+                return !(value === false || value === "false" || value === 0 || value === "0") &&
+                  productsFixture.some(product => String(product.category || "").trim().toLowerCase() === name.toLowerCase());
+              }) || "";
+              assert.equal(await togglePage.locator("#tabs button.active").getAttribute("data-tab"), expectedDefaultCategory, label + ": default falls back to first populated enabled category");
+              const expectedVisibleAfterDisable = productsFixture.filter(product => String(product.category || "").trim().toLowerCase() === expectedDefaultCategory.toLowerCase()).length;
+              assert.equal(await togglePage.locator('#products [data-product-id]').count(), expectedVisibleAfterDisable, label + ": default catalogue shows only the selected enabled category");
               await togglePage.locator("#ssv-smart-finder-trigger").click();
               assert.equal(await togglePage.locator('#ssv-finder-category option[value="' + category + '"]').count(), 0, label + ": Finder excludes disabled " + category);
               await togglePage.locator(".ssv-finder-close").click();
@@ -334,7 +342,7 @@ jobs:
                 return enabled && productsFixture.some(product => String(product.category || "").trim().toLowerCase() === category.toLowerCase());
               });
               const expectedDefaultCategory = enabledCategoryNames[0] || "";
-              const hasDefaultCategoryBehavior = /function ssvDefaultStorefrontCategory/.test(page);
+              const hasDefaultCategoryBehavior = await page.evaluate(async () => /function ssvDefaultStorefrontCategory/.test(await (await fetch("/index.html")).text()));
               if (hasDefaultCategoryBehavior) {
                 assert.equal(await page.locator("#tabs button.active").getAttribute("data-tab"), expectedDefaultCategory, label + ": first populated enabled category is selected on load");
                 const expectedDefaultCount = productsFixture.filter(product => String(product.category || "").trim().toLowerCase() === expectedDefaultCategory.toLowerCase()).length;
