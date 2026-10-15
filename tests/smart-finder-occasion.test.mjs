@@ -117,8 +117,8 @@ test("Enrich Finder popup keeps model rankings and product IDs internal", () => 
   assert.ok(start >= 0 && end > start, "summary renderer must be present");
   const popupSummary = adminSource.slice(start, end);
   assert.doesNotMatch(popupSummary, /model score|Product "\+suggestion\.id|Product "\+item\.id/);
-  assert.match(popupSummary, /option\.textContent=value/);
-  assert.match(popupSummary, /Colour review/);
+  assert.doesNotMatch(popupSummary, /rankings|model score|Colour review|option\.textContent=value/);
+  assert.doesNotMatch(adminSource, /ssvSaveReviewedColour|colourReviewSuggestions|SAVE REVIEWED COLOUR/);
 });
 
 test("Enrich Finder reports saved counts, a deduplicated review count, and actionable diagnostics", () => {
@@ -126,7 +126,8 @@ test("Enrich Finder reports saved counts, a deduplicated review count, and actio
   assert.match(adminSource, /colourMissingCount=queue\.filter/);
   assert.match(adminSource, /occasion\.textContent=String\(result\.occasionsSaved\)/);
   assert.match(adminSource, /colour\.textContent=String\(result\.coloursSaved\)/);
-  assert.match(adminSource, /const reviewCount=reviewIds\.size/);
+  assert.match(adminSource, /const failureCount=Array\.isArray\(result\.failures\)\?result\.failures\.length:0/);
+  assert.doesNotMatch(adminSource, /const reviewCount=reviewIds\.size/);
   assert.match(adminSource, /low-confidence occasion predictions/);
   assert.match(adminSource, /Their highest-scoring occasion\(s\) were saved automatically/);
   assert.match(adminSource, /Processing failures:/);
@@ -164,7 +165,7 @@ test("A failed final catalogue refresh preserves partial-save results and warns 
 
 
 test("occasion enrichment always saves highest-scoring matches, including low-confidence ties", () => {
-  assert.match(aiSource, /const tieTolerance = 0\.0005/);
+  assert.match(aiSource, /OCCASION_TIE_TOLERANCE = 0\.0005/);
   assert.match(aiSource, /const nextDistinct = ranked\.find/);
   assert.match(aiSource, /const labels = Array\.isArray\(result\?\.labels\)/);
   assert.match(adminSource, /occasionLabels=\[\.\.\.new Set/);
@@ -172,7 +173,7 @@ test("occasion enrichment always saves highest-scoring matches, including low-co
   assert.doesNotMatch(adminSource, /const addOccasion=needsOccasion&&!!occasion\?\.confident/);
   assert.match(adminSource, /if\(needsOccasion&&!occasion\?\.confident\)occasionUncertain\+\+/);
   assert.match(adminSource, /next\.occasions=occasionLabels/);
-  assert.match(adminSource, /occasionLabels\.every\(value=>savedProduct\.occasions\.includes\(value\)\)/);
+  assert.match(adminSource, /occasionLabels\.every(value=>savedProduct\.occasions\.includes(value))/);
   assert.doesNotMatch(adminSource, /SAVE SELECTED OCCASIONS/);
   assert.doesNotMatch(adminSource, /reviewSuggestions\.push\(\{id:candidate\.id,name:/);
 });
@@ -181,7 +182,7 @@ test("automatic multi-occasion save preserves product fields and verifies all ti
   assert.match(adminSource, /const next=\{\.\.\.current\}/);
   assert.match(adminSource, /next\.occasions=occasionLabels/);
   assert.match(adminSource, /await githubWriteJson\("data\/products\.json"/);
-  assert.match(adminSource, /occasionLabels\.every\(value=>savedProduct\.occasions\.includes\(value\)\)/);
+  assert.match(adminSource, /occasionLabels\.every(value=>savedProduct\.occasions\.includes(value))/);
   assert.match(adminSource, /persisted\?\.occasionMetadata\?\.image===String\(current\.image\)/);
 });
 
