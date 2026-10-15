@@ -79,7 +79,9 @@ test("OTP is verified before the saved token is read", () => {
 
 test("401 and 403 catalogue failures reopen token setup without opening Admin Studio", () => {
   const verify = functionSource("async function verifyAdminOtp()", "\nfunction logoutAdmin()");
-  assert.match(verify, /catalogError\?\.status===401\|\|catalogError\?\.status===403/);
+  assert.match(verify, /catalogError\?\.status===401\|\|\(catalogError\?\.status===403&&!catalogError\?\.rateLimited\)/);
+  assert.match(verify, /else if\(catalogError\?\.rateLimited\)/);
+  assert.match(verify, /Your saved token has not been changed/);
   assert.match(verify, /showGithubStorageSetup\(\)/);
   assert.match(verify, /return false;/);
   assert.ok(verify.indexOf("showGithubStorageSetup()") < verify.indexOf("adminSessionActive=true"));
@@ -105,4 +107,12 @@ test("logout ends the session without deleting the saved token", () => {
   assert.match(logout, /adminSessionActive=false/);
   assert.match(logout, /otpAdminSession=false/);
   assert.doesNotMatch(logout, /localStorage\.removeItem|sessionStorage\.removeItem|localStorage\.clear|sessionStorage\.clear/);
+});
+
+
+test("GitHub 403 rate-limit responses are distinguished from invalid credentials", () => {
+  assert.match(html, /error\.rateLimited=r\.status===403&&\(/);
+  assert.match(html, /x-ratelimit-remaining/);
+  assert.match(html, /retry-after/);
+  assert.match(html, /error\.rateLimitReset=r\.headers\.get\("x-ratelimit-reset"\)/);
 });
