@@ -10831,7 +10831,7 @@ async function ssvEnrichFinderCatalogue({allMissing=false,productId=null,onProgr
        writeCompleted=true;
        const verify=await githubReadJsonFresh("data/products.json");
        const savedProduct=Array.isArray(verify.value)?verify.value.find(p=>Number(p.id)===Number(current.id)):null;
-       const occasionVerified=!addOccasion||(Array.isArray(savedProduct?.occasions)&&occasionLabels.every(value=>savedProduct.occasions.includes(value))&&savedProduct?.occasionMetadata?.image===String(current.image));
+       const occasionVerified=!addOccasion||(Array.isArray(savedProduct?.occasions)&&JSON.stringify(savedProduct.occasions)===JSON.stringify(occasionLabels)&&occasionLabels.every(value=>savedProduct.occasions.includes(value)&&SSV_OCCASION_LABELS.has(value))&&savedProduct?.occasionMetadata?.image===String(current.image));
        const colourVerified=!addColour||(savedProduct?.color===colourToSave&&savedProduct?.colourMetadata?.image===String(current.image));
        if(!savedProduct||!occasionVerified||!colourVerified)throw new Error("Save verification failed: GitHub did not return the expected metadata for this product.");
        processed++;if(addOccasion)occasionsSaved+=occasionLabels.length;if(addColour)coloursSaved++;saved=true;
@@ -10841,7 +10841,7 @@ async function ssvEnrichFinderCatalogue({allMissing=false,productId=null,onProgr
         try{
          const recovery=await githubReadJsonFresh("data/products.json");
          const persisted=Array.isArray(recovery.value)?recovery.value.find(p=>Number(p.id)===Number(current.id)):null;
-         const occasionPersisted=!addOccasion||(Array.isArray(persisted?.occasions)&&occasionLabels.every(value=>persisted.occasions.includes(value))&&persisted?.occasionMetadata?.image===String(current.image));
+         const occasionPersisted=!addOccasion||(Array.isArray(persisted?.occasions)&&JSON.stringify(persisted.occasions)===JSON.stringify(occasionLabels)&&occasionLabels.every(value=>persisted.occasions.includes(value)&&SSV_OCCASION_LABELS.has(value))&&persisted?.occasionMetadata?.image===String(current.image));
          const colourPersisted=!addColour||(persisted?.color===colourToSave&&persisted?.colourMetadata?.image===String(current.image));
          if(persisted&&persisted.image===current.image&&occasionPersisted&&colourPersisted){
           processed++;if(addOccasion)occasionsSaved+=occasionLabels.length;if(addColour)coloursSaved++;saved=true;stop=true;break;
