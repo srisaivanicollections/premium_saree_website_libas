@@ -9779,7 +9779,7 @@ async function load(){
   delete settings.githubToken;
   // Never broadcast fallback settings as if category availability were verified.
   // Finder and cart remain fail-closed until a successful settings read or Admin refresh.
-  if(categorySettingsReady)window.dispatchEvent(new CustomEvent("ssv:settings-updated",{detail:{settings:{...settings}}}));
+  if(categorySettingsReady){category=ssvDefaultStorefrontCategory(products);window.dispatchEvent(new CustomEvent("ssv:settings-updated",{detail:{settings:{...settings}}}));}
 
   try{
     apply();
