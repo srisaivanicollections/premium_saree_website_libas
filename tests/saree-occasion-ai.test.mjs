@@ -45,18 +45,23 @@ test("supports dress-specific prompt labels", () => {
 
 test("selects a known dominant colour from image prompt predictions", () => {
   const result = selectColourPrediction([
-    { label: "a product photo of a saree whose main visible fabric or material colour is red", score: 0.42 },
-    { label: "a product photo of a saree whose main visible fabric or material colour is pink", score: 0.24 },
-    { label: "a product photo of a saree whose main visible fabric or material colour is blue", score: 0.10 }
+    { label: "a product photo of a saree whose main visible fabric or material colour is red", score: 0.62 },
+    { label: "a product photo of a saree whose main visible fabric or material colour is pink", score: 0.20 },
+    { label: "a product photo of a saree whose main visible fabric or material colour is blue", score: 0.08 }
   ]);
-  assert.deepEqual(result, { label: "Red", score: 0.42, margin: 0.18 });
+  assert.deepEqual(result, { label: "Red", score: 0.62, margin: 0.42 });
   assert.equal(isConfidentColourPrediction(result), true);
 });
 
 test("rejects uncertain or unknown colour predictions", () => {
   assert.equal(isConfidentColourPrediction({ label: "Red", score: 0.19, margin: 0.2 }), false);
-  assert.equal(isConfidentColourPrediction({ label: "Red", score: 0.8, margin: 0.044 }), false);
+  assert.equal(isConfidentColourPrediction({ label: "Red", score: 0.8, margin: 0.299 }), false);
   assert.equal(isConfidentColourPrediction({ label: "Turquoise", score: 0.99, margin: 0.5 }), false);
+});
+
+test("keeps a known risky printed-dress prediction for manual review", () => {
+  // The Blue frock was previously predicted as Gold at score 0.3783 / margin 0.27.
+  assert.equal(isConfidentColourPrediction({ label: "Gold", score: 0.3783, margin: 0.27 }), false);
 });
 
 test("rejects empty and malformed colour model outputs", () => {
