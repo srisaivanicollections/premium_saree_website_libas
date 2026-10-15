@@ -323,7 +323,8 @@ jobs:
               await page.locator("#ssv-finder-budget").fill("800");
               await page.locator("#ssv-finder-color").selectOption("Pink");
               await page.locator("#ssv-finder-form button[type='submit']").click();
-              await page.getByRole("heading", { name: "Printed frock" }).waitFor({ state: "visible" });
+              await page.waitForFunction(() => document.querySelector(".ssv-finder-result h3")?.textContent.trim() === "Printed frock");
+              assert.equal(await page.locator(".ssv-finder-result h3").count(), 1, label + ": colour filter returns only the matching product");
               assert.equal((await page.locator(".ssv-finder-result h3").innerText()).trim(), "Printed frock", label + ": recorded colour filter");
               await page.locator("#ssv-finder-category").selectOption("Jewellery");
               assert.equal(await page.locator("#ssv-finder-color-field").isVisible(), false, label + ": Jewellery must hide colour");
