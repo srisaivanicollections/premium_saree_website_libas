@@ -10780,7 +10780,7 @@ function ssvUpdateEnrichProgress({index=0,total=0,product=null,phase="Analysing 
 async function ssvEnrichFinderCatalogue({allMissing=false,productId=null,onProgress=null}={}){
  if(ssvFinderEnrichmentPromise)return ssvFinderEnrichmentPromise;
  ssvFinderEnrichmentPromise=(async()=>{
-  const status=$("#adminEnrichFinderStatus")||$("#adminProductResults");let processed=0,skipped=0,failed=0,occasionsSaved=0,coloursSaved=0,occasionUncertain=0,colourUncertain=0;const failures=[],uncertainProductIds=[],uncertainColourProductIds=[],reviewSuggestions=[],colourReviewSuggestions=[];
+  const status=$("#adminEnrichFinderStatus")||$("#adminProductResults");let processed=0,skipped=0,failed=0,occasionsSaved=0,coloursSaved=0,occasionUncertain=0,colourUncertain=0;const failures=[],uncertainProductIds=[],uncertainColourProductIds=[];
   const paint=(message)=>{if(status)status.textContent=message;};
   try{
    const module=await import("./saree-occasion-ai.js"),scanner=await module.createOccasionScanner(),initial=await githubReadJson("data/products.json");
@@ -10798,16 +10798,12 @@ async function ssvEnrichFinderCatalogue({allMissing=false,productId=null,onProgr
      const candidateNeeds=ssvEnrichFieldNeeds(candidate);
      const needsOccasion=candidateNeeds.occasion,needsColour=candidateNeeds.colour;
      const addOccasion=needsOccasion&&occasionLabels.length>0;
-     const isJewellery=normalizeCategoryName(candidate.category)==="Jewellery";const colourToSave=isJewellery?"Gold":colour?.label;const addColour=needsColour&&(isJewellery||(!!colour?.confident&&SSV_FINDER_COLOURS.has(colour.label)));
+     const isJewellery=normalizeCategoryName(candidate.category)==="Jewellery";const colourToSave=isJewellery?"Gold":colour?.label;const addColour=needsColour&&(isJewellery||SSV_FINDER_COLOURS.has(colour?.label));
      if(needsOccasion&&!occasion?.confident)occasionUncertain++;
      if(needsColour&&!addColour){
       colourUncertain++;
       if(!uncertainColourProductIds.includes(candidate.id))uncertainColourProductIds.push(candidate.id);
-      const colourRankings=Array.isArray(colour?.rankings)?colour.rankings
-       .filter(item=>SSV_FINDER_COLOURS.has(item.label)&&Number.isFinite(Number(item.score)))
-       .map((item,index)=>({label:item.label,score:Number(item.score),rank:Number(item.rank)||index+1}))
-       .sort((a,b)=>a.rank-b.rank):[];
-      colourReviewSuggestions.push({id:candidate.id,name:String(candidate.name||("Product "+candidate.id)),image:String(candidate.image||""),category:String(candidate.category||""),reason:colour?"Colour prediction did not meet the automatic-save confidence threshold.":"No valid colour prediction was returned.",rankings:colourRankings});
+
      }
      if((needsOccasion&&!addOccasion)||(needsColour&&!addColour))if(!uncertainProductIds.includes(candidate.id))uncertainProductIds.push(candidate.id);
      if(!addOccasion&&!addColour){skipped++;continue;}
@@ -10880,7 +10876,7 @@ async function ssvEnrichFinderCatalogue({allMissing=false,productId=null,onProgr
     failures.push({id:"catalogue refresh",reason:refreshMessage});
     paint(summary+" WARNING: "+refreshMessage);
    }
-   return {processed,skipped,failed,imageProcessed,occasionsSaved,coloursSaved,occasionMissingCount,colourMissingCount,occasionUncertain,colourUncertain,uncertainProductIds,uncertainColourProductIds,reviewSuggestions,colourReviewSuggestions,failures,refreshFailed};
+   return {processed,skipped,failed,imageProcessed,occasionsSaved,coloursSaved,occasionMissingCount,colourMissingCount,occasionUncertain,colourUncertain,uncertainProductIds,uncertainColourProductIds,failures,refreshFailed};
   }finally{ssvFinderEnrichmentPromise=null;}
  })();return ssvFinderEnrichmentPromise;
 }
