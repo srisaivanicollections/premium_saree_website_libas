@@ -249,8 +249,12 @@ jobs:
               assert.ok(JSON.parse(await page.evaluate(() => localStorage.getItem("ssv_guest_cart_v1") || "[]")).length, label + ": cart row created before category disable");
               await page.locator(".ssv-finder-close").click();
               state.settings.categoryDressesEnabled = false;
+              const beforeDisabledSettingsRead = state.settingsReads;
               await page.reload();
               await page.locator("#products [data-product-id]").first().waitFor();
+              const disabledSettingsDeadline = Date.now() + 5000;
+              while (state.settingsReads <= beforeDisabledSettingsRead && Date.now() < disabledSettingsDeadline) await page.waitForTimeout(25);
+              assert.ok(state.settingsReads > beforeDisabledSettingsRead, label + ": disabled category settings reloaded");
               assert.equal(await page.locator('[data-tab="Dresses"]').count(), 0, label + ": disabled Dresses tab is hidden");
               await page.locator('[data-tab="All"]').click();
               assert.equal(await page.locator('#products [data-product-id]').count(), productsFixture.filter(p => p.category !== "Dresses").length, label + ": All Products excludes disabled category");
@@ -263,8 +267,12 @@ jobs:
               assert.equal(await page.locator(".ssv-cart-item").count(), 0, label + ": disabled-category cart row is not visible");
               assert.equal(state.workerActions.filter(action => action === "submitOrder").length, 0, label + ": disabled category cannot submit an order");
               state.settings.categoryDressesEnabled = true;
+              const beforeEnabledSettingsRead = state.settingsReads;
               await page.reload();
               await page.locator("#products [data-product-id]").first().waitFor();
+              const enabledSettingsDeadline = Date.now() + 5000;
+              while (state.settingsReads <= beforeEnabledSettingsRead && Date.now() < enabledSettingsDeadline) await page.waitForTimeout(25);
+              assert.ok(state.settingsReads > beforeEnabledSettingsRead, label + ": re-enabled category settings reloaded");
               await page.locator("#ssv-cart-trigger").click();
               assert.equal(await page.locator(".ssv-cart-item").count(), 1, label + ": cart row returns when category is re-enabled");
               await page.evaluate(() => localStorage.clear());
