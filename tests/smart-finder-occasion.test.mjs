@@ -100,7 +100,7 @@ test("Enrich Finder reports saved counts, a deduplicated review count, and actio
   assert.match(adminSource, /occasion\.textContent=String\(result\.occasionsSaved\)/);
   assert.match(adminSource, /colour\.textContent=String\(result\.coloursSaved\)/);
   assert.match(adminSource, /const reviewCount=reviewIds\.size/);
-  assert.match(adminSource, /uncertain predictions and need manual review/);
+  assert.match(adminSource, /Occasion prediction is uncertain\. Review the ranked suggestions/);
   assert.match(adminSource, /Processing failures:/);
 });
 
@@ -132,4 +132,41 @@ test("A failed final catalogue refresh preserves partial-save results and warns 
   assert.match(adminSource, /refreshFailed\};/);
   assert.match(adminSource, /result\.refreshFailed\?"Partial results":"Complete"/);
   assert.match(adminSource, /result\.failed\|\|result\.refreshFailed\?"error":"success"/);
+});
+
+
+test("uncertain occasion enrichment retains all ranked suggestions and exposes manual multi-occasion saving", () => {
+  assert.match(aiSource, /rankings: ranked/);
+  assert.match(adminSource, /reviewSuggestions\.push\(\{id:candidate\.id,name:/);
+  assert.match(adminSource, /SAVE SELECTED OCCASIONS/);
+  assert.match(adminSource, /occasion prediction is uncertain/i);
+  assert.match(adminSource, /ssvSaveReviewedOccasions\(productId,imagePath,selectedLabels\)/);
+  assert.match(adminSource, /source:"ai-reviewed"/);
+  assert.match(adminSource, /if\(!ssvHasNoOccasionMetadata\(current\)\|\|ssvHasOccasionDecision\(current\)\)/);
+  assert.match(adminSource, /The product image changed since analysis/);
+  assert.match(adminSource, /This product category is currently disabled/);
+});
+
+test("manual occasion review preserves existing product fields and verifies the saved image and tags", () => {
+  assert.match(adminSource, /const next=\{\.\.\.current,occasions:labels\}/);
+  assert.match(adminSource, /await githubWriteJson\("data\/products\.json"/);
+  assert.match(adminSource, /JSON\.stringify\(saved\.occasions\)!==JSON\.stringify\(labels\)/);
+  assert.match(adminSource, /saved\.occasionMetadata\?\.source!=="ai-reviewed"/);
+});
+
+
+test("concurrent occasion review saves filter the latest result list instead of a stale captured array", () => {
+  assert.ok(adminSource.includes('result.reviewSuggestions=(Array.isArray(result.reviewSuggestions)?result.reviewSuggestions:[]).filter(item=>String(item.id)!==String(suggestion.id));'));
+  assert.ok(!adminSource.includes('result.reviewSuggestions=suggestions.filter(item=>String(item.id)!==String(suggestion.id));'));
+});
+
+ 
+test("manual occasion review shows product image and identity with mobile-safe review controls", () => {
+  assert.match(adminSource, /ssv-enrich-review-image/);
+  assert.match(adminSource, /preview\.src=String\(suggestion\.image\|\|\"\"\)/);
+  assert.match(adminSource, /suggestion\.name\+" product image"/);
+  assert.match(adminSource, /suggestion\.category\?" · "\+suggestion\.category/);
+  assert.match(adminSource, /max-width:100vw/);
+  assert.match(adminSource, /ssv-enrich-review-card button\{min-height:44px/);
+  assert.match(adminSource, /overflow-wrap:anywhere/);
 });
