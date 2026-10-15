@@ -11,7 +11,9 @@
     "newArrival": true,
     "bestSeller": true,
     "availability": true,
-    "occasions": [],
+    "occasions": [
+      "Traditional"
+    ],
     "colourMetadata": {
       "source": "ai",
       "model": "CLIP-ViT-B-32",
@@ -23,12 +25,12 @@
     "occasionMetadata": {
       "source": "ai",
       "model": "CLIP-ViT-B-32",
-      "score": 0.3922,
-      "margin": 0.0186,
+      "score": 0.4418,
+      "margin": 0.1906,
       "scores": [
         {
           "label": "Traditional",
-          "score": 0.3922
+          "score": 0.4418
         }
       ],
       "image": "assets/products/1791912682188-614f0db1e8dc-WhatsApp-Image-2026-10-13-at-10.57.14-PM.jpeg",
