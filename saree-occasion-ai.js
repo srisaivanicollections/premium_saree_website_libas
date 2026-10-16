@@ -39,6 +39,76 @@ function imageUrl(path) {
   return url.href;
 }
 
+// A lightweight pixel signal complements CLIP for colour names that CLIP often confuses
+// (notably navy fabric with gold/beige embroidery). It is advisory and never overrides
+// the model unless the image has a clear dominant chromatic fabric colour.
+function pixelColourFromRgb(r, g, b) {
+  r /= 255; g /= 255; b /= 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b), delta = max - min;
+  const lightness = (max + min) / 2;
+  const saturation = delta === 0 ? 0 : delta / (1 - Math.abs(2 * lightness - 1));
+  if (saturation < 0.24 || lightness < 0.09 || lightness > 0.88) return null;
+  let hue = 0;
+  if (delta) {
+    if (max === r) hue = 60 * (((g - b) / delta) % 6);
+    else if (max === g) hue = 60 * ((b - r) / delta + 2);
+    else hue = 60 * ((r - g) / delta + 4);
+  }
+  if (hue < 0) hue += 360;
+  if (hue >= 195 && hue <= 255) return "Blue";
+  if (hue >= 95 && hue < 165) return "Green";
+  if (hue >= 165 && hue < 195) return "Blue";
+  if (hue >= 255 && hue < 290) return "Purple";
+  if (hue >= 290 && hue < 345) return "Pink";
+  if (hue >= 345 || hue < 12) return "Red";
+  if (hue >= 12 && hue < 28) return "Orange";
+  if (hue >= 28 && hue < 58) return lightness > 0.55 ? "Gold" : "Brown";
+  if (hue >= 58 && hue < 95) return "Yellow";
+  return null;
+}
+
+export function selectDominantPixelColour(rgbPixels) {
+  const counts = new Map();
+  for (const pixel of Array.isArray(rgbPixels) ? rgbPixels : []) {
+    if (!Array.isArray(pixel) || pixel.length < 3 || !pixel.slice(0, 3).every(value => Number.isFinite(Number(value)))) continue;
+    const label = pixelColourFromRgb(Number(pixel[0]), Number(pixel[1]), Number(pixel[2]));
+    if (label) counts.set(label, (counts.get(label) || 0) + 1);
+  }
+  const ranked = [...counts.entries()].map(([label, count]) => ({ label, count })).sort((a, b) => b.count - a.count || COLOURS.indexOf(a.label) - COLOURS.indexOf(b.label));
+  if (!ranked.length || ranked[0].count < 12) return null;
+  const runnerUp = ranked[1]?.count || 0;
+  if (ranked[0].count / Math.max(1, runnerUp) < 1.25) return null;
+  return { label: ranked[0].label, share: ranked[0].count / ranked.reduce((sum, item) => sum + item.count, 0), margin: (ranked[0].count - runnerUp) / ranked.reduce((sum, item) => sum + item.count, 0), counts: ranked };
+}
+
+async function readDominantPixelColour(url) {
+  try {
+    if (typeof Image === "undefined" || typeof document === "undefined") return null;
+    const image = new Image();
+    image.decoding = "async";
+    // Product images are served from the shop's own GitHub Pages origin. If canvas
+    // access is blocked by a host/CORS configuration, fall back safely to CLIP.
+    image.src = url;
+    if (typeof image.decode === "function") await image.decode();
+    else await new Promise((resolve, reject) => { image.onload = resolve; image.onerror = reject; });
+    if (!image.naturalWidth || !image.naturalHeight) return null;
+    const canvas = document.createElement("canvas");
+    const width = 72, height = Math.max(72, Math.round(72 * image.naturalHeight / image.naturalWidth));
+    canvas.width = width; canvas.height = Math.min(height, 128);
+    const context = canvas.getContext("2d", { willReadFrequently: true });
+    if (!context) return null;
+    // Focus on the centre of the product photo, reducing border/background influence.
+    const cropWidth = image.naturalWidth * 0.68, cropHeight = image.naturalHeight * 0.72;
+    context.drawImage(image, (image.naturalWidth - cropWidth) / 2, (image.naturalHeight - cropHeight) / 2, cropWidth, cropHeight, 0, 0, canvas.width, canvas.height);
+    const data = context.getImageData(0, 0, canvas.width, canvas.height).data;
+    const pixels = [];
+    for (let i = 0; i < data.length; i += 16) pixels.push([data[i], data[i + 1], data[i + 2]]);
+    return selectDominantPixelColour(pixels);
+  } catch (_) {
+    return null;
+  }
+}
+
 function itemTypeFor(category) {
   const normalized = String(category || "Sarees").trim().toLowerCase();
   if (["jewellery", "jewelry"].includes(normalized)) return "piece of jewellery";
@@ -149,7 +219,16 @@ export async function createOccasionScanner() {
         if (occasion.confident && colour?.confident) break;
       }
 
-      const combined = { occasion, colour, colourError };
+      // When CLIP's label conflicts with a strong, central-image pixel majority,
+      // use the visual signal to prevent embroidery/background tones winning over
+      // the dominant garment fabric. Low-signal images remain governed by CLIP.
+      const pixelColour = await readDominantPixelColour(url);
+      if (pixelColour && colour && pixelColour.label !== colour.label && pixelColour.share >= 0.42 && pixelColour.margin >= 0.12) {
+        colour = { ...colour, label: pixelColour.label, pixelEvidence: pixelColour, confident: Boolean(colour.confident || pixelColour.share >= 0.55) };
+      } else if (pixelColour && colour && pixelColour.label === colour.label) {
+        colour = { ...colour, pixelEvidence: pixelColour, confident: Boolean(colour.confident || (pixelColour.share >= 0.42 && pixelColour.margin >= 0.12)) };
+      }
+      const combined = { occasion, colour, colourError, pixelColour };
       combined.passes = passes;
       combined.colourConfident = Boolean(colour && isConfidentColourPrediction(colour));
       // Cache only complete confident results. Transient failures and uncertain
