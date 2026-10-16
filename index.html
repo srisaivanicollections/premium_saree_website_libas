@@ -10293,6 +10293,7 @@ function ssvOpenEnrichFinderPopup(){
   const popup=ssvEnsureEnrichFinderPopup();
   if(popup.hidden)popup._opener=document.activeElement;
   if(popup._closeTimer){clearTimeout(popup._closeTimer);popup._closeTimer=null;}if(popup._closeHandler){popup.removeEventListener("animationend",popup._closeHandler);popup._closeHandler=null;}popup.classList.remove("is-closing");ssvRefreshEnrichFinderCounts();popup.hidden=false;
+  githubReadJsonFresh("data/products.json").then(snapshot=>{if(popup.isConnected&&Array.isArray(snapshot.value))ssvRefreshEnrichFinderCounts(snapshot.value);}).catch(()=>{});
   const close=popup.querySelector("#adminEnrichFinderClose");if(close)close.focus();
   const button=popup.querySelector("#adminEnrichFinder");if(ssvFinderEnrichmentPromise&&button){button.disabled=true;button.textContent="ENRICHMENT RUNNING…";}
 }
