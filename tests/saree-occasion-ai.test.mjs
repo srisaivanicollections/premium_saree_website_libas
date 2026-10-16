@@ -158,6 +158,7 @@ test("removes manual colour review and keeps deterministic multi-pass inference"
   assert.match(scanner, /MAX_INFERENCE_PASSES = 3/);
   assert.match(scanner, /occasionPrompts/);
   assert.match(scanner, /colourPrompts/);
+  assert.match(scanner, /pixelOverride: true, confident: Boolean\(pixelColour\.share >= 0\.55 && pixelColour\.margin >= 0\.12\)/, "a confident CLIP label for the old colour must not make a weaker, different pixel override confident");
   assert.match(admin, /occasionLabels\.every/);
   assert.doesNotMatch(admin, /colourReviewSuggestions/);
   assert.doesNotMatch(admin, /SAVE REVIEWED COLOUR/);
