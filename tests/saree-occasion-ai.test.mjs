@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { selectOccasionPrediction, isConfidentOccasionPrediction, selectColourPrediction, isConfidentColourPrediction } from "../saree-occasion-ai.js";
+import { selectOccasionPrediction, isConfidentOccasionPrediction, selectColourPrediction, isConfidentColourPrediction, selectDominantPixelColour } from "../saree-occasion-ai.js";
 
 const prompts = {
   wedding: "a saree intended for wedding wear, bridal wear or a wedding guest",
@@ -101,6 +101,21 @@ test("low-confidence valid colour remains selectable for diagnostics but must no
   const admin = readFileSync(new URL("../index.html", import.meta.url), "utf8");
   assert.match(admin, /colour\?\.confident===true&&SSV_FINDER_COLOURS\.has\(colour\?\.label\)/,
     "the Enrich Finder must not persist an uncertain but valid colour label");
+});
+
+test("dominant navy-blue garment pixels beat a smaller gold/beige embellishment region", () => {
+  const pixels = [];
+  for (let i = 0; i < 80; i++) pixels.push([18, 35, 91]); // navy fabric
+  for (let i = 0; i < 25; i++) pixels.push([190, 145, 76]); // gold/tan print
+  const result = selectDominantPixelColour(pixels);
+  assert.equal(result.label, "Blue");
+  assert.ok(result.share > 0.7);
+});
+
+test("ambiguous or low-chroma pixels do not force a colour override", () => {
+  assert.equal(selectDominantPixelColour(Array.from({ length: 40 }, () => [235, 232, 225])), null);
+  const balanced = [...Array.from({ length: 20 }, () => [18, 35, 91]), ...Array.from({ length: 20 }, () => [190, 145, 76])];
+  assert.equal(selectDominantPixelColour(balanced), null);
 });
 
 test("rejects empty and malformed colour model outputs", () => {
