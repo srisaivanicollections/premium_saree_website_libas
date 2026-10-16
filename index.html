@@ -10243,7 +10243,8 @@ async function renderImageDangerZone(){
   await refreshCount();
 }
 function ssvEnrichFieldNeeds(product){
-  const eligible=!!(product&&product.image&&["Sarees","Dresses","Jewellery","Jewelry"].includes(String(product.category||"")));
+  const category=normalizeCategoryName(product?.category);
+  const eligible=!!(product&&String(product.image||"").trim()&&["Sarees","Dresses","Jewellery"].includes(category));
   return {eligible,occasion:eligible&&ssvHasNoOccasionMetadata(product)&&!ssvHasOccasionDecision(product),colour:eligible&&ssvHasNoColour(product)};
 }
 function ssvEnrichMissingCounts(items){
@@ -10793,11 +10794,12 @@ async function ssvEnrichFinderCatalogue({allMissing=false,productId=null,onProgr
   const status=$("#adminEnrichFinderStatus")||$("#adminProductResults");let processed=0,skipped=0,failed=0,occasionsSaved=0,coloursSaved=0,occasionUncertain=0,colourUncertain=0;const failures=[],uncertainProductIds=[],uncertainColourProductIds=[];
   const paint=(message)=>{if(status)status.textContent=message;};
   try{
-   const module=await import("./saree-occasion-ai.js"),scanner=await module.createOccasionScanner(),initial=await githubReadJson("data/products.json");
+   const initial=await githubReadJsonFresh("data/products.json");
    if(!Array.isArray(initial.value))throw new Error("Product catalogue is invalid.");
    const candidates=initial.value.filter(p=>isCategoryEnabled(p.category)&&(!productId||Number(p.id)===Number(productId))&&(ssvEnrichFieldNeeds(p).occasion||ssvEnrichFieldNeeds(p).colour));
-   const queue=allMissing?candidates:candidates.slice(0,1);if(typeof onProgress==="function")onProgress({index:0,total:queue.length,phase:queue.length?"Scanning product images…":"No missing metadata found"});
+   const queue=allMissing?candidates:candidates.slice(0,1);ssvRefreshEnrichFinderCounts(initial.value);if(typeof onProgress==="function")onProgress({index:0,total:queue.length,phase:queue.length?"Scanning product images…":"No missing metadata found"});
    const occasionMissingCount=queue.filter(p=>ssvEnrichFieldNeeds(p).occasion).length,colourMissingCount=queue.filter(p=>ssvEnrichFieldNeeds(p).colour).length;
+   const module=queue.length?await import("./saree-occasion-ai.js"):null,scanner=module?await module.createOccasionScanner():null;
    let imageProcessed=0;
    for(let i=0;i<queue.length;i++){
     const candidate=queue[i];if(typeof onProgress==="function")onProgress({index:i,total:queue.length,product:candidate,phase:"Analysing product images…"});
@@ -10808,7 +10810,7 @@ async function ssvEnrichFinderCatalogue({allMissing=false,productId=null,onProgr
      const candidateNeeds=ssvEnrichFieldNeeds(candidate);
      const needsOccasion=candidateNeeds.occasion,needsColour=candidateNeeds.colour;
      const addOccasion=needsOccasion&&occasionLabels.length>0;
-     const isJewellery=normalizeCategoryName(candidate.category)==="Jewellery";const colourToSave=isJewellery?"Gold":colour?.label;const addColour=needsColour&&(isJewellery||SSV_FINDER_COLOURS.has(colour?.label));
+     const isJewellery=normalizeCategoryName(candidate.category)==="Jewellery";const colourToSave=isJewellery?"Gold":colour?.label;const addColour=needsColour&&(isJewellery||(colour?.confident===true&&SSV_FINDER_COLOURS.has(colour?.label)));
      if(needsOccasion&&!occasion?.confident)occasionUncertain++;
      if(needsColour&&!addColour){
       colourUncertain++;
