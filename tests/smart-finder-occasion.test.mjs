@@ -58,7 +58,7 @@ test("occasion rankings survive an independent colour-inference failure", () => 
   assert.match(aiSource, /colourError = error;/);
   assert.doesNotMatch(aiSource, /catch\s*\(error\)\s*\{\s*console\.warn\("Finder (occasion|colour) inference was inconclusive:/);
   assert.match(aiSource, /Runtime\/image\/model errors deliberately propagate/);
-  assert.match(aiSource, /const combined = \\{ occasion, colour, colourError(?:, pixelColour)? \\}/);
+  assert.match(aiSource, /const combined = \{ occasion, colour, colourError(?:, pixelColour)? \}/);
 });
 
 test("uncertain predictions are not cached and an explicit retry bypasses cached results", () => {
