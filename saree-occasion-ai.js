@@ -151,6 +151,7 @@ export async function createOccasionScanner() {
 
       const combined = { occasion, colour, colourError };
       combined.passes = passes;
+      combined.colourConfident = Boolean(colour && isConfidentColourPrediction(colour));
       // Cache only complete confident results. Transient failures and uncertain
       // predictions remain retryable, and Admin can report real failures.
       if (occasion.confident && colour?.confident) resultCache.set(cacheKey, combined);
@@ -199,8 +200,8 @@ export function selectColourPrediction(predictions) {
 }
 
 export function isConfidentColourPrediction(result) {
-  // Confidence affects whether more inference passes are needed, never whether a
-  // valid single colour is selected and returned.
+  // A plausible label is not sufficient evidence to mutate catalogue metadata.
+  // Keep uncertain predictions retryable and leave the colour field untouched.
   return Boolean(result && COLOURS.includes(result.label) && Number.isFinite(result.score) &&
     result.score >= 0.40 && Number.isFinite(result.margin) && result.margin >= 0.30);
 }
