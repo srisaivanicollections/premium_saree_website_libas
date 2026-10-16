@@ -224,7 +224,7 @@ export async function createOccasionScanner() {
       // the dominant garment fabric. Low-signal images remain governed by CLIP.
       const pixelColour = await readDominantPixelColour(url);
       if (pixelColour && colour && pixelColour.label !== colour.label && pixelColour.share >= 0.42 && pixelColour.margin >= 0.12) {
-        colour = { ...colour, label: pixelColour.label, pixelEvidence: pixelColour, pixelOverride: true, confident: Boolean(colour.confident || pixelColour.share >= 0.55) };
+        colour = { ...colour, label: pixelColour.label, pixelEvidence: pixelColour, pixelOverride: true, confident: Boolean(pixelColour.share >= 0.55 && pixelColour.margin >= 0.12) };
       } else if (pixelColour && colour && pixelColour.label === colour.label) {
         colour = { ...colour, pixelEvidence: pixelColour, confident: Boolean(colour.confident || (pixelColour.share >= 0.42 && pixelColour.margin >= 0.12)) };
       }
