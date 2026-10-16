@@ -222,7 +222,7 @@ test("Enrich Finder close animation and final badge sizing overrides exist", () 
 
 test("Enrich Finder uses automated inference without a manual colour-review workflow", () => {
   assert.match(aiSource, /MAX_INFERENCE_PASSES = 3/);
-  assert.match(adminSource, /const addColour=needsColour&&\(isJewellery\|\|SSV_FINDER_COLOURS\.has\(colour\?\.label\)\)/);
+  assert.match(adminSource, /const addColour=needsColour&&\(isJewellery\|\|\(colour\?\.confident===true&&SSV_FINDER_COLOURS\.has\(colour\?\.label\)\)\)/);
   assert.doesNotMatch(adminSource, /ssvSaveReviewedColour/);
   assert.doesNotMatch(adminSource, /colourReviewSuggestions/);
   assert.doesNotMatch(adminSource, /SAVE REVIEWED COLOUR/);
