@@ -10814,7 +10814,7 @@ async function ssvEnrichFinderCatalogue({allMissing=false,productId=null,onProgr
      const needsOccasion=candidateNeeds.occasion,needsColour=candidateNeeds.colour;
      const addOccasion=needsOccasion&&occasionLabels.length>0;
      const isJewellery=normalizeCategoryName(candidate.category)==="Jewellery";const colourToSave=isJewellery?"Gold":colour?.label;const addColour=needsColour&&(isJewellery||(colour?.confident===true&&SSV_FINDER_COLOURS.has(colour?.label)));
-     if(needsOccasion&&!occasion?.confident)occasionUncertain++;
+     if(needsOccasion&&!occasion?.confident){occasionUncertain++;if(!uncertainProductIds.includes(candidate.id))uncertainProductIds.push(candidate.id);}
      if(needsColour&&!addColour){
       colourUncertain++;
       if(!uncertainColourProductIds.includes(candidate.id))uncertainColourProductIds.push(candidate.id);
