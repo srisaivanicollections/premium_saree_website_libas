@@ -127,7 +127,9 @@ test("Enrich Finder reports saved counts, a deduplicated review count, and actio
   assert.match(adminSource, /occasion\.textContent=String\(result\.occasionsSaved\)/);
   assert.match(adminSource, /colour\.textContent=String\(result\.coloursSaved\)/);
   assert.match(adminSource, /const failureCount=Array\.isArray\(result\.failures\)\?result\.failures\.length:0/);
-  assert.doesNotMatch(adminSource, /const reviewCount=reviewIds\.size/);
+  assert.match(adminSource, /const reviewIds=new Set\(\[\.\.\.\(Array\.isArray\(result\.uncertainProductIds\)\?result\.uncertainProductIds:\[\]\),\.\.\.\(Array\.isArray\(result\.uncertainColourProductIds\)\?result\.uncertainColourProductIds:\[\]\)\]\)/);
+  assert.match(adminSource, /review\.textContent=String\(reviewIds\.size\)/);
+  assert.match(adminSource, /uncertain colour predictions/);
   assert.match(adminSource, /low-confidence occasion predictions/);
   assert.match(adminSource, /Their highest-scoring occasion\(s\) were saved automatically/);
   assert.match(adminSource, /Processing failures:/);
