@@ -10282,8 +10282,8 @@ function ssvEnsureEnrichFinderPopup(){
   document.addEventListener("keydown",event=>{if(event.key==="Escape"&&!popup.hidden)close();});
   return popup;
 }
-function ssvRefreshEnrichFinderCounts(){
-  const counts=ssvEnrichMissingCounts(products);ssvEnsureEnrichFinderPopup();
+function ssvRefreshEnrichFinderCounts(items=products){
+  const counts=ssvEnrichMissingCounts(Array.isArray(items)?items:products);ssvEnsureEnrichFinderPopup();
   const candidate=$("#adminEnrichCandidateCount"),occasion=$("#adminEnrichOccasionCount"),colour=$("#adminEnrichColourCount");
   if(candidate)candidate.textContent=String(counts.products);
   if(occasion&&!occasion.dataset.hasResult)occasion.textContent="0 / "+counts.occasions;
