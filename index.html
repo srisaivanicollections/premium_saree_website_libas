@@ -10855,7 +10855,7 @@ async function ssvEnrichFinderCatalogue({allMissing=false,productId=null,onProgr
       if(!uncertainColourProductIds.includes(candidate.id))uncertainColourProductIds.push(candidate.id);
 
      }
-     if((needsOccasion&&!addOccasion)||(needsColour&&!addColour)){
+     if((needsOccasion&&!occasion?.confident)||(needsOccasion&&!addOccasion)||(needsColour&&!addColour)){
       if(!uncertainProductIds.includes(candidate.id))uncertainProductIds.push(candidate.id);
       if(!reviewProducts.some(item=>Number(item.id)===Number(candidate.id)))reviewProducts.push({id:candidate.id,name:String(candidate.name||candidate.title||("Product "+candidate.id)),image:String(candidate.image||""),category:String(candidate.category||""),needsOccasion:!!needsOccasion,needsColour:!!needsColour,occasionLabels,occasionUncertain:!!(needsOccasion&&!occasion?.confident),colourSuggestion:String(colour?.label||"")});
      }
