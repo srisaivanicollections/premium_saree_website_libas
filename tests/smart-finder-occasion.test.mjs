@@ -58,7 +58,7 @@ test("occasion rankings survive an independent colour-inference failure", () => 
   assert.match(aiSource, /colourError = error;/);
   assert.doesNotMatch(aiSource, /catch\s*\(error\)\s*\{\s*console\.warn\("Finder (occasion|colour) inference was inconclusive:/);
   assert.match(aiSource, /Runtime\/image\/model errors deliberately propagate/);
-  assert.match(aiSource, /const combined = \{ occasion, colour, colourError \}/);
+  assert.match(aiSource, /const combined = \{ occasion, colour, colourError(?:, pixelColour)? \}/);
 });
 
 test("uncertain predictions are not cached and an explicit retry bypasses cached results", () => {
@@ -141,9 +141,15 @@ test("ambiguous catalogue writes are re-read before reporting an unknown outcome
 
 test("Enrichment candidate selection and field counts share one eligibility decision", () => {
   assert.match(adminSource, /function ssvEnrichFieldNeeds\(product\)/);
+  assert.match(adminSource, /function ssvRefreshEnrichFinderCounts\(items=products\)/);
+  assert.match(adminSource, /const counts=ssvEnrichMissingCounts\(Array\.isArray\(items\)\?items:products\)/);
+  assert.match(adminSource, /const category=normalizeCategoryName\(product\?\.category\)/);
   assert.match(adminSource, /occasion:eligible&&ssvHasNoOccasionMetadata\(product\)&&!ssvHasOccasionDecision\(product\)/);
   assert.match(adminSource, /products:needs\.filter\(item=>item\.occasion\|\|item\.colour\)\.length/);
   assert.match(adminSource, /ssvEnrichFieldNeeds\(p\)\.occasion\|\|ssvEnrichFieldNeeds\(p\)\.colour/);
+  assert.match(adminSource, /const initial=await githubReadJsonFresh\("data\/products\.json"\)/);
+  assert.match(adminSource, /ssvRefreshEnrichFinderCounts\(initial\.value\)/);
+  assert.match(adminSource, /const module=queue\.length\?await import\("\.\/saree-occasion-ai\.js"\):null/);
   assert.match(adminSource, /const candidateNeeds=ssvEnrichFieldNeeds\(candidate\)/);
 });
 
@@ -218,7 +224,7 @@ test("Enrich Finder close animation and final badge sizing overrides exist", () 
 
 test("Enrich Finder uses automated inference without a manual colour-review workflow", () => {
   assert.match(aiSource, /MAX_INFERENCE_PASSES = 3/);
-  assert.match(adminSource, /const addColour=needsColour&&\(isJewellery\|\|SSV_FINDER_COLOURS\.has\(colour\?\.label\)\)/);
+  assert.match(adminSource, /const addColour=needsColour&&\(isJewellery\|\|\(colour\?\.confident===true&&SSV_FINDER_COLOURS\.has\(colour\?\.label\)\)\)/);
   assert.doesNotMatch(adminSource, /ssvSaveReviewedColour/);
   assert.doesNotMatch(adminSource, /colourReviewSuggestions/);
   assert.doesNotMatch(adminSource, /SAVE REVIEWED COLOUR/);

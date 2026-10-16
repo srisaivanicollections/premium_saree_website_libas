@@ -10243,7 +10243,8 @@ async function renderImageDangerZone(){
   await refreshCount();
 }
 function ssvEnrichFieldNeeds(product){
-  const eligible=!!(product&&product.image&&["Sarees","Dresses","Jewellery","Jewelry"].includes(String(product.category||"")));
+  const category=normalizeCategoryName(product?.category);
+  const eligible=!!(product&&String(product.image||"").trim()&&["Sarees","Dresses","Jewellery"].includes(category));
   return {eligible,occasion:eligible&&ssvHasNoOccasionMetadata(product)&&!ssvHasOccasionDecision(product),colour:eligible&&ssvHasNoColour(product)};
 }
 function ssvEnrichMissingCounts(items){
@@ -10281,8 +10282,8 @@ function ssvEnsureEnrichFinderPopup(){
   document.addEventListener("keydown",event=>{if(event.key==="Escape"&&!popup.hidden)close();});
   return popup;
 }
-function ssvRefreshEnrichFinderCounts(){
-  const counts=ssvEnrichMissingCounts(products);ssvEnsureEnrichFinderPopup();
+function ssvRefreshEnrichFinderCounts(items=products){
+  const counts=ssvEnrichMissingCounts(Array.isArray(items)?items:products);ssvEnsureEnrichFinderPopup();
   const candidate=$("#adminEnrichCandidateCount"),occasion=$("#adminEnrichOccasionCount"),colour=$("#adminEnrichColourCount");
   if(candidate)candidate.textContent=String(counts.products);
   if(occasion&&!occasion.dataset.hasResult)occasion.textContent="0 / "+counts.occasions;
@@ -10292,6 +10293,7 @@ function ssvOpenEnrichFinderPopup(){
   const popup=ssvEnsureEnrichFinderPopup();
   if(popup.hidden)popup._opener=document.activeElement;
   if(popup._closeTimer){clearTimeout(popup._closeTimer);popup._closeTimer=null;}if(popup._closeHandler){popup.removeEventListener("animationend",popup._closeHandler);popup._closeHandler=null;}popup.classList.remove("is-closing");ssvRefreshEnrichFinderCounts();popup.hidden=false;
+  githubReadJsonFresh("data/products.json").then(snapshot=>{if(popup.isConnected&&Array.isArray(snapshot.value))ssvRefreshEnrichFinderCounts(snapshot.value);}).catch(()=>{});
   const close=popup.querySelector("#adminEnrichFinderClose");if(close)close.focus();
   const button=popup.querySelector("#adminEnrichFinder");if(ssvFinderEnrichmentPromise&&button){button.disabled=true;button.textContent="ENRICHMENT RUNNING…";}
 }
@@ -10793,11 +10795,12 @@ async function ssvEnrichFinderCatalogue({allMissing=false,productId=null,onProgr
   const status=$("#adminEnrichFinderStatus")||$("#adminProductResults");let processed=0,skipped=0,failed=0,occasionsSaved=0,coloursSaved=0,occasionUncertain=0,colourUncertain=0;const failures=[],uncertainProductIds=[],uncertainColourProductIds=[];
   const paint=(message)=>{if(status)status.textContent=message;};
   try{
-   const module=await import("./saree-occasion-ai.js"),scanner=await module.createOccasionScanner(),initial=await githubReadJson("data/products.json");
+   const initial=await githubReadJsonFresh("data/products.json");
    if(!Array.isArray(initial.value))throw new Error("Product catalogue is invalid.");
    const candidates=initial.value.filter(p=>isCategoryEnabled(p.category)&&(!productId||Number(p.id)===Number(productId))&&(ssvEnrichFieldNeeds(p).occasion||ssvEnrichFieldNeeds(p).colour));
-   const queue=allMissing?candidates:candidates.slice(0,1);if(typeof onProgress==="function")onProgress({index:0,total:queue.length,phase:queue.length?"Scanning product images…":"No missing metadata found"});
+   const queue=allMissing?candidates:candidates.slice(0,1);ssvRefreshEnrichFinderCounts(initial.value);if(typeof onProgress==="function")onProgress({index:0,total:queue.length,phase:queue.length?"Scanning product images…":"No missing metadata found"});
    const occasionMissingCount=queue.filter(p=>ssvEnrichFieldNeeds(p).occasion).length,colourMissingCount=queue.filter(p=>ssvEnrichFieldNeeds(p).colour).length;
+   const module=queue.length?await import("./saree-occasion-ai.js"):null,scanner=module?await module.createOccasionScanner():null;
    let imageProcessed=0;
    for(let i=0;i<queue.length;i++){
     const candidate=queue[i];if(typeof onProgress==="function")onProgress({index:i,total:queue.length,product:candidate,phase:"Analysing product images…"});
@@ -10808,7 +10811,7 @@ async function ssvEnrichFinderCatalogue({allMissing=false,productId=null,onProgr
      const candidateNeeds=ssvEnrichFieldNeeds(candidate);
      const needsOccasion=candidateNeeds.occasion,needsColour=candidateNeeds.colour;
      const addOccasion=needsOccasion&&occasionLabels.length>0;
-     const isJewellery=normalizeCategoryName(candidate.category)==="Jewellery";const colourToSave=isJewellery?"Gold":colour?.label;const addColour=needsColour&&(isJewellery||SSV_FINDER_COLOURS.has(colour?.label));
+     const isJewellery=normalizeCategoryName(candidate.category)==="Jewellery";const colourToSave=isJewellery?"Gold":colour?.label;const addColour=needsColour&&(isJewellery||(colour?.confident===true&&SSV_FINDER_COLOURS.has(colour?.label)));
      if(needsOccasion&&!occasion?.confident)occasionUncertain++;
      if(needsColour&&!addColour){
       colourUncertain++;
@@ -10830,7 +10833,7 @@ async function ssvEnrichFinderCatalogue({allMissing=false,productId=null,onProgr
        next.occasions=occasionLabels;next.occasionMetadata={source:"ai",model:"CLIP-ViT-B-32",score:Number(occasion.score.toFixed(4)),margin:Number(occasion.margin.toFixed(4)),scores:occasionLabels.map(value=>({label:value,score:Number(occasion.score.toFixed(4))})),image:String(current.image),version:1};changed=true;
       }
       if(addColour&&ssvHasNoColour(current)){
-       next.color=colourToSave;next.colourMetadata=isJewellery?{source:"default",model:"jewellery-default",image:String(current.image),version:1}:{source:"ai",model:"CLIP-ViT-B-32",score:Number(colour.score.toFixed(4)),margin:Number(colour.margin.toFixed(4)),image:String(current.image),version:1};changed=true;
+       next.color=colourToSave;next.colourMetadata=isJewellery?{source:"default",model:"jewellery-default",image:String(current.image),version:1}:colour?.pixelOverride?{source:"ai-pixel",model:"dominant-pixel+CLIP-ViT-B-32",score:Number(colour.pixelEvidence.share.toFixed(4)),margin:Number(colour.pixelEvidence.margin.toFixed(4)),image:String(current.image),version:1}:{source:"ai",model:"CLIP-ViT-B-32",score:Number(colour.score.toFixed(4)),margin:Number(colour.margin.toFixed(4)),image:String(current.image),version:1};changed=true;
       }
       if(!changed){skipped++;stop=true;break;}
       latest.value[index]=next;
