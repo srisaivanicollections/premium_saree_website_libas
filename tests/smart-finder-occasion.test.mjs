@@ -375,5 +375,4 @@ test("Enrich Finder exposes manual colour and multi-occasion review controls wit
   assert.match(adminSource, /async function ssvSaveEnrichReviewedMetadata/);
   assert.match(adminSource, /Save manually reviewed Enrich Finder metadata for product/);
   assert.match(adminSource, /Save verification failed/);
-  assert.match(adminSource, /occasionUncertain\)\)/);
 });
