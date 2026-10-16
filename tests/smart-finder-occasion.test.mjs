@@ -141,6 +141,8 @@ test("ambiguous catalogue writes are re-read before reporting an unknown outcome
 
 test("Enrichment candidate selection and field counts share one eligibility decision", () => {
   assert.match(adminSource, /function ssvEnrichFieldNeeds\(product\)/);
+  assert.match(adminSource, /function ssvRefreshEnrichFinderCounts\(items=products\)/);
+  assert.match(adminSource, /const counts=ssvEnrichMissingCounts\(Array\.isArray\(items\)\?items:products\)/);
   assert.match(adminSource, /const category=normalizeCategoryName\(product\?\.category\)/);
   assert.match(adminSource, /occasion:eligible&&ssvHasNoOccasionMetadata\(product\)&&!ssvHasOccasionDecision\(product\)/);
   assert.match(adminSource, /products:needs\.filter\(item=>item\.occasion\|\|item\.colour\)\.length/);
