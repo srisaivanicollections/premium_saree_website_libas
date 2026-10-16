@@ -90,7 +90,7 @@ test("rejects uncertain or unknown colour predictions", () => {
   assert.equal(isConfidentColourPrediction({ label: "Turquoise", score: 0.99, margin: 0.5 }), false);
 });
 
-test("low-confidence valid colour remains selectable even when it is not marked confident", () => {
+test("low-confidence valid colour remains selectable for diagnostics but must not be persisted", () => {
   const prediction = selectColourPrediction([
     { label: "a product photo of a saree whose main visible fabric or material colour is blue", score: 0.3783 },
     { label: "a product photo of a saree whose main visible fabric or material colour is gold", score: 0.27 }
@@ -98,6 +98,9 @@ test("low-confidence valid colour remains selectable even when it is not marked 
   assert.equal(prediction.label, "Blue");
   assert.equal(isConfidentColourPrediction(prediction), false);
   assert.ok(["Black","Blue","Brown","Gold","Green","Grey","Ivory","Maroon","Multi-colour","Orange","Pink","Purple","Red","Silver","White","Yellow"].includes(prediction.label));
+  const admin = readFileSync(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(admin, /colour\?\.confident===true&&SSV_FINDER_COLOURS\.has\(colour\?\.label\)/,
+    "the Enrich Finder must not persist an uncertain but valid colour label");
 });
 
 test("rejects empty and malformed colour model outputs", () => {
