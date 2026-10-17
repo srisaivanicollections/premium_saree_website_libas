@@ -15021,7 +15021,7 @@ if ("serviceWorker" in navigator) {
 #admin #adminProductsScroll.admin-products-scroll{
   display:flex!important;flex-direction:column!important;align-items:stretch!important;gap:10px!important;
   width:100%!important;min-width:0!important;max-width:100%!important;height:auto!important;
-  max-height:min(62vh,720px)!important;overflow-x:hidden!important;overflow-y:auto!important;
+  max-height:none!important;overflow:visible!important;
   box-sizing:border-box!important;contain:none!important;
 }
 #admin #adminProductsScroll.admin-products-scroll > .admin-item{
@@ -15070,7 +15070,7 @@ if ("serviceWorker" in navigator) {
   width:100%!important;min-width:0!important;max-width:100%!important;height:auto!important;overflow:visible!important;white-space:normal!important;
 }
 @media(max-width:600px){
-  #admin #adminProductsScroll.admin-products-scroll{gap:8px!important;padding:4px 2px 12px!important;max-height:62vh!important;}
+  #admin #adminProductsScroll.admin-products-scroll{gap:8px!important;padding:4px 2px 12px!important;max-height:62vh!important;overflow-x:hidden!important;overflow-y:auto!important;}
   #admin #adminProductsScroll.admin-products-scroll > .admin-item{gap:7px!important;padding:9px!important;}
   #admin #adminProductsScroll.admin-products-scroll > .admin-item > .admin-product-main{gap:7px!important;}
   #admin #adminProductsScroll.admin-products-scroll > .admin-item > .admin-product-main > .admin-product-thumb{
