@@ -176,6 +176,7 @@ function occasionResult(ranked) {
   const selected = ranked
     .filter(item => item.score >= threshold)
     .slice(0, MAX_OCCASION_LABELS);
+  if (!selected.length) selected.push(best);
   const labels = selected.map(item => item.label);
   const nextExcluded = ranked[selected.length];
   const margin = selected[selected.length - 1].score - Number(nextExcluded?.score || 0);
