@@ -10,6 +10,8 @@ test("Admin product list has one vertical scroll column and stable flex rows", (
   assert.ok(mobileFix.includes("#admin #adminProductsScroll.admin-products-scroll{"));
   assert.ok(mobileFix.includes("display:flex!important;flex-direction:column!important;"));
   assert.ok(mobileFix.includes("overflow-x:hidden!important;overflow-y:auto!important;"));
+  assert.ok(mobileFix.includes("max-height:none!important;overflow:visible!important;"));
+  assert.ok(mobileFix.includes("@media(max-width:600px){\n  #admin #adminProductsScroll.admin-products-scroll{gap:8px!important;padding:4px 2px 12px!important;max-height:62vh!important;overflow-x:hidden!important;overflow-y:auto!important;}"));
   assert.ok(mobileFix.includes("display:flex!important;flex-flow:row nowrap!important;"));
   assert.ok(mobileFix.includes("width:100%!important;min-width:0!important;max-width:100%!important;"));
 });
