@@ -117,7 +117,7 @@ test("Enrich Finder popup keeps model rankings and product IDs internal", () => 
   assert.ok(start >= 0 && end > start, "summary renderer must be present");
   const popupSummary = adminSource.slice(start, end);
   assert.doesNotMatch(popupSummary, /model score|Product "\+suggestion\.id|Product "\+item\.id/);
-  assert.doesNotMatch(popupSummary, /rankings|model score|Colour review|option\.textContent=value/);
+  assert.doesNotMatch(popupSummary, /rankings|model score|Colour review/);
   assert.doesNotMatch(adminSource, /ssvSaveReviewedColour|colourReviewSuggestions|SAVE REVIEWED COLOUR/);
 });
 
@@ -207,11 +207,16 @@ test("low-confidence occasions are counted while their top matches are saved wit
 });
 
  
-test("manual colour-review UI and save workflow are removed", () => {
-  assert.doesNotMatch(adminSource, /ssvSaveReviewedColour/);
-  assert.doesNotMatch(adminSource, /colourReviewSuggestions/);
-  assert.doesNotMatch(adminSource, /SAVE REVIEWED COLOUR/);
-  assert.doesNotMatch(adminSource, /Choose the product's actual visible colour/);
+test("uncertain Enrich Finder metadata has manual colour and multi-occasion controls with verified save", () => {
+  assert.match(adminSource, /function ssvSaveEnrichReview\(/);
+  assert.match(adminSource, /function ssvRenderEnrichReviewCards\(result\)/);
+  assert.match(adminSource, /Confirm visible colour/);
+  assert.match(adminSource, /Confirm occasion\(s\)/);
+  assert.match(adminSource, /Select the product's actual visible colour/);
+  assert.match(adminSource, /SAVE CORRECTIONS/);
+  assert.match(adminSource, /Save manual Enrich Finder review for product/);
+  assert.match(adminSource, /Save verification failed/);
+  assert.match(adminSource, /uncertainOccasionProductIds/);
 });
 
 test("Enrich Finder close animation and final badge sizing overrides exist", () => {
@@ -225,12 +230,11 @@ test("Enrich Finder close animation and final badge sizing overrides exist", () 
 });
 
 
-test("Enrich Finder uses automated inference without a manual colour-review workflow", () => {
+test("Enrich Finder uses automated inference and provides manual correction only for uncertain fields", () => {
   assert.match(aiSource, /MAX_INFERENCE_PASSES = 3/);
   assert.match(adminSource, /const addColour=needsColour&&\(isJewellery\|\|\(colour\?\.confident===true&&SSV_FINDER_COLOURS\.has\(colour\?\.label\)\)\)/);
-  assert.doesNotMatch(adminSource, /ssvSaveReviewedColour/);
-  assert.doesNotMatch(adminSource, /colourReviewSuggestions/);
-  assert.doesNotMatch(adminSource, /SAVE REVIEWED COLOUR/);
+  assert.match(adminSource, /function ssvSaveEnrichReview\(/);
+  assert.match(adminSource, /function ssvRenderEnrichReviewCards\(result\)/);
 });
 
 test("TOP PICK sizing targets the rendered Smart Finder badge without adding popup entrance animation", () => {
