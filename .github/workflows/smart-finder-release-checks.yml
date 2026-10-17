@@ -24,6 +24,7 @@ jobs:
           node --check saree-occasion-ai.js
           node --test tests/saree-occasion-ai.test.mjs
           node --test tests/smart-finder-occasion.test.mjs
+          node --test tests/admin-mobile-layout.test.mjs
           node --input-type=module <<'NODE'
           import { readFileSync } from "node:fs";
           import assert from "node:assert/strict";
@@ -462,6 +463,45 @@ jobs:
               await page.locator("#verifyOtpBtn").click();
               await page.locator("#adminProductResults").waitFor();
               assert.ok(state.workerActions.includes("send") && state.workerActions.includes("verify"), label + ": OTP request and verification UI path");
+
+              // Verify the real Admin product list at narrow mobile widths, not a CSS-only fixture.
+              const originalViewport = page.viewportSize();
+              for (const width of [320, 360, 390]) {
+                await page.setViewportSize({ width, height: 850 });
+                const row = page.locator("#adminProductsScroll .admin-item").first();
+                await row.waitFor({ state: "visible" });
+                const geometry = await row.evaluate(element => {
+                  const rect = node => {
+                    const r = node.getBoundingClientRect();
+                    return { left: r.left, right: r.right, width: r.width };
+                  };
+                  const edit = element.querySelector(".edit");
+                  const thumb = element.querySelector(".admin-product-thumb");
+                  const badges = [...element.querySelectorAll(".admin-occasion-badge")];
+                  const list = document.querySelector("#adminProductsScroll");
+                  return {
+                    row: rect(element),
+                    edit: edit ? rect(edit) : null,
+                    thumb: thumb ? rect(thumb) : null,
+                    badges: badges.map(rect),
+                    rowClientWidth: element.clientWidth,
+                    rowScrollWidth: element.scrollWidth,
+                    listClientWidth: list.clientWidth,
+                    listScrollWidth: list.scrollWidth
+                  };
+                });
+                assert.ok(geometry.row.width > 0, label + ": product row has width at " + width + "px");
+                assert.ok(geometry.row.left >= -1 && geometry.row.right <= width + 1, label + ": product row fits viewport at " + width + "px");
+                assert.ok(geometry.thumb && geometry.thumb.width > 0, label + ": thumbnail remains visible at " + width + "px");
+                assert.ok(geometry.edit && geometry.edit.width > 0, label + ": EDIT action remains visible at " + width + "px");
+                assert.ok(geometry.edit.left >= geometry.row.left - 1 && geometry.edit.right <= geometry.row.right + 1, label + ": EDIT action stays inside row at " + width + "px");
+                assert.ok(geometry.rowScrollWidth <= geometry.rowClientWidth + 1, label + ": product row has no horizontal overflow at " + width + "px");
+                assert.ok(geometry.listScrollWidth <= geometry.listClientWidth + 2, label + ": Admin product list has no horizontal overflow at " + width + "px");
+                for (const badge of geometry.badges) {
+                  assert.ok(badge.width > 0 && badge.left >= geometry.row.left - 1 && badge.right <= geometry.row.right + 1, label + ": occasion badge stays intact inside row at " + width + "px");
+                }
+              }
+              await page.setViewportSize(originalViewport || { width: 393, height: 852 });
 
               // Enrich Finder is a closable Products-page popup; closing/reopening preserves the catalogue view.
               assert.equal(await page.locator('[data-view="enrich"]').count(), 0, label + ": no separate Enrich Finder tab");
