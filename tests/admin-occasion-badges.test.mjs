@@ -46,7 +46,7 @@ test("escapes HTML special characters and prevents executable markup", () => {
 });
 
 test("renders one wrapper with independent, long-label-safe badge elements", () => {
-  const markup = context.renderAdminOccasionBadges("<img src=x onerror=\"alert(1)\"> & \"quoted\" 'single'");
+  const markup = context.renderAdminOccasionBadges("Festive, A very long custom occasion label that exceeds the badge maximum");
   assert.equal((markup.match(/class="occ-badge-wrap"/g) || []).length, 1);
   assert.equal((markup.match(/class="occ-badge-item"/g) || []).length, 2);
   assert.ok(markup.includes("A very long custom occasion label that exceeds the badge maximum"));
