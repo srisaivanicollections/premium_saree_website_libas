@@ -198,20 +198,28 @@ test("automatic multi-occasion save preserves product fields and verifies all ti
 });
 
 
-test("low-confidence occasions are counted while their top matches are saved without ranking cards", () => {
-  assert.match(adminSource, /if\(needsOccasion&&!occasion\?\.confident\)\{occasionUncertain\+\+;if\(!uncertainProductIds\.includes\(candidate\.id\)\)uncertainProductIds\.push\(candidate\.id\);\}/);
-  assert.match(adminSource, /const addOccasion=needsOccasion&&occasionLabels\.length>0/);
-  assert.match(adminSource, /low-confidence occasion predictions/);
-  assert.doesNotMatch(adminSource, /SAVE SELECTED OCCASIONS/);
-  assert.doesNotMatch(adminSource, /reviewSuggestions\.push\(\{id:candidate\.id,name:/);
+test("uncertain colour and occasion predictions expose manual review controls", () => {
+  assert.match(adminSource, /reviewProducts\.push\(\{id:candidate\.id,name:/);
+  assert.match(adminSource, /data-review-colour/);
+  assert.match(adminSource, /data-review-occasions/);
+  assert.match(adminSource, /Select correct colour/);
+  assert.match(adminSource, /Occasion \(select all that apply\)/);
+  assert.match(adminSource, /SAVE CORRECTIONS/);
+  assert.match(adminSource, /ssvSaveEnrichReviewedMetadata/);
 });
 
  
-test("manual colour-review UI and save workflow are removed", () => {
-  assert.doesNotMatch(adminSource, /ssvSaveReviewedColour/);
-  assert.doesNotMatch(adminSource, /colourReviewSuggestions/);
-  assert.doesNotMatch(adminSource, /SAVE REVIEWED COLOUR/);
-  assert.doesNotMatch(adminSource, /Choose the product's actual visible colour/);
+test("manual review saves only approved values and verifies persisted catalogue data", () => {
+  assert.match(adminSource, /if\(item\.needsColour&&!SSV_FINDER_COLOURS\.has\(colour\)\)throw new Error\("Select a valid colour\."\)/);
+  assert.match(adminSource, /allowedOccasions=\[\.\.\.SSV_OCCASION_LABELS\]/);
+  assert.match(adminSource, /if\(item\.needsColour&&!ssvHasNoColour\(current\)\)/);
+  assert.match(adminSource, /Occasion metadata changed since this scan/);
+  assert.match(adminSource, /githubWriteJson\("data\/products\.json"/);
+  assert.match(adminSource, /Save manually reviewed Enrich Finder metadata/);
+  assert.match(adminSource, /Save verification failed\. Refresh the catalogue before retrying\./);
+  assert.match(adminSource, /source:"admin-reviewed",model:"manual-review"/);
+  assert.match(adminSource, /source:"ai-reviewed",model:"manual-review"/);
+  assert.match(adminSource, /result\.uncertainColourProductIds=.*filter/);
 });
 
 test("Enrich Finder close animation and final badge sizing overrides exist", () => {
@@ -225,12 +233,12 @@ test("Enrich Finder close animation and final badge sizing overrides exist", () 
 });
 
 
-test("Enrich Finder uses automated inference without a manual colour-review workflow", () => {
+test("Enrich Finder keeps automatic inference while allowing correction of uncertain fields", () => {
   assert.match(aiSource, /MAX_INFERENCE_PASSES = 3/);
   assert.match(adminSource, /const addColour=needsColour&&\(isJewellery\|\|\(colour\?\.confident===true&&SSV_FINDER_COLOURS\.has\(colour\?\.label\)\)\)/);
-  assert.doesNotMatch(adminSource, /ssvSaveReviewedColour/);
-  assert.doesNotMatch(adminSource, /colourReviewSuggestions/);
-  assert.doesNotMatch(adminSource, /SAVE REVIEWED COLOUR/);
+  assert.match(adminSource, /data-review-colour/);
+  assert.match(adminSource, /data-review-occasions/);
+  assert.match(adminSource, /ssvSaveEnrichReviewedMetadata/);
 });
 
 test("TOP PICK sizing targets the rendered Smart Finder badge without adding popup entrance animation", () => {
