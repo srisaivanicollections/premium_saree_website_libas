@@ -118,6 +118,7 @@
     "bestSeller": false,
     "availability": true,
     "occasions": [
+      "Festive",
       "Traditional"
     ],
     "occasionMetadata": {
