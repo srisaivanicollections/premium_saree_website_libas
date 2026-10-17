@@ -6,10 +6,10 @@ const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
 const app = await readFile(new URL("../app.js", import.meta.url), "utf8");
 const mobileFix = html.slice(html.lastIndexOf('<style id="ssv-admin-mobile-product-list-regression-20261017">'));
 
-test("Admin product list is a single column and each product row is a stable two-column grid", () => {
-  assert.match(mobileFix, /#admin #adminProductsScroll\.admin-products-scroll\{[\s\S]*?display:flex!important;flex-direction:column!important;[\s\S]*?overflow:visible!important;/);
-  assert.match(mobileFix, /#admin #adminProductsScroll\.admin-products-scroll > \.admin-item\{[\s\S]*?display:grid!important;grid-template-columns:minmax\(0,1fr\) auto!important;[\s\S]*?width:100% !important|width:100%!important/);
-  assert.match(mobileFix, /grid-auto-flow:row!important/);
+test("Admin product list is a single column and product rows use stable flex sizing", () => {
+  assert.match(mobileFix, /#admin #adminProductsScroll\\.admin-products-scroll\\{[\\s\\S]*?display:flex!important;flex-direction:column!important;[\\s\\S]*?overflow-x:hidden!important;overflow-y:auto!important;/);
+  assert.match(mobileFix, /#admin #adminProductsScroll\\.admin-products-scroll > \\.admin-item\\{[\\s\\S]*?display:flex!important;flex-flow:row nowrap!important;[\\s\\S]*?width:100%!important;min-width:0!important;max-width:100%!important/);
+  assert.match(mobileFix, /\\.admin-product-main\\{[\\s\\S]*?flex:1 1 0%!important;[\\s\\S]*?width:0!important;min-width:0!important/);
 });
 
 test("Admin product row keeps thumbnail, copy, and Edit action in separate stable columns", () => {
@@ -35,4 +35,18 @@ test("product list keeps Edit actions and preserves selected occasions on save",
   assert.match(app, /class="admin-item"/);
   assert.match(app, /class="danger edit"/);
   assert.match(app, /occasions:\[\.\.\.document\.querySelectorAll\('input\[name="fOccasion"\]:checked'\)\]/);
+});
+
+
+test("Admin product copy is flexible and duplicate status wrappers are absent", () => {
+  assert.match(mobileFix, /\\.admin-product-copy\\{[\\s\\S]*?flex:1 1 0%!important;[\\s\\S]*?width:0!important;min-width:0!important/);
+  assert.match(mobileFix, /\\.admin-product-copy > strong\\{[\\s\\S]*?white-space:normal!important;[\\s\\S]*?overflow-wrap:anywhere!important/);
+  assert.doesNotMatch(html, /<div class="admin-product-status"><div class="admin-product-status">/);
+  assert.match(html, /<div class="admin-product-status">[\\s\\S]*?admin-status is-available/);
+});
+
+test("Admin product row regression rules cover narrow mobile viewports", () => {
+  assert.match(mobileFix, /@media\\(max-width:600px\\)/);
+  assert.match(mobileFix, /@media\\(max-width:360px\\)/);
+  assert.match(mobileFix, /\\.admin-occasion-badges\\{[\\s\\S]*?flex-wrap:wrap!important/);
 });
