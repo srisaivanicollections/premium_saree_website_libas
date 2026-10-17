@@ -178,8 +178,11 @@ function occasionResult(ranked) {
     .slice(0, MAX_OCCASION_LABELS);
   if (!selected.length) selected.push(best);
   const labels = selected.map(item => item.label);
-  const nextExcluded = ranked[selected.length];
-  const margin = selected[selected.length - 1].score - Number(nextExcluded?.score || 0);
+  // Confidence remains a top-class separation check, not a selected-group
+  // boundary check. Otherwise a close top pair (e.g. 0.31 vs 0.29) can look
+  // confident merely because the third score is much lower.
+  const nextDistinct = ranked.find(item => item.score < best.score - OCCASION_TIE_TOLERANCE);
+  const margin = best.score - Number(nextDistinct?.score || 0);
   return {
     label: best.label, labels, score: best.score, margin,
     rankings: ranked.map((item, index) => ({ ...item, rank: index + 1, margin: index === 0 ? margin : item.score - Number(ranked[index + 1]?.score || 0) }))
