@@ -382,7 +382,7 @@ test("Enrich Finder progress and failure details never expose product IDs", () =
 test("Enrich Finder exposes manual colour and occasion controls for uncertain metadata", () => {
   assert.match(adminSource, /async function ssvRenderEnrichManualReview\(result\)/);
   assert.match(adminSource, /Select correct colour/);
-  assert.match(adminSource, /Correct occasion tags/);
+  assert.match(adminSource, /Select correct occasions \\(select all that apply\\)/);
   assert.match(adminSource, /SAVE CORRECTIONS/);
   assert.match(adminSource, /ssvSaveEnrichManualReview/);
   assert.match(adminSource, /Save verification failed/);
