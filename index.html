@@ -10268,7 +10268,7 @@ function ssvEnsureEnrichFinderPopup(){
     if(event.shiftKey&&(document.activeElement===first||!popup.contains(document.activeElement))){event.preventDefault();last.focus();}
     else if(!event.shiftKey&&(document.activeElement===last||!popup.contains(document.activeElement))){event.preventDefault();first.focus();}
   });
-  popup.addEventListener("focusout",()=>{queueMicrotask(()=>{if(!popup.hidden&&!popup.contains(document.activeElement))popup.querySelector("#adminEnrichFinderClose")?.focus();});});
+  // Do not force focus back on focusout: Android/iOS native select menus may temporarily move focus outside the DOM popup. The Tab-key trap above still keeps keyboard navigation contained.
   popup.addEventListener("click",event=>{if(event.target===popup)close();});
   popup.querySelector(".ssv-enrich-popup").addEventListener("click",event=>event.stopPropagation());
   popup.querySelector("#adminEnrichFinder").onclick=async()=>{
@@ -10358,7 +10358,7 @@ async function ssvRenderManualEnrichReviews(result){
  const colourIds=new Set(Array.isArray(result.uncertainColourProductIds)?result.uncertainColourProductIds:[]);
  const ids=[...new Set([...occasionIds,...colourIds])];
  if(!ids.length)return;
- const note=document.createElement("p");note.className="ssv-enrich-review-instructions";note.textContent="Review uncertain fields below. Choose the correct colour and/or occasions, then save each product. Changes are verified against GitHub.";details.append(note);
+
  let catalogue;
  try{catalogue=await githubReadJsonFresh("data/products.json");}
  catch(error){const warning=document.createElement("p");warning.textContent="Could not load products for manual review. "+ssvFinderFailureReason(error);details.append(warning);return;}
@@ -10407,7 +10407,7 @@ async function ssvRenderManualEnrichReviews(result){
     card.querySelectorAll("input,select").forEach(input=>input.disabled=true);
     const remaining=details.querySelectorAll(".ssv-enrich-review-card:not([data-saved='true'])").length;
     card.dataset.saved="true";
-    if(remaining<=1){const instruction=details.querySelector(".ssv-enrich-review-instructions");if(instruction)instruction.textContent="All displayed review items have been saved. You can analyse missing metadata again if needed.";}
+
     ssvRefreshEnrichFinderCounts(products);
    }catch(error){status.textContent="Not saved: "+ssvFinderFailureReason(error);status.dataset.state="error";save.disabled=false;save.textContent="RETRY SAVE";}
   });
@@ -14876,6 +14876,8 @@ if ("serviceWorker" in navigator) {
 #adminEnrichFinderFailures .ssv-enrich-review-field{display:grid;gap:7px;margin:10px 0}
 #adminEnrichFinderFailures .ssv-enrich-review-field>span,#adminEnrichFinderFailures .ssv-enrich-review-occasions legend{font-size:12px;font-weight:600;color:#4c4035}
 #adminEnrichFinderFailures .ssv-enrich-review-field select{width:100%;min-height:42px;padding:8px 10px;border:1px solid #d9c7ae;background:#fff;color:#2a2521}
+#adminEnrichFinderFailures .ssv-enrich-review-field select.ssv-enrich-review-colour{display:block;position:relative;z-index:2;width:100%;min-width:0;min-height:48px;margin:0;padding:10px 12px;box-sizing:border-box;font-size:16px;line-height:1.4;pointer-events:auto;touch-action:manipulation;appearance:auto;-webkit-appearance:menulist;cursor:pointer}
+#adminEnrichFinderFailures .ssv-enrich-review-field select.ssv-enrich-review-colour:focus{outline:2px solid #B89758;outline-offset:2px}
 #adminEnrichFinderFailures .ssv-enrich-review-occasions{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:7px;border:1px solid #e4d8c5;padding:10px;margin:12px 0}
 #adminEnrichFinderFailures .ssv-enrich-review-occasions legend{padding:0 4px}
 #adminEnrichFinderFailures .ssv-enrich-review-occasions label{display:flex;align-items:center;gap:8px;min-height:38px;padding:6px 8px;background:#fff;border:1px solid #eee7df}
