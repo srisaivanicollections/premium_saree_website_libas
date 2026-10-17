@@ -79,12 +79,20 @@
     "newArrival": true,
     "bestSeller": true,
     "availability": true,
-    "occasions": [],
+    "occasions": [
+      "Traditional"
+    ],
     "occasionMetadata": {
       "source": "ai",
       "model": "CLIP-ViT-B-32",
-      "score": 0.4288,
-      "margin": 0.0798,
+      "score": 0.6505,
+      "margin": 0.5206,
+      "scores": [
+        {
+          "label": "Traditional",
+          "score": 0.6505
+        }
+      ],
       "image": "assets/products/1791828771779-999930cbc550-file_000000005b208211ac51b8b8724d07d6.png",
       "version": 1
     },
