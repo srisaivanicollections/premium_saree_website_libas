@@ -45,11 +45,19 @@ test("escapes HTML special characters and prevents executable markup", () => {
   assert.equal(markup.includes("onerror=\""), false);
 });
 
-test("renders one wrapper with independent, long-label-safe badge elements", () => {
-  const markup = context.renderAdminOccasionBadges("Festive, A very long custom occasion label that exceeds the badge maximum");
+test("renders no more than the first three occasions in original order", () => {
+  const markup = context.renderAdminOccasionBadges("Festive, Wedding, Traditional, Daily Wear");
   assert.equal((markup.match(/class="occ-badge-wrap"/g) || []).length, 1);
-  assert.equal((markup.match(/class="occ-badge-item"/g) || []).length, 2);
-  assert.ok(markup.includes("A very long custom occasion label that exceeds the badge maximum"));
+  assert.equal((markup.match(/class="occ-badge-item"/g) || []).length, 3);
+  assert.ok(markup.indexOf(">Festive<") < markup.indexOf(">Wedding<"));
+  assert.ok(markup.indexOf(">Wedding<") < markup.indexOf(">Traditional<"));
+  assert.equal(markup.includes("Daily Wear"), false);
+});
+
+test("retains long label text safely for CSS truncation", () => {
+  const label = "A very long custom occasion label that exceeds the badge maximum";
+  const markup = context.renderAdminOccasionBadges(label);
+  assert.ok(markup.includes(label));
 });
 
 test("places badges after metadata and before the existing status row", () => {
@@ -66,11 +74,11 @@ test("uses only the two required isolated badge selectors and exact required dec
   assert.ok(style, "isolated badge stylesheet exists");
   assert.deepEqual(Array.from(style.matchAll(/(^|})\s*([^{}]+)\s*\{/g), match => match[2].trim()), [".occ-badge-wrap", ".occ-badge-item"]);
   for (const declaration of [
-    "display: flex;", "flex-wrap: wrap;", "gap: 4px;", "margin: 4px 0 6px 0;",
-    "max-width: 110px;", "overflow: hidden;", "text-overflow: ellipsis;", "white-space: nowrap;",
-    "border: 1px solid #C5A67C;", "border-radius: 0;", "background: #FAF5EC;",
-    "color: #7A5828;", "font-size: 10px;", "line-height: 1.2;",
-    "letter-spacing: 0.04em;", "text-transform: uppercase;", "padding: 2px 6px;"
+    "display: flex;", "flex-wrap: nowrap;", "gap: 4px;", "min-width: 0;", "max-width: 100%;", "overflow: hidden;", "margin: 4px 0 6px 0;",
+    "flex: 0 1 auto;", "max-width: calc((100% - 8px) / 3);", "text-overflow: ellipsis;", "white-space: nowrap;",
+    "border: 1px solid #C5A67C;", "border-radius: 999px;", "background: #FAF5EC;",
+    "color: #1C1917;", "font-size: 10px;", "line-height: 1.2;",
+    "letter-spacing: 0.02em;", "text-transform: uppercase;", "padding: 2px 6px;"
   ]) assert.ok(style.includes(declaration), "required CSS declaration: " + declaration);
-  assert.doesNotMatch(style, /!important|position\s*:|min-width\s*:|flex\s*:/i);
+  assert.doesNotMatch(style, /!important|position\\s*:/i);
 });
