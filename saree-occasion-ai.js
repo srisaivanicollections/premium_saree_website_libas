@@ -158,12 +158,27 @@ function strongestPass(results, isConfident) {
   return best;
 }
 
+const MIN_OCCASION_LABEL_SCORE = 0.16;
+const OCCASION_RELATIVE_SCORE_THRESHOLD = 0.68;
+const MAX_OCCASION_LABELS = 3;
+
 function occasionResult(ranked) {
   if (!ranked.length) throw new Error("The image model returned no known occasion labels.");
   const best = ranked[0];
-  const labels = ranked.filter(item => Math.abs(item.score - best.score) <= OCCASION_TIE_TOLERANCE).map(item => item.label);
-  const nextDistinct = ranked.find(item => item.score < best.score - OCCASION_TIE_TOLERANCE);
-  const margin = best.score - Number(nextDistinct?.score || 0);
+  // CLIP's zero-shot image classifier ranks the occasion prompts against one
+  // another, so exact-score ties alone are too restrictive for multi-occasion
+  // products. Keep only the strongest labels that remain close to the best
+  // score, require a minimum score floor, and cap the result to avoid broad
+  // tagging. Confidence is measured at the boundary of the selected group:
+  // a multi-label result is auto-saved only when that group is separated from
+  // the next excluded occasion by the same conservative margin as before.
+  const threshold = Math.max(MIN_OCCASION_LABEL_SCORE, best.score * OCCASION_RELATIVE_SCORE_THRESHOLD);
+  const selected = ranked
+    .filter(item => item.score >= threshold)
+    .slice(0, MAX_OCCASION_LABELS);
+  const labels = selected.map(item => item.label);
+  const nextExcluded = ranked[selected.length];
+  const margin = selected[selected.length - 1].score - Number(nextExcluded?.score || 0);
   return {
     label: best.label, labels, score: best.score, margin,
     rankings: ranked.map((item, index) => ({ ...item, rank: index + 1, margin: index === 0 ? margin : item.score - Number(ranked[index + 1]?.score || 0) }))
