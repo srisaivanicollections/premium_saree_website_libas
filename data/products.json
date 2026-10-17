@@ -118,7 +118,8 @@
     "bestSeller": false,
     "availability": true,
     "occasions": [
-      "Traditional"
+      "Daily Wear",
+      "Festive"
     ],
     "occasionMetadata": {
       "source": "ai",

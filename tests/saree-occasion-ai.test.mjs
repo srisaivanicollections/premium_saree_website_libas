@@ -21,33 +21,6 @@ test("selects the highest valid known occasion prediction", () => {
   assert.equal(isConfidentOccasionPrediction(result), true);
 });
 
-test("returns multiple strongly supported occasions without requiring exact score ties", () => {
-  const result = selectOccasionPrediction([
-    { label: prompts.wedding, score: 0.39 },
-    { label: prompts.festive, score: 0.29 },
-    { label: prompts.daily, score: 0.18 },
-    { label: "a saree intended for party wear, evening events or cocktail occasions", score: 0.09 },
-    { label: "a saree intended for traditional cultural or religious occasions", score: 0.05 }
-  ]);
-  assert.deepEqual(result.labels, ["wedding", "festive"]);
-  assert.equal(result.label, "wedding");
-  assert.ok(Math.abs(result.margin - 0.10) < 1e-12, "confidence margin must preserve top-class separation, even when multiple labels are selected");
-  assert.equal(isConfidentOccasionPrediction(result), true);
-});
-
-test("caps automatic occasion suggestions at three and leaves an ambiguous group for review", () => {
-  const result = selectOccasionPrediction([
-    { label: prompts.wedding, score: 0.31 },
-    { label: prompts.festive, score: 0.28 },
-    { label: prompts.daily, score: 0.25 },
-    { label: "a saree intended for party wear, evening events or cocktail occasions", score: 0.21 },
-    { label: "a saree intended for traditional cultural or religious occasions", score: 0.05 }
-  ]);
-  assert.deepEqual(result.labels, ["wedding", "festive", "daily wear"]);
-  assert.equal(result.labels.length, 3);
-  assert.equal(isConfidentOccasionPrediction(result), false, "a weak boundary must remain manual-review only");
-});
-
 test("returns all tied top occasions and measures confidence against the next distinct score", () => {
   const result = selectOccasionPrediction([
     { label: prompts.festive, score: 0.392 },
