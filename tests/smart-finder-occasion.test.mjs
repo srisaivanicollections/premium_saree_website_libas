@@ -188,20 +188,20 @@ test("A failed final catalogue refresh preserves partial-save results and warns 
 });
 
 
-test("occasion enrichment always saves highest-scoring matches, including low-confidence ties", () => {
-  assert.match(aiSource, /OCCASION_TIE_TOLERANCE = 0\.0005/);
-  assert.match(aiSource, /const nextDistinct = ranked\.find/);
-  assert.match(aiSource, /const labels = Array\.isArray\(result\?\.labels\)/);
-  assert.match(adminSource, /occasionLabels=\[\.\.\.new Set/);
-  assert.match(adminSource, /const addOccasion=needsOccasion&&occasionLabels\.length>0/);
-  assert.doesNotMatch(adminSource, /const addOccasion=needsOccasion&&!!occasion\?\.confident/);
-  assert.match(adminSource, /if\(needsOccasion&&!occasion\?\.confident\)\{occasionUncertain\+\+;if\(!uncertainProductIds\.includes\(candidate\.id\)\)uncertainProductIds\.push\(candidate\.id\);if\(!uncertainOccasionProductIds\.includes\(candidate\.id\)\)uncertainOccasionProductIds\.push\(candidate\.id\);\}/);
-  assert.match(adminSource, /next\.occasions=occasionLabels/);
-  assert.match(adminSource, /occasionLabels\.every/);
-  assert.match(adminSource, /SSV_OCCASION_LABELS\.has\(value\)/);
+test("occasion enrichment auto-saves confident matches and routes low-confidence matches to review", () => {
+  assert.match(aiSource, /OCCASION_TIE_TOLERANCE = 0\\.0005/);
+  assert.match(aiSource, /const nextDistinct = ranked\\.find/);
+  assert.match(aiSource, /const labels = Array\\.isArray\\(result\\?\\.labels\\)/);
+  assert.match(adminSource, /occasionLabels=\\[\\.\\.\\.new Set/);
+  assert.match(adminSource, /const addOccasion=needsOccasion&&occasion\\?\\.confident===true&&occasionLabels\\.length>0/);
+  assert.match(adminSource, /if\\(needsOccasion&&!occasion\\?\\.confident\\)\\{occasionUncertain\\+\\+;if\\(!uncertainProductIds\\.includes\\(candidate\\.id\\)\\)uncertainProductIds\\.push\\(candidate\\.id\\);if\\(!uncertainOccasionProductIds\\.includes\\(candidate\\.id\\)\\)uncertainOccasionProductIds\\.push\\(candidate\\.id\\);\\}/);
+  assert.match(adminSource, /next\\.occasions=occasionLabels/);
+  assert.match(adminSource, /occasionLabels\\.every/);
+  assert.match(adminSource, /SSV_OCCASION_LABELS\\.has\\(value\\)/);
   assert.doesNotMatch(adminSource, /SAVE SELECTED OCCASIONS/);
-  assert.doesNotMatch(adminSource, /reviewSuggestions\.push\(\{id:candidate\.id,name:/);
+  assert.doesNotMatch(adminSource, /reviewSuggestions\\.push\\(\\{id:candidate\\.id,name:/);
 });
+
 
 test("automatic multi-occasion save preserves product fields and verifies all tied occasions", () => {
   assert.match(adminSource, /const next=\{\.\.\.current\}/);
@@ -213,15 +213,18 @@ test("automatic multi-occasion save preserves product fields and verifies all ti
 });
 
 
-test("low-confidence occasions are counted while their top matches are saved without ranking cards", () => {
-  assert.match(adminSource, /if\(needsOccasion&&!occasion\?\.confident\)\{occasionUncertain\+\+;if\(!uncertainProductIds\.includes\(candidate\.id\)\)uncertainProductIds\.push\(candidate\.id\);if\(!uncertainOccasionProductIds\.includes\(candidate\.id\)\)uncertainOccasionProductIds\.push\(candidate\.id\);\}/);
-  assert.match(adminSource, /const addOccasion=needsOccasion&&occasionLabels\.length>0/);
+test("low-confidence occasions remain unsaved and are queued for manual review", () => {
+  assert.match(adminSource, /if\\(needsOccasion&&!occasion\\?\\.confident\\)\\{occasionUncertain\\+\\+;if\\(!uncertainProductIds\\.includes\\(candidate\\.id\\)\\)uncertainProductIds\\.push\\(candidate\\.id\\);if\\(!uncertainOccasionProductIds\\.includes\\(candidate\\.id\\)\\)uncertainOccasionProductIds\\.push\\(candidate\\.id\\);\\}/);
+  assert.match(adminSource, /const addOccasion=needsOccasion&&occasion\\?\\.confident===true&&occasionLabels\\.length>0/);
   assert.match(adminSource, /low-confidence occasion predictions/);
+  assert.ok(adminSource.includes("They were not saved automatically; select the correct occasion(s) below and save each product."));
+  assert.match(adminSource, /async function ssvRenderManualEnrichReviews\\(result\\)/);
+  assert.match(adminSource, /Confirm occasion \\(select all that apply\\)/);
   assert.doesNotMatch(adminSource, /SAVE SELECTED OCCASIONS/);
-  assert.doesNotMatch(adminSource, /reviewSuggestions\.push\(\{id:candidate\.id,name:/);
+  assert.doesNotMatch(adminSource, /reviewSuggestions\\.push\\(\\{id:candidate\\.id,name:/);
 });
 
- 
+
 test("manual Enrich Finder review supports colour and occasion corrections", () => {
   assert.match(adminSource, /async function ssvSaveManualEnrichReview/);
   assert.match(adminSource, /Confirm colour/);
