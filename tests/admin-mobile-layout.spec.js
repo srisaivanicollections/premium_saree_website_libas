@@ -60,7 +60,7 @@ for (const width of [320, 360, 390]) {
         thumb: rect(thumb),
         edit: rect(edit),
         badges: badgeNodes.map(rect),
-        bodyScrollWidth: document.documentElement.scrollWidth
+        hostScrollWidth: host.scrollWidth
       };
     });
 
@@ -75,6 +75,6 @@ for (const width of [320, 360, 390]) {
       expect(badge.left).toBeGreaterThanOrEqual(-1);
       expect(badge.right).toBeLessThanOrEqual(width + 1);
     }
-    expect(geometry.bodyScrollWidth).toBeLessThanOrEqual(width + 1);
+    expect(geometry.hostScrollWidth).toBeLessThanOrEqual(width + 1);
   });
 }
