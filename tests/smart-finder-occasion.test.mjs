@@ -129,7 +129,7 @@ test("Enrich Finder reports saved counts, a deduplicated review count, and actio
   assert.match(adminSource, /const failureCount=Array\.isArray\(result\.failures\)\?result\.failures\.length:0/);
   assert.match(adminSource, /const reviewIds=new Set\(\[\.\.\.\(Array\.isArray\(result\.uncertainProductIds\)\?result\.uncertainProductIds:\[\]\),\.\.\.\(Array\.isArray\(result\.uncertainColourProductIds\)\?result\.uncertainColourProductIds:\[\]\)\]\)/);
   assert.match(adminSource, /review\.textContent=String\(reviewIds\.size\)/);
-  assert.match(adminSource, /if\(needsOccasion&&!occasion\?\.confident\)\{occasionUncertain\+\+;if\(!uncertainProductIds\.includes\(candidate\.id\)\)uncertainProductIds\.push\(candidate\.id\);\}/);
+  assert.match(adminSource, /if\(needsOccasion&&!occasion\?\.confident\)\{occasionUncertain\+\+;if\(!uncertainProductIds\.includes\(candidate\.id\)\)uncertainProductIds\.push\(candidate\.id\);if\(!uncertainOccasionProductIds\.includes\(candidate\.id\)\)uncertainOccasionProductIds\.push\(candidate\.id\);\}/);
   assert.match(adminSource, /uncertain colour predictions/);
   assert.match(adminSource, /low-confidence occasion predictions/);
   assert.match(adminSource, /Their highest-scoring occasion\(s\) were saved automatically/);
@@ -180,7 +180,7 @@ test("occasion enrichment always saves highest-scoring matches, including low-co
   assert.match(adminSource, /occasionLabels=\[\.\.\.new Set/);
   assert.match(adminSource, /const addOccasion=needsOccasion&&occasionLabels\.length>0/);
   assert.doesNotMatch(adminSource, /const addOccasion=needsOccasion&&!!occasion\?\.confident/);
-  assert.match(adminSource, /if\(needsOccasion&&!occasion\?\.confident\)\{occasionUncertain\+\+;if\(!uncertainProductIds\.includes\(candidate\.id\)\)uncertainProductIds\.push\(candidate\.id\);\}/);
+  assert.match(adminSource, /if\(needsOccasion&&!occasion\?\.confident\)\{occasionUncertain\+\+;if\(!uncertainProductIds\.includes\(candidate\.id\)\)uncertainProductIds\.push\(candidate\.id\);if\(!uncertainOccasionProductIds\.includes\(candidate\.id\)\)uncertainOccasionProductIds\.push\(candidate\.id\);\}/);
   assert.match(adminSource, /next\.occasions=occasionLabels/);
   assert.match(adminSource, /occasionLabels\.every/);
   assert.match(adminSource, /SSV_OCCASION_LABELS\.has\(value\)/);
@@ -199,7 +199,7 @@ test("automatic multi-occasion save preserves product fields and verifies all ti
 
 
 test("low-confidence occasions are counted while their top matches are saved without ranking cards", () => {
-  assert.match(adminSource, /if\(needsOccasion&&!occasion\?\.confident\)\{occasionUncertain\+\+;if\(!uncertainProductIds\.includes\(candidate\.id\)\)uncertainProductIds\.push\(candidate\.id\);\}/);
+  assert.match(adminSource, /if\(needsOccasion&&!occasion\?\.confident\)\{occasionUncertain\+\+;if\(!uncertainProductIds\.includes\(candidate\.id\)\)uncertainProductIds\.push\(candidate\.id\);if\(!uncertainOccasionProductIds\.includes\(candidate\.id\)\)uncertainOccasionProductIds\.push\(candidate\.id\);\}/);
   assert.match(adminSource, /const addOccasion=needsOccasion&&occasionLabels\.length>0/);
   assert.match(adminSource, /low-confidence occasion predictions/);
   assert.doesNotMatch(adminSource, /SAVE SELECTED OCCASIONS/);
@@ -207,11 +207,13 @@ test("low-confidence occasions are counted while their top matches are saved wit
 });
 
  
-test("manual colour-review UI and save workflow are removed", () => {
-  assert.doesNotMatch(adminSource, /ssvSaveReviewedColour/);
-  assert.doesNotMatch(adminSource, /colourReviewSuggestions/);
-  assert.doesNotMatch(adminSource, /SAVE REVIEWED COLOUR/);
-  assert.doesNotMatch(adminSource, /Choose the product's actual visible colour/);
+test("manual Enrich Finder review controls exist and save corrections safely", () => {
+  assert.match(adminSource, /ssvSaveEnrichManualReview/);
+  assert.match(adminSource, /Select correct colour/);
+  assert.match(adminSource, /Correct occasion tags/);
+  assert.match(adminSource, /SAVE CORRECTIONS/);
+  assert.match(adminSource, /Save verification failed/);
+  assert.match(adminSource, /Existing manually maintained occasion tags were preserved/);
 });
 
 test("Enrich Finder close animation and final badge sizing overrides exist", () => {
@@ -225,12 +227,12 @@ test("Enrich Finder close animation and final badge sizing overrides exist", () 
 });
 
 
-test("Enrich Finder uses automated inference without a manual colour-review workflow", () => {
+test("Enrich Finder keeps automated inference and provides manual review only for uncertain fields", () => {
   assert.match(aiSource, /MAX_INFERENCE_PASSES = 3/);
   assert.match(adminSource, /const addColour=needsColour&&\(isJewellery\|\|\(colour\?\.confident===true&&SSV_FINDER_COLOURS\.has\(colour\?\.label\)\)\)/);
-  assert.doesNotMatch(adminSource, /ssvSaveReviewedColour/);
-  assert.doesNotMatch(adminSource, /colourReviewSuggestions/);
-  assert.doesNotMatch(adminSource, /SAVE REVIEWED COLOUR/);
+  assert.match(adminSource, /uncertainColourProductIds/);
+  assert.match(adminSource, /uncertainOccasionProductIds/);
+  assert.match(adminSource, /ssvRenderEnrichManualReview\(result\)/);
 });
 
 test("TOP PICK sizing targets the rendered Smart Finder badge without adding popup entrance animation", () => {
