@@ -184,8 +184,9 @@ test("occasion enrichment always saves highest-scoring matches, including low-co
   assert.match(adminSource, /next\.occasions=occasionLabels/);
   assert.match(adminSource, /occasionLabels\.every/);
   assert.match(adminSource, /SSV_OCCASION_LABELS\.has\(value\)/);
-  assert.doesNotMatch(adminSource, /SAVE SELECTED OCCASIONS/);
-  assert.doesNotMatch(adminSource, /reviewSuggestions\.push\(\{id:candidate\.id,name:/);
+  assert.match(adminSource, /async function ssvRenderEnrichManualReview\(result\)/);
+  assert.match(adminSource, /Select correct occasions \(select all that apply\)/);
+  assert.match(adminSource, /SAVE CORRECTIONS/);
 });
 
 test("automatic multi-occasion save preserves product fields and verifies all tied occasions", () => {
@@ -198,7 +199,7 @@ test("automatic multi-occasion save preserves product fields and verifies all ti
 });
 
 
-test("low-confidence occasions are counted while their top matches are saved without ranking cards", () => {
+test("low-confidence occasions are tracked and exposed for manual correction", () => {
   assert.match(adminSource, /if\(needsOccasion&&!occasion\?\.confident\)\{occasionUncertain\+\+;if\(!uncertainProductIds\.includes\(candidate\.id\)\)uncertainProductIds\.push\(candidate\.id\);if\(!uncertainOccasionProductIds\.includes\(candidate\.id\)\)uncertainOccasionProductIds\.push\(candidate\.id\);\}/);
   assert.match(adminSource, /const addOccasion=needsOccasion&&occasionLabels\.length>0/);
   assert.match(adminSource, /low-confidence occasion predictions/);
@@ -210,10 +211,19 @@ test("low-confidence occasions are counted while their top matches are saved wit
 test("manual Enrich Finder review controls exist and save corrections safely", () => {
   assert.match(adminSource, /ssvSaveEnrichManualReview/);
   assert.match(adminSource, /Select correct colour/);
-  assert.match(adminSource, /Correct occasion tags/);
+  assert.match(adminSource, /Select correct occasions \(select all that apply\)/);
   assert.match(adminSource, /SAVE CORRECTIONS/);
   assert.match(adminSource, /Save verification failed/);
   assert.match(adminSource, /Existing manually maintained occasion tags were preserved/);
+});
+
+test("manual review requires every uncertain field and refreshes Needs Review after verified save", () => {
+  assert.match(adminSource, /if\(needsColour&&!selectedColour\)throw new Error/);
+  assert.match(adminSource, /if\(needsOccasion&&!updateOccasion\)throw new Error/);
+  assert.match(adminSource, /Existing manually maintained occasion tags were preserved/);
+  assert.match(adminSource, /result\.uncertainColourProductIds=.*filter/);
+  assert.match(adminSource, /result\.uncertainOccasionProductIds=.*filter/);
+  assert.match(adminSource, /const reviewCount=new Set\(\[\.\.\.result\.uncertainProductIds,\.\.\.result\.uncertainColourProductIds\]\)\.size/);
 });
 
 test("Enrich Finder close animation and final badge sizing overrides exist", () => {
