@@ -129,7 +129,7 @@ test("Enrich Finder reports saved counts, a deduplicated review count, and actio
   assert.match(adminSource, /const failureCount=Array\.isArray\(result\.failures\)\?result\.failures\.length:0/);
   assert.match(adminSource, /const reviewIds=new Set\(\[\.\.\.\(Array\.isArray\(result\.uncertainProductIds\)\?result\.uncertainProductIds:\[\]\),\.\.\.\(Array\.isArray\(result\.uncertainColourProductIds\)\?result\.uncertainColourProductIds:\[\]\)\]\)/);
   assert.match(adminSource, /review\.textContent=String\(reviewIds\.size\)/);
-  assert.match(adminSource, /if\(needsOccasion&&!occasion\?\.confident\)\{occasionUncertain\+\+;if\(!uncertainProductIds\.includes\(candidate\.id\)\)uncertainProductIds\.push\(candidate\.id\);\}/);
+  assert.match(adminSource, /if\(needsOccasion&&!occasion\?\.confident\)\{occasionUncertain\+\+;if\(!uncertainProductIds\.includes\(candidate\.id\)\)uncertainProductIds\.push\(candidate\.id\);if\(!uncertainOccasionProductIds\.includes\(candidate\.id\)\)uncertainOccasionProductIds\.push\(candidate\.id\);\}/);
   assert.match(adminSource, /uncertain colour predictions/);
   assert.match(adminSource, /low-confidence occasion predictions/);
   assert.match(adminSource, /Highest-scoring occasion\\(s\\) may have been saved automatically; verify them below/);
@@ -194,7 +194,7 @@ test("occasion enrichment always saves highest-scoring matches, including low-co
   assert.match(adminSource, /occasionLabels=\[\.\.\.new Set/);
   assert.match(adminSource, /const addOccasion=needsOccasion&&occasionLabels\.length>0/);
   assert.doesNotMatch(adminSource, /const addOccasion=needsOccasion&&!!occasion\?\.confident/);
-  assert.match(adminSource, /if\(needsOccasion&&!occasion\?\.confident\)\{occasionUncertain\+\+;if\(!uncertainProductIds\.includes\(candidate\.id\)\)uncertainProductIds\.push\(candidate\.id\);\}/);
+  assert.match(adminSource, /if\(needsOccasion&&!occasion\?\.confident\)\{occasionUncertain\+\+;if\(!uncertainProductIds\.includes\(candidate\.id\)\)uncertainProductIds\.push\(candidate\.id\);if\(!uncertainOccasionProductIds\.includes\(candidate\.id\)\)uncertainOccasionProductIds\.push\(candidate\.id\);\}/);
   assert.match(adminSource, /next\.occasions=occasionLabels/);
   assert.match(adminSource, /occasionLabels\.every/);
   assert.match(adminSource, /SSV_OCCASION_LABELS\.has\(value\)/);
@@ -213,7 +213,7 @@ test("automatic multi-occasion save preserves product fields and verifies all ti
 
 
 test("low-confidence occasions are counted while their top matches are saved without ranking cards", () => {
-  assert.match(adminSource, /if\(needsOccasion&&!occasion\?\.confident\)\{occasionUncertain\+\+;if\(!uncertainProductIds\.includes\(candidate\.id\)\)uncertainProductIds\.push\(candidate\.id\);\}/);
+  assert.match(adminSource, /if\(needsOccasion&&!occasion\?\.confident\)\{occasionUncertain\+\+;if\(!uncertainProductIds\.includes\(candidate\.id\)\)uncertainProductIds\.push\(candidate\.id\);if\(!uncertainOccasionProductIds\.includes\(candidate\.id\)\)uncertainOccasionProductIds\.push\(candidate\.id\);\}/);
   assert.match(adminSource, /const addOccasion=needsOccasion&&occasionLabels\.length>0/);
   assert.match(adminSource, /low-confidence occasion predictions/);
   assert.doesNotMatch(adminSource, /SAVE SELECTED OCCASIONS/);
