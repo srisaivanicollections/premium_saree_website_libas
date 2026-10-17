@@ -117,12 +117,20 @@
     "newArrival": true,
     "bestSeller": false,
     "availability": true,
-    "occasions": [],
+    "occasions": [
+      "Traditional"
+    ],
     "occasionMetadata": {
       "source": "ai",
       "model": "CLIP-ViT-B-32",
-      "score": 0.4402,
-      "margin": 0.1709,
+      "score": 0.3938,
+      "margin": 0.1255,
+      "scores": [
+        {
+          "label": "Traditional",
+          "score": 0.3938
+        }
+      ],
       "image": "assets/products/1791810866317-7cea9017c5e1-asper-viscose-dobby-printed-a-line-maxi-dress-2037737.jpg",
       "version": 1
     },
