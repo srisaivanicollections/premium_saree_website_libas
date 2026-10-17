@@ -119,10 +119,7 @@
     "availability": true,
     "occasions": [
       "Daily Wear",
-      "Wedding",
-      "Festive",
-      "Party Wear",
-      "Traditional"
+      "Festive"
     ],
     "occasionMetadata": {
       "source": "ai",
