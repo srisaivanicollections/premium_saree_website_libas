@@ -490,6 +490,7 @@ jobs:
                     listScrollWidth: list.scrollWidth
                   };
                 });
+                console.log("Admin mobile geometry " + label + " " + width + "px: " + JSON.stringify(geometry));
                 assert.ok(geometry.row.width > 0, label + ": product row has width at " + width + "px");
                 assert.ok(geometry.row.left >= -1 && geometry.row.right <= width + 1, label + ": product row fits viewport at " + width + "px");
                 assert.ok(geometry.thumb && geometry.thumb.width > 0, label + ": thumbnail remains visible at " + width + "px");
