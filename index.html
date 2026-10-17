@@ -10255,7 +10255,7 @@ function ssvEnrichMissingCounts(items){
 function ssvEnsureEnrichFinderPopup(){
   let popup=$("#adminEnrichFinderPopup");if(popup)return popup;
   popup=document.createElement("div");popup.id="adminEnrichFinderPopup";popup.className="ssv-enrich-popup-backdrop";popup.hidden=true;
-  popup.innerHTML='<section class="ssv-enrich-popup" role="dialog" aria-modal="true" aria-labelledby="adminEnrichTitle" aria-describedby="adminEnrichIntro"><button type="button" class="ssv-enrich-popup-close" id="adminEnrichFinderClose" aria-label="Close Enrich Finder">×</button><p class="eyebrow">SMART SAREE FINDER</p><h3 id="adminEnrichTitle">Enrich Finder</h3><p id="adminEnrichIntro">Analyse product images to suggest missing occasion and colour metadata. Existing occasion tags, colour values, product images and unrelated product fields are preserved.</p><div class="ssv-enrich-count-grid"><div><strong id="adminEnrichOccasionCount">0</strong><span>OCCASIONS SAVED</span></div><div><strong id="adminEnrichColourCount">0</strong><span>COLOURS SAVED</span></div><div><strong id="adminEnrichReviewCount">0</strong><span>NEEDS REVIEW</span></div></div><div id="adminEnrichProcessing" class="ssv-enrich-processing" hidden aria-live="polite"><div class="ssv-enrich-processing-heading"><span class="ssv-enrich-scan-icon" aria-hidden="true">✦</span><strong id="adminEnrichProcessingLabel">Preparing image analysis…</strong></div><div class="ssv-enrich-progress-track" role="progressbar" aria-label="Products analysed" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="adminEnrichProgressTrack"><span id="adminEnrichProgressFill"></span></div><div class="ssv-enrich-progress-meta"><span id="adminEnrichProgressText">Preparing…</span><span id="adminEnrichProgressPercent">0%</span></div><div class="ssv-enrich-current-product" id="adminEnrichCurrentProduct" hidden><img id="adminEnrichCurrentImage" alt="" /><div><strong id="adminEnrichCurrentName">Preparing product…</strong><span id="adminEnrichCurrentStep">Waiting to analyse</span></div><span class="ssv-enrich-live-dots" aria-hidden="true"><i></i><i></i><i></i></span></div><p class="ssv-enrich-processing-note"><span aria-hidden="true">✦</span> Analysing products and saving only verified missing metadata.</p></div><p class="ssv-enrich-safety-note">Missing occasions use the highest-scoring match(es). Colour values follow catalogue rules, and saved changes are verified.</p><button type="button" class="btn dark" id="adminEnrichFinder">ANALYSE MISSING METADATA</button><p id="adminEnrichFinderStatus" role="status" aria-live="polite" style="margin-top:16px;overflow-wrap:anywhere">Ready to analyse missing occasion and colour details.</p><div id="adminEnrichFinderFailures" aria-live="polite"></div></section>';
+  popup.innerHTML='<section class="ssv-enrich-popup" role="dialog" aria-modal="true" aria-labelledby="adminEnrichTitle" aria-describedby="adminEnrichIntro"><button type="button" class="ssv-enrich-popup-close" id="adminEnrichFinderClose" aria-label="Close Enrich Finder">×</button><p class="eyebrow">SMART SAREE FINDER</p><h3 id="adminEnrichTitle">Enrich Finder</h3><p id="adminEnrichIntro">Analyse images to fill missing colour and occasion tags. Existing product data is preserved.</p><div class="ssv-enrich-count-grid"><div><strong id="adminEnrichOccasionCount">0</strong><span>OCCASIONS SAVED</span></div><div><strong id="adminEnrichColourCount">0</strong><span>COLOURS SAVED</span></div><div><strong id="adminEnrichReviewCount">0</strong><span>NEEDS REVIEW</span></div></div><div id="adminEnrichProcessing" class="ssv-enrich-processing" hidden aria-live="polite"><div class="ssv-enrich-processing-heading"><span class="ssv-enrich-scan-icon" aria-hidden="true">✦</span><strong id="adminEnrichProcessingLabel">Preparing image analysis…</strong></div><div class="ssv-enrich-progress-track" role="progressbar" aria-label="Products analysed" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="adminEnrichProgressTrack"><span id="adminEnrichProgressFill"></span></div><div class="ssv-enrich-progress-meta"><span id="adminEnrichProgressText">Preparing…</span><span id="adminEnrichProgressPercent">0%</span></div><div class="ssv-enrich-current-product" id="adminEnrichCurrentProduct" hidden><img id="adminEnrichCurrentImage" alt="" /><div><strong id="adminEnrichCurrentName">Preparing product…</strong><span id="adminEnrichCurrentStep">Waiting to analyse</span></div><span class="ssv-enrich-live-dots" aria-hidden="true"><i></i><i></i><i></i></span></div><p class="ssv-enrich-processing-note"><span aria-hidden="true">✦</span> Analysing products and saving only verified missing metadata.</p></div><p class="ssv-enrich-safety-note">Only verified changes are saved. Review uncertain fields below when needed.</p><button type="button" class="btn dark" id="adminEnrichFinder">ANALYSE MISSING METADATA</button><p id="adminEnrichFinderStatus" role="status" aria-live="polite" style="margin-top:16px;overflow-wrap:anywhere">Ready to analyse missing occasion and colour details.</p><div id="adminEnrichFinderFailures" aria-live="polite"></div></section>';
   document.body.appendChild(popup);
   const focusableSelector='a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
   const close=()=>{if(popup.hidden||popup.classList.contains("is-closing"))return;const finish=()=>{if(popup._closeHandler){popup.removeEventListener("animationend",popup._closeHandler);popup._closeHandler=null;}if(popup._closeTimer){clearTimeout(popup._closeTimer);popup._closeTimer=null;}popup.hidden=true;popup.classList.remove("is-closing");const opener=popup._opener;if(opener&&opener.isConnected)opener.focus();};if(window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches){finish();return;}popup.classList.add("is-closing");let finished=false;const onEnd=event=>{if(event.target!==popup||finished)return;finished=true;finish();};popup._closeHandler=onEnd;popup.addEventListener("animationend",onEnd);popup._closeTimer=setTimeout(()=>{if(finished)return;finished=true;popup._closeTimer=null;finish();},220);};
@@ -10323,6 +10323,97 @@ async function ssvSaveReviewedOccasions(productId,imagePath,selectedLabels){
  }
  throw new Error("The catalogue kept changing. Refresh and try again.");
 }
+async function ssvSaveManualEnrichReview(productId,snapshot,fields){
+ const selectedOccasions=[...new Set((fields.occasions||[]).map(ssvOccasionLabel).filter(Boolean))];
+ const selectedColour=String(fields.colour||"").trim();
+ if(fields.reviewOccasion&&!selectedOccasions.length)throw new Error("Select at least one occasion.");
+ if(fields.reviewColour&&!SSV_FINDER_COLOURS.has(selectedColour))throw new Error("Select a valid colour.");
+ for(let attempt=0;attempt<3;attempt++){
+  const latest=await githubReadJsonFresh("data/products.json");
+  if(!Array.isArray(latest.value))throw new Error("Product catalogue is invalid.");
+  const index=latest.value.findIndex(product=>Number(product.id)===Number(productId));
+  if(index<0)throw new Error("Product no longer exists in the catalogue.");
+  const current=latest.value[index];
+  if(String(current.image||"")!==String(snapshot.image||""))throw new Error("The product image changed. Re-analyse before reviewing.");
+  if(JSON.stringify(Array.isArray(current.occasions)?current.occasions:[])!==JSON.stringify(Array.isArray(snapshot.occasions)?snapshot.occasions:[])||String(current.color||"")!==String(snapshot.color||""))throw new Error("This product metadata changed since the review card opened. Refresh Enrich Finder before saving.");
+  if(!isCategoryEnabled(current.category))throw new Error("This product category is currently disabled.");
+  const next={...current};
+  if(fields.reviewOccasion)next.occasions=selectedOccasions;
+  if(fields.reviewColour)next.color=normalizeCategoryName(current.category)==="Jewellery"?"Gold":selectedColour;
+  try{
+   await githubWriteJson("data/products.json",latest.value.map((product,i)=>i===index?next:product),latest.sha,"Manually review Enrich Finder metadata for product "+current.id);
+   const verify=await githubReadJsonFresh("data/products.json");
+   const saved=Array.isArray(verify.value)?verify.value.find(product=>Number(product.id)===Number(current.id)):null;
+   const occasionsMatch=!fields.reviewOccasion||JSON.stringify(saved?.occasions)===JSON.stringify(selectedOccasions);
+   const colourMatch=!fields.reviewColour||String(saved?.color||"")===String(normalizeCategoryName(current.category)==="Jewellery"?"Gold":selectedColour);
+   if(!saved||String(saved.image||"")!==String(snapshot.image||"")||!occasionsMatch||!colourMatch)throw new Error("Save verification failed. Refresh the catalogue and verify this product before retrying.");
+   products=verify.value;githubOriginalIds=new Set(products.map(product=>Number(product.id)));return saved;
+  }catch(error){if(isGithubShaConflict(error)&&attempt<2){await new Promise(resolve=>setTimeout(resolve,300*(attempt+1)));continue;}throw error;}
+ }
+ throw new Error("The catalogue kept changing. Refresh and try again.");
+}
+async function ssvRenderManualEnrichReviews(result){
+ const details=$("#adminEnrichFinderFailures");if(!details)return;
+ const occasionIds=new Set(Array.isArray(result.uncertainOccasionProductIds)?result.uncertainOccasionProductIds:[]);
+ const colourIds=new Set(Array.isArray(result.uncertainColourProductIds)?result.uncertainColourProductIds:[]);
+ const ids=[...new Set([...occasionIds,...colourIds])];
+ if(!ids.length)return;
+ const note=document.createElement("p");note.className="ssv-enrich-review-instructions";note.textContent="Review uncertain fields below. Choose the correct colour and/or occasions, then save each product. Changes are verified against GitHub.";details.append(note);
+ let catalogue;
+ try{catalogue=await githubReadJsonFresh("data/products.json");}
+ catch(error){const warning=document.createElement("p");warning.textContent="Could not load products for manual review. "+ssvFinderFailureReason(error);details.append(warning);return;}
+ if(!Array.isArray(catalogue.value)){const warning=document.createElement("p");warning.textContent="The product catalogue could not be verified for manual review.";details.append(warning);return;}
+ const colourOptions=[...SSV_FINDER_COLOURS];
+ for(const id of ids){
+  const product=catalogue.value.find(item=>Number(item.id)===Number(id));
+  if(!product||!isCategoryEnabled(product.category)||!String(product.image||"").trim())continue;
+  const reviewOccasion=occasionIds.has(id),reviewColour=colourIds.has(id);
+  const card=document.createElement("article");card.className="ssv-enrich-review-card";
+  const heading=document.createElement("h4");heading.textContent=String(product.name||("Product "+product.id));card.append(heading);
+  const image=document.createElement("img");image.className="ssv-enrich-review-image";image.src=productImageSrc(product.image);image.alt=String(product.name||"Product image");image.loading="lazy";image.onerror=()=>{image.hidden=true;};card.append(image);
+  const productMeta=document.createElement("p");productMeta.className="ssv-enrich-review-meta";productMeta.textContent=String(product.category||"")+" · ID "+String(product.id);card.append(productMeta);
+  const snapshot={id:product.id,image:String(product.image||""),color:String(product.color||""),occasions:Array.isArray(product.occasions)?product.occasions.slice():[]};
+  if(reviewColour){
+   const field=document.createElement("label");field.className="ssv-enrich-review-field";
+   const caption=document.createElement("span");caption.textContent="Confirm colour";field.append(caption);
+   const select=document.createElement("select");select.className="ssv-enrich-review-colour";select.setAttribute("aria-label","Select correct colour for "+String(product.name||"product"));
+   const placeholder=document.createElement("option");placeholder.value="";placeholder.textContent="Select colour";select.append(placeholder);
+   colourOptions.forEach(value=>{const option=document.createElement("option");option.value=value;option.textContent=value;select.append(option);});
+   const savedColour=normalizeCategoryName(product.category)==="Jewellery"?"Gold":snapshot.color;
+   if(colourOptions.includes(savedColour))select.value=savedColour;
+   if(normalizeCategoryName(product.category)==="Jewellery"){select.value="Gold";select.disabled=true;caption.textContent="Colour (Jewellery is fixed to Gold)";}
+   field.append(select);card.append(field);
+  }
+  if(reviewOccasion){
+   const field=document.createElement("fieldset");field.className="ssv-enrich-review-occasions";
+   const legend=document.createElement("legend");legend.textContent="Confirm occasion (select all that apply)";field.append(legend);
+   for(const value of SSV_OCCASION_LABELS){
+    const label=document.createElement("label");const checkbox=document.createElement("input");checkbox.type="checkbox";checkbox.value=value;checkbox.checked=snapshot.occasions.includes(value);
+    const text=document.createElement("span");text.textContent=value;label.append(checkbox,text);field.append(label);
+   }
+   card.append(field);
+  }
+  const status=document.createElement("p");status.className="ssv-enrich-review-status";status.setAttribute("role","status");status.setAttribute("aria-live","polite");card.append(status);
+  const save=document.createElement("button");save.type="button";save.className="btn dark";save.textContent="SAVE REVIEWED METADATA";
+  save.addEventListener("click",async()=>{
+   if(save.disabled)return;
+   const fields={reviewOccasion,reviewColour};
+   if(reviewOccasion)fields.occasions=[...card.querySelectorAll(".ssv-enrich-review-occasions input:checked")].map(input=>input.value);
+   if(reviewColour)fields.colour=card.querySelector(".ssv-enrich-review-colour")?.value||"";
+   save.disabled=true;save.textContent="SAVING…";status.textContent="Saving and verifying catalogue changes…";
+   try{
+    await ssvSaveManualEnrichReview(product.id,snapshot,fields);
+    status.textContent="Saved and verified on GitHub.";status.dataset.state="success";save.textContent="SAVED";
+    card.querySelectorAll("input,select").forEach(input=>input.disabled=true);
+    const remaining=details.querySelectorAll(".ssv-enrich-review-card:not([data-saved='true'])").length;
+    card.dataset.saved="true";
+    if(remaining<=1){const instruction=details.querySelector(".ssv-enrich-review-instructions");if(instruction)instruction.textContent="All displayed review items have been saved. You can analyse missing metadata again if needed.";}
+    ssvRefreshEnrichFinderCounts(products);
+   }catch(error){status.textContent="Not saved: "+ssvFinderFailureReason(error);status.dataset.state="error";save.disabled=false;save.textContent="RETRY SAVE";}
+  });
+  card.append(save);details.append(card);
+ }
+}
 function ssvRenderEnrichFinderSummary(result){
  const status=$("#adminEnrichFinderStatus"),occasion=$("#adminEnrichOccasionCount"),colour=$("#adminEnrichColourCount"),review=$("#adminEnrichReviewCount"),details=$("#adminEnrichFinderFailures"),button=$("#adminEnrichFinder");
  if(occasion){occasion.textContent=String(result.occasionsSaved);occasion.dataset.hasResult="true";}
@@ -10330,15 +10421,16 @@ function ssvRenderEnrichFinderSummary(result){
  const reviewIds=new Set([...(Array.isArray(result.uncertainProductIds)?result.uncertainProductIds:[]),...(Array.isArray(result.uncertainColourProductIds)?result.uncertainColourProductIds:[])]);
  if(review){review.textContent=String(reviewIds.size);review.dataset.hasResult="true";}
  const failureCount=Array.isArray(result.failures)?result.failures.length:0;
- if(status){status.textContent=(result.refreshFailed?"Partial results":"Complete")+" · "+result.imageProcessed+" images analysed · "+result.occasionsSaved+" occasions saved · "+result.coloursSaved+" colours saved"+(failureCount?" · "+failureCount+" processing failure(s)":"");status.setAttribute("data-state",result.failed||result.refreshFailed?"error":"success");}
+ if(status){status.textContent=(result.refreshFailed?"Partial results":"Complete")+" · "+result.imageProcessed+" images analysed"+(failureCount?" · "+failureCount+" processing failure(s)":"");status.setAttribute("data-state",result.failed||result.refreshFailed?"error":"success");}
  if(details){
-  details.replaceChildren();if(Number(result.occasionUncertain)>0){const note=document.createElement("p");note.className="ssv-enrich-occasion-review-note";note.textContent=String(result.occasionUncertain)+" product(s) had low-confidence occasion predictions. Their highest-scoring occasion(s) were saved automatically; verify the catalogue tags if needed.";note.style.cssText="margin:10px 0;padding:12px;border:1px solid #E4D8C5;background:#FAF7F2;color:#6f6252;font-size:13px;line-height:1.5";details.append(note);}if(Number(result.colourUncertain)>0){const note=document.createElement("p");note.className="ssv-enrich-colour-review-note";note.textContent=String(result.colourUncertain)+" product(s) had uncertain colour predictions. Their existing colour values were left unchanged; review these products and retry after confirming the image.";note.style.cssText="margin:10px 0;padding:12px;border:1px solid #E4D8C5;background:#FAF7F2;color:#6f6252;font-size:13px;line-height:1.5";details.append(note);}
-    const failures=Array.isArray(result.failures)?result.failures:[];
+  details.replaceChildren();if(Number(result.occasionUncertain)>0){const note=document.createElement("p");note.className="ssv-enrich-occasion-review-note";note.textContent=String(result.occasionUncertain)+" product(s) had low-confidence occasion predictions. Highest-scoring occasion(s) may have been saved automatically; verify them below.";note.style.cssText="margin:10px 0;padding:12px;border:1px solid #E4D8C5;background:#FAF7F2;color:#6f6252;font-size:13px;line-height:1.5";details.append(note);}if(Number(result.colourUncertain)>0){const note=document.createElement("p");note.className="ssv-enrich-colour-review-note";note.textContent=String(result.colourUncertain)+" product(s) had uncertain colour predictions. Existing colour values were left unchanged; confirm the correct colour below.";note.style.cssText="margin:10px 0;padding:12px;border:1px solid #E4D8C5;background:#FAF7F2;color:#6f6252;font-size:13px;line-height:1.5";details.append(note);}
+  const failures=Array.isArray(result.failures)?result.failures:[];
   if(failures.length){const failure=document.createElement("p");failure.textContent="Processing failures: "+failures.slice(0,5).map(item=>item.reason).join(" | ")+(failures.length>5?" · "+(failures.length-5)+" more failure(s).":"");failure.style.cssText="margin-top:12px;overflow-wrap:anywhere";details.append(failure);}
   if(result.refreshFailed){const warning=document.createElement("p");warning.textContent="Final catalogue refresh failed. Refresh before retrying.";details.append(warning);}
   details.hidden=!details.childElementCount;
  }
  if(button){button.disabled=false;button.textContent="ANALYSE MISSING METADATA";}
+ ssvRenderManualEnrichReviews(result).catch(error=>console.error("Manual Enrich Finder review rendering failed",error));
 }
 function showView(v){
   updateStudioNav(v);
@@ -10794,7 +10886,7 @@ function ssvUpdateEnrichProgress({index=0,total=0,product=null,phase="Analysing 
 async function ssvEnrichFinderCatalogue({allMissing=false,productId=null,onProgress=null}={}){
  if(ssvFinderEnrichmentPromise)return ssvFinderEnrichmentPromise;
  ssvFinderEnrichmentPromise=(async()=>{
-  const status=$("#adminEnrichFinderStatus")||$("#adminProductResults");let processed=0,skipped=0,failed=0,occasionsSaved=0,coloursSaved=0,occasionUncertain=0,colourUncertain=0;const failures=[],uncertainProductIds=[],uncertainColourProductIds=[];
+  const status=$("#adminEnrichFinderStatus")||$("#adminProductResults");let processed=0,skipped=0,failed=0,occasionsSaved=0,coloursSaved=0,occasionUncertain=0,colourUncertain=0;const failures=[],uncertainProductIds=[],uncertainOccasionProductIds=[],uncertainColourProductIds=[];
   const paint=(message)=>{if(status)status.textContent=message;};
   try{
    const initial=await githubReadJsonFresh("data/products.json");
@@ -10814,7 +10906,7 @@ async function ssvEnrichFinderCatalogue({allMissing=false,productId=null,onProgr
      const needsOccasion=candidateNeeds.occasion,needsColour=candidateNeeds.colour;
      const addOccasion=needsOccasion&&occasionLabels.length>0;
      const isJewellery=normalizeCategoryName(candidate.category)==="Jewellery";const colourToSave=isJewellery?"Gold":colour?.label;const addColour=needsColour&&(isJewellery||(colour?.confident===true&&SSV_FINDER_COLOURS.has(colour?.label)));
-     if(needsOccasion&&!occasion?.confident){occasionUncertain++;if(!uncertainProductIds.includes(candidate.id))uncertainProductIds.push(candidate.id);}
+     if(needsOccasion&&!occasion?.confident){occasionUncertain++;if(!uncertainProductIds.includes(candidate.id))uncertainProductIds.push(candidate.id);if(!uncertainOccasionProductIds.includes(candidate.id))uncertainOccasionProductIds.push(candidate.id);}
      if(needsColour&&!addColour){
       colourUncertain++;
       if(!uncertainColourProductIds.includes(candidate.id))uncertainColourProductIds.push(candidate.id);
@@ -10897,7 +10989,7 @@ async function ssvEnrichFinderCatalogue({allMissing=false,productId=null,onProgr
     failures.push({id:"catalogue refresh",reason:refreshMessage});
     paint(summary+" WARNING: "+refreshMessage);
    }
-   return {processed,skipped,failed,imageProcessed,occasionsSaved,coloursSaved,occasionMissingCount,colourMissingCount,occasionUncertain,colourUncertain,uncertainProductIds,uncertainColourProductIds,failures,refreshFailed};
+   return {processed,skipped,failed,imageProcessed,occasionsSaved,coloursSaved,occasionMissingCount,colourMissingCount,occasionUncertain,colourUncertain,uncertainProductIds,uncertainOccasionProductIds,uncertainColourProductIds,failures,refreshFailed};
   }finally{ssvFinderEnrichmentPromise=null;}
  })();return ssvFinderEnrichmentPromise;
 }
@@ -14776,6 +14868,21 @@ if ("serviceWorker" in navigator) {
 @media(prefers-reduced-motion:reduce){
  #admin .admin-products-heading-actions>#adminEnrichFinderLink,.ssv-enrich-popup-backdrop,.ssv-enrich-popup,.ssv-enrich-popup-backdrop *{animation:none!important;transition:none!important;scroll-behavior:auto!important}
 }
+</style>
+<style id="ssv-enrich-manual-review">
+#adminEnrichFinderFailures .ssv-enrich-review-instructions{margin:12px 0;padding:12px;border:1px solid #E4D8C5;background:#FAF7F2;color:#6f6252;font-size:13px;line-height:1.5}
+#adminEnrichFinderFailures .ssv-enrich-review-image{display:block;width:100%;max-height:220px;object-fit:contain;background:#fff;border:1px solid #eee7df;margin:10px 0}
+#adminEnrichFinderFailures .ssv-enrich-review-meta{font-size:11px;color:#75695e;margin:4px 0 12px}
+#adminEnrichFinderFailures .ssv-enrich-review-field{display:grid;gap:7px;margin:10px 0}
+#adminEnrichFinderFailures .ssv-enrich-review-field>span,#adminEnrichFinderFailures .ssv-enrich-review-occasions legend{font-size:12px;font-weight:600;color:#4c4035}
+#adminEnrichFinderFailures .ssv-enrich-review-field select{width:100%;min-height:42px;padding:8px 10px;border:1px solid #d9c7ae;background:#fff;color:#2a2521}
+#adminEnrichFinderFailures .ssv-enrich-review-occasions{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:7px;border:1px solid #e4d8c5;padding:10px;margin:12px 0}
+#adminEnrichFinderFailures .ssv-enrich-review-occasions legend{padding:0 4px}
+#adminEnrichFinderFailures .ssv-enrich-review-occasions label{display:flex;align-items:center;gap:8px;min-height:38px;padding:6px 8px;background:#fff;border:1px solid #eee7df}
+#adminEnrichFinderFailures .ssv-enrich-review-status{font-size:12px;line-height:1.5;overflow-wrap:anywhere}
+#adminEnrichFinderFailures .ssv-enrich-review-status[data-state="success"]{color:#24613d}
+#adminEnrichFinderFailures .ssv-enrich-review-status[data-state="error"]{color:#a32121}
+#adminEnrichFinderFailures .ssv-enrich-review-card button{width:100%;min-height:44px}
 </style>
 </body>
 
