@@ -10323,12 +10323,14 @@ async function ssvSaveReviewedOccasions(productId,imagePath,selectedLabels){
  }
  throw new Error("The catalogue kept changing. Refresh and try again.");
 }
-async function ssvSaveEnrichManualReview(productId,imagePath,{colour,updateOccasion=false,occasions=[]}={}){
+async function ssvSaveEnrichManualReview(productId,imagePath,{colour,updateOccasion=false,occasions=[],needsColour=false,needsOccasion=false}={}){
  const selectedColour=String(colour||"").trim();
- if(selectedColour&&!SSV_FINDER_COLOURS.has(selectedColour))throw new Error("Choose a valid catalogue colour.");
  const labels=[...new Set((Array.isArray(occasions)?occasions:[]).map(ssvOccasionLabel).filter(label=>SSV_OCCASION_LABELS.has(label)))];
- if(updateOccasion&&!labels.length)throw new Error("Select at least one occasion, or turn off occasion correction.");
- if(!selectedColour&&!updateOccasion)throw new Error("Choose a colour or enable occasion correction.");
+ if(needsColour&&!selectedColour)throw new Error("Choose a valid catalogue colour.");
+ if(selectedColour&&!SSV_FINDER_COLOURS.has(selectedColour))throw new Error("Choose a valid catalogue colour.");
+ if(needsOccasion&&!updateOccasion)throw new Error("Confirm the occasion correction before saving.");
+ if(updateOccasion&&!labels.length)throw new Error("Select at least one occasion.");
+ if(!selectedColour&&!updateOccasion)throw new Error("Choose a colour or correct the occasion.");
  for(let attempt=0;attempt<3;attempt++){
   const latest=await githubReadJsonFresh("data/products.json");
   if(!Array.isArray(latest.value))throw new Error("Product catalogue is invalid.");
@@ -10344,8 +10346,8 @@ async function ssvSaveEnrichManualReview(productId,imagePath,{colour,updateOccas
    next.colourMetadata={source:"manual-reviewed",model:"admin-enrich-review",image:String(current.image),version:1,reviewedAt:new Date().toISOString()};
   }
   if(updateOccasion){
-   const existingIsAi= current?.occasionMetadata?.source==="ai" || current?.occasionMetadata?.source==="ai-reviewed";
-   if(!ssvHasNoOccasionMetadata(current)&&!existingIsAi)throw new Error("Existing manually maintained occasion tags were preserved. Refresh and review the product before editing them.");
+   const existingIsAi=current?.occasionMetadata?.source==="ai"||current?.occasionMetadata?.source==="ai-reviewed";
+   if((!ssvHasNoOccasionMetadata(current)||!!current.occasionMetadata)&&!existingIsAi)throw new Error("Existing manually maintained occasion tags were preserved. Refresh and review the product before editing them.");
    next.occasions=labels;
    next.occasionMetadata={source:"ai-reviewed",model:"CLIP-ViT-B-32",image:String(current.image),version:1,reviewedAt:new Date().toISOString(),scores:labels.map(label=>({label,score:null}))};
   }
@@ -10389,10 +10391,9 @@ async function ssvRenderEnrichManualReview(result){
    card.append(select);
   }
   if(needsOccasion){
-   const toggleLabel=document.createElement("label");toggleLabel.style.cssText="display:flex;align-items:center;gap:8px;margin:8px 0";const toggle=document.createElement("input");toggle.type="checkbox";toggle.checked=true;toggle.dataset.updateOccasion="true";toggleLabel.append(toggle,document.createTextNode("Correct occasion tags"));card.append(toggleLabel);
+   const occasionLabel=document.createElement("p");occasionLabel.textContent="Select correct occasions (select all that apply)";card.append(occasionLabel);
    const group=document.createElement("div");group.dataset.occasionGroup="true";group.style.cssText="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:6px;margin:8px 0 12px";
-   for(const occasion of SSV_OCCASION_LABELS){const label=document.createElement("label");label.style.cssText="display:flex;align-items:center;gap:7px;padding:7px;border:1px solid #E4D8C5";const checkbox=document.createElement("input");checkbox.type="checkbox";checkbox.value=occasion;checkbox.dataset.reviewOccasion="true";checkbox.checked=Array.isArray(product.occasions)&&product.occasions.includes(occasion);label.append(checkbox,document.createTextNode(occasion));group.append(label);}
-   toggle.addEventListener("change",()=>{group.hidden=!toggle.checked;});card.append(group);
+   for(const occasion of SSV_OCCASION_LABELS){const label=document.createElement("label");label.style.cssText="display:flex;align-items:center;gap:7px;padding:7px;border:1px solid #E4D8C5";const checkbox=document.createElement("input");checkbox.type="checkbox";checkbox.value=occasion;checkbox.dataset.reviewOccasion="true";checkbox.checked=Array.isArray(product.occasions)&&product.occasions.includes(occasion);label.append(checkbox,document.createTextNode(occasion));group.append(label);}card.append(group);
   }
   const save=document.createElement("button");save.type="button";save.className="btn dark";save.textContent="SAVE CORRECTIONS";save.style.cssText="width:100%;min-height:44px;margin-top:8px";
   const message=document.createElement("p");message.setAttribute("role","status");message.setAttribute("aria-live","polite");message.style.cssText="margin:8px 0 0;font-size:12px;line-height:1.5;overflow-wrap:anywhere";
@@ -10402,8 +10403,15 @@ async function ssvRenderEnrichManualReview(result){
     const colourSelect=card.querySelector("[data-review-colour]");
     const updateOccasion=!!card.querySelector("[data-update-occasion]")?.checked;
     const occasions=[...card.querySelectorAll("[data-review-occasion]:checked")].map(input=>input.value);
-    await ssvSaveEnrichManualReview(id,card.dataset.image,{colour:colourSelect?.value||"",updateOccasion,occasions});
+    await ssvSaveEnrichManualReview(id,card.dataset.image,{colour:colourSelect?.value||"",updateOccasion:needsOccasion,occasions,needsColour,needsOccasion});
     message.textContent="Saved and verified in GitHub.";message.style.color="#276749";card.dataset.reviewSaved="true";save.textContent="SAVED ✓";
+    result.uncertainProductIds=(Array.isArray(result.uncertainProductIds)?result.uncertainProductIds:[]).filter(value=>Number(value)!==Number(id));
+    result.uncertainColourProductIds=(Array.isArray(result.uncertainColourProductIds)?result.uncertainColourProductIds:[]).filter(value=>Number(value)!==Number(id));
+    result.uncertainOccasionProductIds=(Array.isArray(result.uncertainOccasionProductIds)?result.uncertainOccasionProductIds:[]).filter(value=>Number(value)!==Number(id));
+    if(needsColour)result.colourUncertain=Math.max(0,Number(result.colourUncertain||0)-1);
+    if(needsOccasion)result.occasionUncertain=Math.max(0,Number(result.occasionUncertain||0)-1);
+    const reviewCount=new Set([...result.uncertainProductIds,...result.uncertainColourProductIds]).size;const review=$("#adminEnrichReviewCount");if(review)review.textContent=String(reviewCount);
+    const colourNote=$("#adminEnrichFinderFailures .ssv-enrich-colour-review-note"),occasionNote=$("#adminEnrichFinderFailures .ssv-enrich-occasion-review-note");if(colourNote&&!result.colourUncertain)colourNote.remove();if(occasionNote&&!result.occasionUncertain)occasionNote.remove();
     if(colourSelect)colourSelect.disabled=true;card.querySelectorAll("input").forEach(input=>input.disabled=true);
    }catch(error){message.textContent=ssvFinderFailureReason(error);message.style.color="#9B2C2C";save.disabled=false;save.textContent="RETRY SAVE";}
   });
