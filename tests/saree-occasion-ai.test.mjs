@@ -31,7 +31,7 @@ test("returns multiple strongly supported occasions without requiring exact scor
   ]);
   assert.deepEqual(result.labels, ["wedding", "festive"]);
   assert.equal(result.label, "wedding");
-  assert.ok(Math.abs(result.margin - 0.11) < 1e-12, "confidence margin must separate the selected group from excluded occasions");
+  assert.ok(Math.abs(result.margin - 0.10) < 1e-12, "confidence margin must preserve top-class separation, even when multiple labels are selected");
   assert.equal(isConfidentOccasionPrediction(result), true);
 });
 
