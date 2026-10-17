@@ -132,7 +132,7 @@ test("Enrich Finder reports saved counts, a deduplicated review count, and actio
   assert.match(adminSource, /if\(needsOccasion&&!occasion\?\.confident\)\{occasionUncertain\+\+;if\(!uncertainProductIds\.includes\(candidate\.id\)\)uncertainProductIds\.push\(candidate\.id\);\}/);
   assert.match(adminSource, /uncertain colour predictions/);
   assert.match(adminSource, /low-confidence occasion predictions/);
-  assert.match(adminSource, /Their highest-scoring occasion\(s\) were saved automatically/);
+  assert.match(adminSource, /Highest-scoring occasion\\(s\\) may have been saved automatically; verify them below/);
   assert.match(adminSource, /Processing failures:/);
 });
 
