@@ -6122,3 +6122,89 @@ footer .brand b{
 #admin #studioBody > *{
   min-height:0;
 }
+
+
+/* Admin Studio mobile product-list layout repair.
+   Keep every product row in one full-width vertical list; occasion badges wrap
+   inside the row instead of forcing the card to shrink to badge text width. */
+#admin #adminProductsScroll,
+#admin .admin-products-scroll {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  justify-content: flex-start !important;
+  gap: 10px !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+#admin #adminProductsScroll > .admin-item,
+#admin .admin-products-scroll > .admin-item {
+  display: flex !important;
+  flex: 0 0 auto !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+}
+#admin .admin-item .admin-product-main {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+#admin .admin-item .admin-product-copy {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  overflow-wrap: anywhere !important;
+}
+#admin .admin-item .admin-product-copy strong {
+  max-width: 100% !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+#admin .admin-item .admin-occasion-badges,
+#admin .admin-item .occasion-badges,
+#admin .admin-item .admin-product-occasions {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  gap: 5px !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  white-space: normal !important;
+}
+#admin .admin-item .admin-occasion-badges > *,
+#admin .admin-item .occasion-badges > *,
+#admin .admin-item .admin-product-occasions > * {
+  flex: 0 0 auto !important;
+  max-width: 100% !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+}
+@media (max-width: 600px) {
+  #admin #adminProductsScroll,
+  #admin .admin-products-scroll {
+    gap: 10px !important;
+    padding-inline: 0 !important;
+  }
+  #admin #adminProductsScroll > .admin-item,
+  #admin .admin-products-scroll > .admin-item {
+    gap: 10px !important;
+    padding: 12px !important;
+  }
+  #admin .admin-item .admin-product-thumb {
+    flex: 0 0 54px !important;
+    width: 54px !important;
+    height: 72px !important;
+  }
+  #admin .admin-item .admin-product-copy strong {
+    font-size: 16px !important;
+  }
+}
