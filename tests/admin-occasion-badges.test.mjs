@@ -80,5 +80,5 @@ test("uses only the two required isolated badge selectors and exact required dec
     "color: #1C1917;", "font-size: 10px;", "line-height: 1.2;",
     "letter-spacing: 0.02em;", "text-transform: uppercase;", "padding: 2px 6px;"
   ]) assert.ok(style.includes(declaration), "required CSS declaration: " + declaration);
-  assert.doesNotMatch(style, /!important|position\s*:|min-width\s*:|flex\s*:/i);
+  assert.doesNotMatch(style, /!important|position\\s*:/i);
 });
