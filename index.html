@@ -6993,12 +6993,6 @@ HERO DEPLOYMENT SAFETY GUARD
     margin-top:1px!important;
   }
 }
-
-/* Admin product list: display each saved occasion as an independent badge. */
-.admin-product-meta{display:block}
-.admin-occasion-badges{display:flex;flex-wrap:wrap;align-items:center;gap:5px;margin:6px 0 0;max-width:100%}
-.admin-occasion-badge{display:inline-flex;align-items:center;border:1px solid #D8C8B4;border-radius:999px;background:#FAF7F2;color:#594638;padding:3px 8px;font-size:11px;line-height:1.35;font-weight:600;letter-spacing:.01em;max-width:100%;overflow-wrap:anywhere}
-@media(max-width:760px){.admin-occasion-badges{gap:4px;margin-top:7px}.admin-occasion-badge{font-size:10px;padding:4px 8px}}
 </style>
 
 
@@ -10499,7 +10493,7 @@ function showView(v){
       results.textContent=filtered.length
         ? "Showing "+(start+1)+"–"+Math.min(start+adminProductsPerPage,filtered.length)+" of "+filtered.length+" products"
         : "Showing 0 of 0 products";
-      list.innerHTML=pageItems.length?pageItems.map(p=>'<div class="admin-item"><div class="admin-product-main"><img class="admin-product-thumb" src="'+esc(productImageSrc(p.image))+'" alt="" loading="lazy" onerror="this.classList.add(\'image-missing\');this.onerror=null;this.src=\'assets/dress-4.svg\'"><div class="admin-product-copy"><strong>'+esc(cleanProductName(p.name))+'</strong><div class="admin-product-meta">'+esc(p.category)+" · "+money(p.price)+(p.color?' · '+esc(p.color):'')+'</div>'+(Array.isArray(p.occasions)&&p.occasions.length?'<div class="admin-occasion-badges" aria-label="Occasions">'+p.occasions.map(occasion=>'<span class="admin-occasion-badge">'+esc(occasion)+'</span>').join("")+'</div>':'')+'<div class="admin-product-status"><div class="admin-product-status">'+(p.newArrival?'<span class="admin-status is-new">NEW</span>':"")+(p.bestSeller?'<span class="admin-status is-best">BEST SELLER</span>':"")+(p.availability===false?'<span class="admin-status is-unavailable">UNAVAILABLE</span>':'<span class="admin-status is-available">AVAILABLE</span>')+'</div></div></div><button class="danger edit" data-id="'+Number(p.id)+'">EDIT</button></div>').join(""):'<div class="admin-products-empty">No products match these filters.<button type="button" id="clearAdminProductFiltersEmpty">Clear filters</button></div>';
+      list.innerHTML=pageItems.length?pageItems.map(p=>'<div class="admin-item"><div class="admin-product-main"><img class="admin-product-thumb" src="'+esc(productImageSrc(p.image))+'" alt="" loading="lazy" onerror="this.classList.add(\'image-missing\');this.onerror=null;this.src=\'assets/dress-4.svg\'"><div class="admin-product-copy"><strong>'+esc(cleanProductName(p.name))+'</strong><small class="admin-product-meta">'+esc(p.category)+" · "+money(p.price)+(Array.isArray(p.occasions)&&p.occasions.length?' · '+esc(p.occasions.join(", ")):'')+(p.color?' · '+esc(p.color):'')+'</small><div class="admin-product-status">'+(p.newArrival?'<span class="admin-status is-new">NEW</span>':"")+(p.bestSeller?'<span class="admin-status is-best">BEST SELLER</span>':"")+(p.availability===false?'<span class="admin-status is-unavailable">UNAVAILABLE</span>':'<span class="admin-status is-available">AVAILABLE</span>')+'</div></div></div><button class="danger edit" data-id="'+Number(p.id)+'">EDIT</button></div>').join(""):'<div class="admin-products-empty">No products match these filters.<button type="button" id="clearAdminProductFiltersEmpty">Clear filters</button></div>';
       const pagination=$("#adminProductPagination");
       if(!filtered.length){pagination.innerHTML="";pagination.hidden=true;return;}
       pagination.hidden=false;
