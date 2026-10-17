@@ -366,3 +366,15 @@ test("Enrich Finder progress and failure details never expose product IDs", () =
   assert.doesNotMatch(adminSource, /failures\.map\(item=>\"Product \"\+item\.id/);
   assert.match(adminSource, /console\.error\(\"Finder enrichment failed for product \"\+candidate\.id/);
 });
+
+
+test("Enrich Finder exposes manual colour and occasion correction controls and verifies saved catalogue values", () => {
+  assert.match(adminSource, /function ssvSaveManualEnrichReview\(productId,imagePath,fields/);
+  assert.match(adminSource, /Select correct colour/);
+  assert.match(adminSource, /Select occasion\(s\)/);
+  assert.match(adminSource, /SAVE CORRECTION/);
+  assert.match(adminSource, /Save verification failed/);
+  assert.match(adminSource, /uncertainOccasionProductIds/);
+  assert.match(adminSource, /source:"manual-review"/);
+  assert.match(adminSource, /details\.hidden=false/);
+});
