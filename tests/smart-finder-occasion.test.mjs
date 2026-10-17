@@ -366,3 +366,22 @@ test("Enrich Finder progress and failure details never expose product IDs", () =
   assert.doesNotMatch(adminSource, /failures\.map\(item=>\"Product \"\+item\.id/);
   assert.match(adminSource, /console\.error\(\"Finder enrichment failed for product \"\+candidate\.id/);
 });
+
+test("Enrich Finder exposes manual colour and occasion controls for uncertain metadata", () => {
+  assert.match(adminSource, /async function ssvRenderEnrichManualReview\(result\)/);
+  assert.match(adminSource, /Select correct colour/);
+  assert.match(adminSource, /Correct occasion tags/);
+  assert.match(adminSource, /SAVE CORRECTIONS/);
+  assert.match(adminSource, /ssvSaveEnrichManualReview/);
+  assert.match(adminSource, /Save verification failed/);
+  assert.match(adminSource, /Existing manually maintained occasion tags were preserved/);
+  assert.match(adminSource, /uncertainOccasionProductIds/);
+});
+
+test("manual Enrich Finder saves validate allowed metadata and verify persisted GitHub values", () => {
+  assert.match(adminSource, /if\(!selectedColour&&!updateOccasion\)throw new Error/);
+  assert.match(adminSource, /if\(selectedColour&&!SSV_FINDER_COLOURS\.has\(selectedColour\)\)/);
+  assert.match(adminSource, /saved\.colourMetadata\?\.source!==\"manual-reviewed\"/);
+  assert.match(adminSource, /saved\.occasionMetadata\?\.source!==\"ai-reviewed\"/);
+  assert.match(adminSource, /current\?\.occasionMetadata\?\.source===\"ai\"/);
+});
