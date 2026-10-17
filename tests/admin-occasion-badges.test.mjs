@@ -38,7 +38,7 @@ test("deduplicates case-insensitively while preserving first spelling", () => {
 });
 
 test("escapes HTML special characters and prevents executable markup", () => {
-  const markup = context.renderAdminOccasionBadges('<img src=x onerror="alert(1)"> & "quoted" \'single\'');
+  const markup = context.renderAdminOccasionBadges("<img src=x onerror=\"alert(1)\"> & \"quoted\" 'single'");
   assert.ok(markup.includes("&lt;img src=x onerror=&quot;alert(1)&quot;&gt;"));
   assert.ok(markup.includes("&amp; &quot;quoted&quot; &#39;single&#39;"));
   assert.equal(markup.includes("<img"), false);
@@ -46,7 +46,7 @@ test("escapes HTML special characters and prevents executable markup", () => {
 });
 
 test("renders one wrapper with independent, long-label-safe badge elements", () => {
-  const markup = context.renderAdminOccasionBadges(["A very long custom occasion label that exceeds the badge maximum", "Festive"]);
+  const markup = context.renderAdminOccasionBadges("<img src=x onerror=\"alert(1)\"> & \"quoted\" 'single'");
   assert.equal((markup.match(/class="occ-badge-wrap"/g) || []).length, 1);
   assert.equal((markup.match(/class="occ-badge-item"/g) || []).length, 2);
   assert.ok(markup.includes("A very long custom occasion label that exceeds the badge maximum"));
