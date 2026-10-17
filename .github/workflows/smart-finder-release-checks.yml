@@ -24,6 +24,7 @@ jobs:
           node --check saree-occasion-ai.js
           node --test tests/saree-occasion-ai.test.mjs
           node --test tests/smart-finder-occasion.test.mjs
+          node --test tests/admin-occasion-badges.test.mjs
           node --input-type=module <<'NODE'
           import { readFileSync } from "node:fs";
           import assert from "node:assert/strict";
@@ -462,6 +463,46 @@ jobs:
               await page.locator("#verifyOtpBtn").click();
               await page.locator("#adminProductResults").waitFor();
               assert.ok(state.workerActions.includes("send") && state.workerActions.includes("verify"), label + ": OTP request and verification UI path");
+
+              // Dedicated real-browser viewport regression for the new Admin occasion badges.
+              const badgeProduct = state.products.find(product => Array.isArray(product.occasions)
+                ? product.occasions.some(value => String(value ?? "").trim())
+                : typeof product.occasions === "string" && product.occasions.split(",").some(value => value.trim()));
+              assert.ok(badgeProduct, label + ": fixture must include a product with occasion metadata");
+              await page.locator("#adminProductSearch").fill(String(badgeProduct.name));
+              const badgeWrap = page.locator("#adminProductsScroll .occ-badge-wrap").first();
+              await badgeWrap.waitFor({ state: "visible" });
+              assert.ok(await badgeWrap.locator(".occ-badge-item").count() > 0, label + ": occasion labels render as individual badges");
+              const originalViewport = page.viewportSize();
+              for (const width of [320, 360, 390]) {
+                await page.setViewportSize({ width, height: 852 });
+                await page.waitForTimeout(50);
+                const geometry = await page.evaluate(() => {
+                  const wrap = document.querySelector("#adminProductsScroll .occ-badge-wrap");
+                  const card = wrap?.closest(".admin-item");
+                  const status = card?.querySelector(".admin-product-status");
+                  if (!wrap || !card || !status) return null;
+                  const rect = element => {
+                    const box = element.getBoundingClientRect();
+                    return { left: box.left, right: box.right, top: box.top, bottom: box.bottom, width: box.width };
+                  };
+                  return {
+                    wrap: rect(wrap),
+                    card: rect(card),
+                    status: rect(status),
+                    badges: [...wrap.querySelectorAll(".occ-badge-item")].map(rect),
+                    viewportWidth: document.documentElement.clientWidth
+                  };
+                });
+                assert.ok(geometry, label + ": badge wrapper, card, and existing status row exist at " + width + "px");
+                assert.ok(geometry.wrap.width > 0 && geometry.wrap.right <= width + 1, label + ": badge wrapper stays inside viewport at " + width + "px");
+                assert.ok(geometry.card.left >= -1 && geometry.card.right <= width + 1, label + ": Admin product card does not horizontally overflow at " + width + "px");
+                assert.ok(geometry.badges.every(badge => badge.width <= 112 && badge.left >= geometry.wrap.left - 1 && badge.right <= geometry.wrap.right + 1), label + ": individual badges respect their width and wrapper at " + width + "px");
+                assert.ok(geometry.status.top >= geometry.wrap.bottom - 1, label + ": existing status row remains below badges at " + width + "px");
+                assert.ok(await page.locator("#adminProductsScroll .admin-product-status").first().isVisible(), label + ": existing status flags remain visible at " + width + "px");
+                console.log("PASS " + label + ": Admin occasion badges/status layout at " + width + "px");
+              }
+              await page.setViewportSize(originalViewport);
 
               // Enrich Finder is a closable Products-page popup; closing/reopening preserves the catalogue view.
               assert.equal(await page.locator('[data-view="enrich"]').count(), 0, label + ": no separate Enrich Finder tab");
