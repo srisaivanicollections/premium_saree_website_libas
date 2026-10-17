@@ -10268,7 +10268,7 @@ function ssvEnsureEnrichFinderPopup(){
     if(event.shiftKey&&(document.activeElement===first||!popup.contains(document.activeElement))){event.preventDefault();last.focus();}
     else if(!event.shiftKey&&(document.activeElement===last||!popup.contains(document.activeElement))){event.preventDefault();first.focus();}
   });
-  popup.addEventListener("focusout",()=>{queueMicrotask(()=>{if(!popup.hidden&&!popup.contains(document.activeElement))popup.querySelector("#adminEnrichFinderClose")?.focus();});});
+  // Do not force focus back on focusout: Android/iOS native select menus may temporarily move focus outside the DOM popup. The Tab-key trap above still keeps keyboard navigation contained.
   popup.addEventListener("click",event=>{if(event.target===popup)close();});
   popup.querySelector(".ssv-enrich-popup").addEventListener("click",event=>event.stopPropagation());
   popup.querySelector("#adminEnrichFinder").onclick=async()=>{
@@ -10407,7 +10407,7 @@ async function ssvRenderManualEnrichReviews(result){
     card.querySelectorAll("input,select").forEach(input=>input.disabled=true);
     const remaining=details.querySelectorAll(".ssv-enrich-review-card:not([data-saved='true'])").length;
     card.dataset.saved="true";
-    if(remaining<=1){const instruction=details.querySelector(".ssv-enrich-review-instructions");if(instruction)instruction.textContent="All displayed review items have been saved. You can analyse missing metadata again if needed.";}
+
     ssvRefreshEnrichFinderCounts(products);
    }catch(error){status.textContent="Not saved: "+ssvFinderFailureReason(error);status.dataset.state="error";save.disabled=false;save.textContent="RETRY SAVE";}
   });
