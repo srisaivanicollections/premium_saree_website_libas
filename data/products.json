@@ -143,12 +143,20 @@
     "newArrival": true,
     "bestSeller": true,
     "availability": true,
-    "occasions": [],
+    "occasions": [
+      "Daily Wear"
+    ],
     "occasionMetadata": {
       "source": "ai",
       "model": "CLIP-ViT-B-32",
-      "score": 0.5495,
-      "margin": 0.2861,
+      "score": 0.4641,
+      "margin": 0.2829,
+      "scores": [
+        {
+          "label": "Daily Wear",
+          "score": 0.4641
+        }
+      ],
       "image": "assets/products/1791751841674-b68899c92514-palmona-printed-viscose-satin-midi-dress-with-voluminous-sleeves-5633534.jpg",
       "version": 1
     },
