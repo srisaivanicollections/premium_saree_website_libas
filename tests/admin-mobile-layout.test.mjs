@@ -6,22 +6,29 @@ const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
 const app = await readFile(new URL("../app.js", import.meta.url), "utf8");
 const mobileFix = html.slice(html.lastIndexOf('<style id="ssv-admin-mobile-product-list-regression-20261017">'));
 
-test("Admin product rows remain full-width flex rows", () => {
-  assert.match(mobileFix, /#admin #studioBody \.admin-item\{[\s\S]*?display:flex !important;[\s\S]*?width:100% !important;[\s\S]*?min-width:0 !important;/);
-  assert.match(mobileFix, /#admin #studioBody \.admin-product-main\{[\s\S]*?flex:1 1 (?:auto|0%) !important;[\s\S]*?min-width:0 !important;/);
-  assert.match(mobileFix, /#admin #studioBody \.admin-item > \.danger\{[\s\S]*?flex:0 0 auto !important;/);
+test("Admin product list is a single column and each product row is a stable two-column grid", () => {
+  assert.match(mobileFix, /#admin #adminProductsScroll\.admin-products-scroll\{[\s\S]*?display:flex!important;flex-direction:column!important;[\s\S]*?overflow:visible!important;/);
+  assert.match(mobileFix, /#admin #adminProductsScroll\.admin-products-scroll > \.admin-item\{[\s\S]*?display:grid!important;grid-template-columns:minmax\(0,1fr\) auto!important;[\s\S]*?width:100% !important|width:100%!important/);
+  assert.match(mobileFix, /grid-auto-flow:row!important/);
 });
 
-test("Admin product text can wrap without forcing narrow columns", () => {
-  assert.match(mobileFix, /#admin #studioBody \.admin-product-copy strong\{[\s\S]*?white-space:normal !important;[\s\S]*?overflow-wrap:anywhere !important;/);
-  assert.match(mobileFix, /#admin #studioBody \.admin-product-copy small\{[\s\S]*?white-space:normal !important;/);
-  assert.match(mobileFix, /#admin #studioBody \.admin-product-copy \.admin-product-meta\{[\s\S]*?white-space:normal !important;[\s\S]*?overflow-wrap:anywhere !important;/);
+test("Admin product row keeps thumbnail, copy, and Edit action in separate stable columns", () => {
+  assert.match(mobileFix, /\.admin-product-main\{[\s\S]*?grid-template-columns:44px minmax\(0,1fr\)!important/);
+  assert.match(mobileFix, /\.admin-product-thumb\{[\s\S]*?width:44px!important;min-width:44px!important;max-width:44px!important/);
+  assert.match(mobileFix, /\.admin-product-copy\{[\s\S]*?min-width:0!important;max-width:100%!important/);
+  assert.match(mobileFix, /\.danger\.edit\{[\s\S]*?grid-column:2!important;grid-row:1!important/);
+});
+
+test("Admin product text and metadata wrap within the product copy column", () => {
+  assert.match(mobileFix, /\.admin-product-copy > strong\{[\s\S]*?white-space:normal!important;[\s\S]*?overflow-wrap:anywhere!important/);
+  assert.match(mobileFix, /\.admin-product-meta\{[\s\S]*?white-space:normal!important;[\s\S]*?overflow-wrap:anywhere!important/);
 });
 
 test("occasion badges wrap as intact pills at mobile widths", () => {
-  assert.match(mobileFix, /#admin #studioBody \.admin-occasion-badges,[\s\S]*?flex-wrap:wrap !important;/);
-  assert.match(mobileFix, /#admin #studioBody \.admin-occasion-badge,[\s\S]*?white-space:nowrap !important;[\s\S]*?word-break:normal !important;/);
-  assert.match(mobileFix, /@media\(max-width:600px\)\{[\s\S]*?#admin #studioBody \.admin-product-thumb\{[\s\S]*?height:56px !important;/);
+  assert.match(mobileFix, /\.admin-occasion-badges\{[\s\S]*?flex-wrap:wrap!important/);
+  assert.match(mobileFix, /\.admin-occasion-badge\{[\s\S]*?white-space:normal!important;overflow-wrap:anywhere!important/);
+  assert.match(mobileFix, /@media\(max-width:600px\)\{[\s\S]*?\.admin-product-thumb\{[\s\S]*?height:54px!important/);
+  assert.match(mobileFix, /@media\(max-width:360px\)\{[\s\S]*?\.admin-product-thumb\{[\s\S]*?height:49px!important/);
 });
 
 test("product list keeps Edit actions and preserves selected occasions on save", () => {
