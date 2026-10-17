@@ -10346,7 +10346,7 @@ async function ssvSaveEnrichManualReview(productId,imagePath,{colour,updateOccas
    next.colourMetadata={source:"manual-reviewed",model:"admin-enrich-review",image:String(current.image),version:1,reviewedAt:new Date().toISOString()};
   }
   if(updateOccasion){
-   const existingIsAi=current?.occasionMetadata?.source==="ai"||current?.occasionMetadata?.source==="ai-reviewed";
+   const existingIsAi=current?.occasionMetadata?.source==="ai";
    if((!ssvHasNoOccasionMetadata(current)||!!current.occasionMetadata)&&!existingIsAi)throw new Error("Existing manually maintained occasion tags were preserved. Refresh and review the product before editing them.");
    next.occasions=labels;
    next.occasionMetadata={source:"ai-reviewed",model:"CLIP-ViT-B-32",image:String(current.image),version:1,reviewedAt:new Date().toISOString(),scores:labels.map(label=>({label,score:null}))};
@@ -10355,7 +10355,7 @@ async function ssvSaveEnrichManualReview(productId,imagePath,{colour,updateOccas
   try{
    await githubWriteJson("data/products.json",latest.value,latest.sha,"Save manual Enrich Finder review for product "+current.id);
    const verify=await githubReadJsonFresh("data/products.json"),saved=Array.isArray(verify.value)?verify.value.find(product=>Number(product.id)===Number(current.id)):null;
-   if(!saved||String(saved.image||"")!==String(imagePath||"")||(selectedColour&&(saved.color!==selectedColour||saved.colourMetadata?.source!=="manual-reviewed"))||(updateOccasion&&(JSON.stringify(saved.occasions)!==JSON.stringify(labels)||saved.occasionMetadata?.source!=="ai-reviewed")))throw new Error("Save verification failed. Refresh the catalogue and inspect the product before retrying.");
+   if(!saved||String(saved.image||"")!==String(imagePath||"")||(selectedColour&&(saved.color!==selectedColour||saved.colourMetadata?.source!=="manual-reviewed"||saved.colourMetadata?.image!==String(current.image)))||(updateOccasion&&(JSON.stringify(saved.occasions)!==JSON.stringify(labels)||saved.occasionMetadata?.source!=="ai-reviewed"||saved.occasionMetadata?.image!==String(current.image)))throw new Error("Save verification failed. Refresh the catalogue and inspect the product before retrying.");
    products=verify.value;githubOriginalIds=new Set(products.map(product=>Number(product.id)));return saved;
   }catch(error){if(isGithubShaConflict(error)&&attempt<2){await new Promise(resolve=>setTimeout(resolve,300*(attempt+1)));continue;}throw error;}
  }
