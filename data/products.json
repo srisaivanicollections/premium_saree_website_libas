@@ -193,9 +193,7 @@
     "bestSeller": true,
     "availability": true,
     "dateAdded": "2026-10-11T18:45:00.158Z",
-    "occasions": [
-      "Traditional"
-    ],
+    "occasions": [],
     "occasionMetadata": {
       "source": "ai",
       "model": "CLIP-ViT-B-32",
