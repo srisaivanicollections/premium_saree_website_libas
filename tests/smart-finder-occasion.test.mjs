@@ -221,11 +221,12 @@ test("low-confidence occasions are counted while their top matches are saved wit
 });
 
  
-test("manual colour-review UI and save workflow are removed", () => {
-  assert.doesNotMatch(adminSource, /ssvSaveReviewedColour/);
-  assert.doesNotMatch(adminSource, /colourReviewSuggestions/);
-  assert.doesNotMatch(adminSource, /SAVE REVIEWED COLOUR/);
-  assert.doesNotMatch(adminSource, /Choose the product's actual visible colour/);
+test("manual Enrich Finder review supports colour and occasion corrections", () => {
+  assert.match(adminSource, /async function ssvSaveManualEnrichReview/);
+  assert.match(adminSource, /Confirm colour/);
+  assert.match(adminSource, /Confirm occasion/);
+  assert.match(adminSource, /SAVE REVIEWED METADATA/);
+  assert.match(adminSource, /Save verification failed/);
 });
 
 test("Enrich Finder close animation and final badge sizing overrides exist", () => {
@@ -239,12 +240,11 @@ test("Enrich Finder close animation and final badge sizing overrides exist", () 
 });
 
 
-test("Enrich Finder uses automated inference without a manual colour-review workflow", () => {
+test("Enrich Finder keeps automatic inference and adds a separate manual correction path", () => {
   assert.match(aiSource, /MAX_INFERENCE_PASSES = 3/);
   assert.match(adminSource, /const addColour=needsColour&&\(isJewellery\|\|\(colour\?\.confident===true&&SSV_FINDER_COLOURS\.has\(colour\?\.label\)\)\)/);
-  assert.doesNotMatch(adminSource, /ssvSaveReviewedColour/);
-  assert.doesNotMatch(adminSource, /colourReviewSuggestions/);
-  assert.doesNotMatch(adminSource, /SAVE REVIEWED COLOUR/);
+  assert.match(adminSource, /ssvSaveManualEnrichReview/);
+  assert.match(adminSource, /ssvRenderManualEnrichReviews/);
 });
 
 test("TOP PICK sizing targets the rendered Smart Finder badge without adding popup entrance animation", () => {
