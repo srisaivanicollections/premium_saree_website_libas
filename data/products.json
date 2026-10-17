@@ -12,6 +12,7 @@
     "bestSeller": true,
     "availability": true,
     "occasions": [
+      "Festive",
       "Traditional"
     ],
     "colourMetadata": {
