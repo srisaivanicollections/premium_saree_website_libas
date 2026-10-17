@@ -10377,7 +10377,7 @@ async function ssvRenderEnrichManualReview(result){
  for(const id of ids){
   const product=byId.get(id);if(!product||!isCategoryEnabled(product.category)||!String(product.image||"").trim())continue;
   const needsColour=colourIds.has(id)&&ssvHasNoColour(product);
-  const needsOccasion=occasionIds.has(id)&&(ssvHasNoOccasionMetadata(product)||product?.occasionMetadata?.source==="ai"||product?.occasionMetadata?.source==="ai-reviewed");
+  const needsOccasion=occasionIds.has(id)&&(ssvHasNoOccasionMetadata(product)||product?.occasionMetadata?.source==="ai");
   if(!needsColour&&!needsOccasion)continue;
   const card=document.createElement("article");card.className="ssv-enrich-review-card";card.dataset.productId=String(id);card.dataset.image=String(product.image||"");
   const title=document.createElement("h4");title.textContent=String(product.name||("Product "+id));card.append(title);
