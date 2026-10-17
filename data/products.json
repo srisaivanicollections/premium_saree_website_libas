@@ -11,9 +11,7 @@
     "newArrival": true,
     "bestSeller": true,
     "availability": true,
-    "occasions": [
-      "Traditional"
-    ],
+    "occasions": [],
     "colourMetadata": {
       "source": "ai",
       "model": "CLIP-ViT-B-32",
