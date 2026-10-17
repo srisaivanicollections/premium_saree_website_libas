@@ -136,6 +136,20 @@ test("Enrich Finder reports saved counts, a deduplicated review count, and actio
   assert.match(adminSource, /Processing failures:/);
 });
 
+test("uncertain Enrich Finder metadata has manual controls and verified per-product saves", () => {
+  assert.match(adminSource, /async function ssvSaveManualEnrichReview\(productId,snapshot,fields\)/);
+  assert.match(adminSource, /async function ssvRenderManualEnrichReviews\(result\)/);
+  assert.match(adminSource, /Confirm colour/);
+  assert.match(adminSource, /Confirm occasion \(select all that apply\)/);
+  assert.match(adminSource, /SAVE REVIEWED METADATA/);
+  assert.match(adminSource, /The product image changed\. Re-analyse before reviewing\./);
+  assert.match(adminSource, /This product metadata changed since the review card opened/);
+  assert.match(adminSource, /Save verification failed/);
+  assert.match(adminSource, /uncertainOccasionProductIds/);
+  assert.match(adminSource, /ssvRenderManualEnrichReviews\(result\)\.catch/);
+  assert.match(adminSource, /Manually review Enrich Finder metadata for product/);
+});
+
 test("ambiguous catalogue writes are re-read before reporting an unknown outcome", () => {
   assert.match(adminSource, /Save outcome unknown/);
   assert.match(adminSource, /const recovery=await githubReadJsonFresh\("data\/products\.json"\)/);
