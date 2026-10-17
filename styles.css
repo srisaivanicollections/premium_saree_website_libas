@@ -6230,3 +6230,18 @@ footer .brand b{
     font-size:8px !important;
   }
 }
+
+
+/* The Admin list renders metadata as a DIV, not a SMALL element.
+   Allow category, price and colour text to wrap on narrow screens. */
+#admin #studioBody .admin-product-copy .admin-product-meta{
+  display:block !important;
+  width:100% !important;
+  max-width:100% !important;
+  min-width:0 !important;
+  box-sizing:border-box !important;
+  white-space:normal !important;
+  overflow-wrap:anywhere !important;
+  word-break:normal !important;
+  line-height:1.45 !important;
+}
