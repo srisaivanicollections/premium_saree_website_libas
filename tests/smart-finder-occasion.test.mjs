@@ -97,7 +97,7 @@ test("Enrich Finder link removes the icon underline and safety copy matches curr
   const styleEnd = adminSource.indexOf("</style>", styleStart);
   assert.ok(styleEnd > styleStart && styleEnd < bodyEnd, "Enrich Finder override styles must close before </body>");
   assert.match(adminSource.slice(styleStart, styleEnd), /text-decoration:none!important/);
-  assert.match(adminSource, /Missing occasions use the highest-scoring match\(es\)\. Colour values follow catalogue rules, and saved changes are verified\./);
+  assert.match(adminSource, /Only verified changes are saved\. Review uncertain fields below when needed\./);
   assert.doesNotMatch(adminSource, /Only confident predictions for fields that are still missing are saved\./);
 });
 
