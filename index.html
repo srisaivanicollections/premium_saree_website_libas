@@ -10974,7 +10974,7 @@ async function ssvEnrichFinderCatalogue({allMissing=false,productId=null,onProgr
       if(current.image!==candidate.image){skipped++;stop=true;break;}
       const next={...current};let changed=false;
       if(addOccasion&&ssvHasNoOccasionMetadata(current)&&!ssvHasOccasionDecision(current)){
-       next.occasions=occasionLabels;next.occasionMetadata={source:"ai",model:"CLIP-ViT-B-32",score:Number(occasion.score.toFixed(4)),margin:Number(occasion.margin.toFixed(4)),scores:occasionLabels.map(value=>({label:value,score:Number((occasion.rankings?.find(item=>item.label===value)?.score??occasion.score).toFixed(4))})),image:String(current.image),version:1};changed=true;
+       next.occasions=occasionLabels;next.occasionMetadata={source:"ai",model:"CLIP-ViT-B-32",score:Number(occasion.score.toFixed(4)),margin:Number(occasion.margin.toFixed(4)),scores:occasionLabels.map(value=>({label:value,score:Number((occasion.rankings?.find(item=>ssvOccasionLabel(item.label)===value)?.score??occasion.score).toFixed(4))})),image:String(current.image),version:1};changed=true;
       }
       if(addColour&&ssvHasNoColour(current)){
        next.color=colourToSave;next.colourMetadata=isJewellery?{source:"default",model:"jewellery-default",image:String(current.image),version:1}:colour?.pixelOverride?{source:"ai-pixel",model:"dominant-pixel+CLIP-ViT-B-32",score:Number(colour.pixelEvidence.share.toFixed(4)),margin:Number(colour.pixelEvidence.margin.toFixed(4)),image:String(current.image),version:1}:{source:"ai",model:"CLIP-ViT-B-32",score:Number(colour.score.toFixed(4)),margin:Number(colour.margin.toFixed(4)),image:String(current.image),version:1};changed=true;
