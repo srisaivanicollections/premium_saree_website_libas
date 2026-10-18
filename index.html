@@ -1181,7 +1181,7 @@ footer{padding:40px 34px;border-top:1px solid var(--line);display:flex;justify-c
 
 /* 2. Compact eyebrow label */
 #admin p:first-of-type,
-#admin span:first-of-type,
+#admin span:first-of-type:not(.occ-badge-item),
 #admin .eyebrow,
 #admin small {
   margin-top: 0 !important;
@@ -8932,7 +8932,7 @@ body:not(#admin) [style*="font-size:7px"]{font-size:8px!important}
   display: flex !important;
   flex-wrap: wrap !important;
   align-items: center !important;
-  gap: 4px !important;
+  gap: 3px !important;
   margin: 3px 0 5px 0 !important;
 }
 
@@ -8950,6 +8950,7 @@ body:not(#admin) [style*="font-size:7px"]{font-size:8px!important}
   min-height: 16px !important;
   max-height: 16px !important;
   font-size: 7px !important;
+  font-weight: 500 !important;
   line-height: 1 !important;
   text-transform: uppercase !important;
   letter-spacing: 0.04em !important;

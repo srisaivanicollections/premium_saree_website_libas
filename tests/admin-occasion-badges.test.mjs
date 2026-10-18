@@ -74,19 +74,20 @@ test("places badges after metadata and before the existing status row", () => {
 test("uses only the two required isolated badge selectors and exact required declarations", () => {
   const style = html.match(/<style id="admin-luxury-occasion-badges">([\s\S]*?)<\/style>/)?.[1];
   assert.ok(style, "isolated badge stylesheet exists");
+  assert.match(html, /#admin span:first-of-type:not\(\.occ-badge-item\)/, "generic first-span styling must exclude the first occasion badge");
   assert.deepEqual(Array.from(style.matchAll(/(^|})\s*([^{}]+)\s*\{/g), match => match[2].trim()), [".occ-badge-wrap", ".occ-badge-item"]);
   for (const declaration of [
     "display: flex !important;", "flex-wrap: wrap !important;", "align-items: center !important;",
-    "gap: 4px !important;", "margin: 3px 0 5px 0 !important;",
+    "gap: 3px !important;", "margin: 3px 0 5px 0 !important;",
     "box-sizing: border-box !important;", "display: inline-flex !important;", "flex: 0 0 auto !important;",
     "min-width: 0 !important;", "max-width: 100% !important;", "overflow: hidden !important;", "text-overflow: ellipsis !important;",
     "justify-content: center !important;", "height: 16px !important;", "min-height: 16px !important;",
-    "max-height: 16px !important;", "font-size: 7px !important;", "line-height: 1 !important;",
+    "max-height: 16px !important;", "font-size: 7px !important;", "font-weight: 500 !important;", "line-height: 1 !important;",
     "text-transform: uppercase !important;", "letter-spacing: 0.04em !important;",
     "white-space: nowrap !important;", "padding: 0 5px !important;", "border-radius: 0 !important;",
     "border: 1px solid #EAE0D2 !important;", "background-color: #F8F4EC !important;",
     "color: #8C6D3B !important;"
   ]) assert.ok(style.includes(declaration), "required CSS declaration: " + declaration);
   assert.doesNotMatch(style, /position\\s*:/i);
-  assert.equal((style.match(/!important/g) || []).length, 27, "all required badge declarations must be important");
+  assert.equal((style.match(/!important/g) || []).length, 28, "all required badge declarations must be important");
 });
