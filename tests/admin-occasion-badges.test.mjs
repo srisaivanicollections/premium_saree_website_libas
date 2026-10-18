@@ -76,11 +76,17 @@ test("uses only the two required isolated badge selectors and exact required dec
   assert.ok(style, "isolated badge stylesheet exists");
   assert.deepEqual(Array.from(style.matchAll(/(^|})\s*([^{}]+)\s*\{/g), match => match[2].trim()), [".occ-badge-wrap", ".occ-badge-item"]);
   for (const declaration of [
-    "display: flex;", "flex-wrap: nowrap;", "gap: 3px;", "min-width: 0;", "max-width: 100%;", "overflow: hidden;", "margin: 4px 0 6px 0;",
-    "flex: 0 1 auto;", "max-width: 100%;", "text-overflow: ellipsis;", "white-space: nowrap;",
-    "border: 1px solid #C5A67C;", "border-radius: 999px;", "background: #FAF5EC;",
-    "color: #1C1917;", "font-size: 8px;", "line-height: 1.2;",
-    "letter-spacing: 0.02em;", "text-transform: uppercase;", "padding: 1px 4px;"
+    "display: flex !important;", "flex-wrap: wrap !important;", "align-items: center !important;",
+    "gap: 4px !important;", "margin: 3px 0 5px 0 !important;",
+    "box-sizing: border-box !important;", "display: inline-flex !important;", "flex: 0 0 auto !important;",
+    "min-width: 0 !important;", "max-width: 100% !important;", "overflow: hidden !important;", "text-overflow: ellipsis !important;",
+    "justify-content: center !important;", "height: 16px !important;", "min-height: 16px !important;",
+    "max-height: 16px !important;", "font-size: 7px !important;", "line-height: 1 !important;",
+    "text-transform: uppercase !important;", "letter-spacing: 0.04em !important;",
+    "white-space: nowrap !important;", "padding: 0 5px !important;", "border-radius: 0 !important;",
+    "border: 1px solid #EAE0D2 !important;", "background-color: #F8F4EC !important;",
+    "color: #8C6D3B !important;"
   ]) assert.ok(style.includes(declaration), "required CSS declaration: " + declaration);
-  assert.doesNotMatch(style, /!important|position\\s*:/i);
+  assert.doesNotMatch(style, /position\\s*:/i);
+  assert.equal((style.match(/!important/g) || []).length, 27, "all required badge declarations must be important");
 });
