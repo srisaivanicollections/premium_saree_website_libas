@@ -158,10 +158,25 @@ function strongestPass(results, isConfident) {
   return best;
 }
 
+const MIN_OCCASION_LABEL_SCORE = 0.16;
+const OCCASION_RELATIVE_SCORE_THRESHOLD = 0.68;
+const MAX_OCCASION_LABELS = 3;
+
 function occasionResult(ranked) {
   if (!ranked.length) throw new Error("The image model returned no known occasion labels.");
   const best = ranked[0];
-  const labels = ranked.filter(item => Math.abs(item.score - best.score) <= OCCASION_TIE_TOLERANCE).map(item => item.label);
+  // Keep only labels with meaningful absolute support and close enough to the
+  // top score. This is a ranking heuristic, not a calibrated probability.
+  const threshold = Math.max(MIN_OCCASION_LABEL_SCORE, best.score * OCCASION_RELATIVE_SCORE_THRESHOLD);
+  const labels = ranked
+    .filter(item => item.score >= threshold)
+    .slice(0, MAX_OCCASION_LABELS)
+    .map(item => item.label);
+  if (!labels.length) labels.push(best.label);
+
+  // Confidence remains based on the top prediction's separation from its
+  // runner-up, not the gap after the selected multi-label group. A broad group
+  // must not make an ambiguous top prediction appear confident.
   const nextDistinct = ranked.find(item => item.score < best.score - OCCASION_TIE_TOLERANCE);
   const margin = best.score - Number(nextDistinct?.score || 0);
   return {
