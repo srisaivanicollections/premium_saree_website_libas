@@ -155,9 +155,7 @@
     "newArrival": true,
     "bestSeller": true,
     "availability": true,
-    "occasions": [
-      "Daily Wear"
-    ],
+    "occasions": [],
     "occasionMetadata": {
       "source": "ai",
       "model": "CLIP-ViT-B-32",
