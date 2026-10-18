@@ -11,11 +11,7 @@
     "newArrival": true,
     "bestSeller": true,
     "availability": true,
-    "occasions": [
-      "Festive",
-      "Party Wear",
-      "Traditional"
-    ],
+    "occasions": [],
     "colourMetadata": {
       "source": "ai",
       "model": "CLIP-ViT-B-32",
