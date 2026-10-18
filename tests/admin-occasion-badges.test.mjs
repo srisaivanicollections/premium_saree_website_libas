@@ -74,6 +74,7 @@ test("places badges after metadata and before the existing status row", () => {
 test("uses only the two required isolated badge selectors and exact required declarations", () => {
   const style = html.match(/<style id="admin-luxury-occasion-badges">([\s\S]*?)<\/style>/)?.[1];
   assert.ok(style, "isolated badge stylesheet exists");
+  assert.match(html, /#admin span:first-of-type:not\(\.occ-badge-item\)/, "generic first-span styling must exclude the first occasion badge");
   assert.deepEqual(Array.from(style.matchAll(/(^|})\s*([^{}]+)\s*\{/g), match => match[2].trim()), [".occ-badge-wrap", ".occ-badge-item"]);
   for (const declaration of [
     "display: flex !important;", "flex-wrap: wrap !important;", "align-items: center !important;",
