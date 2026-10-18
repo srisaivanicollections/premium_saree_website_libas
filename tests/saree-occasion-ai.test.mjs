@@ -21,6 +21,43 @@ test("selects the highest valid known occasion prediction", () => {
   assert.equal(isConfidentOccasionPrediction(result), true);
 });
 
+test("selects supported multi-occasion labels without requiring exact score ties", () => {
+  const result = selectOccasionPrediction([
+    { label: prompts.wedding, score: 0.39 },
+    { label: prompts.festive, score: 0.29 },
+    { label: prompts.daily, score: 0.18 },
+    { label: "a saree intended for party wear, evening events or cocktail occasions", score: 0.09 },
+    { label: "a saree intended for traditional cultural or religious occasions", score: 0.05 }
+  ]);
+  assert.deepEqual(result.labels, ["wedding", "festive"]);
+  assert.equal(result.label, "wedding");
+  assert.ok(Math.abs(result.margin - 0.10) < 1e-12);
+  assert.equal(isConfidentOccasionPrediction(result), true);
+});
+
+test("caps inferred occasions at three and preserves manual review for an ambiguous top pair", () => {
+  const result = selectOccasionPrediction([
+    { label: prompts.wedding, score: 0.31 },
+    { label: prompts.festive, score: 0.28 },
+    { label: prompts.daily, score: 0.25 },
+    { label: "a saree intended for party wear, evening events or cocktail occasions", score: 0.21 },
+    { label: "a saree intended for traditional cultural or religious occasions", score: 0.05 }
+  ]);
+  assert.deepEqual(result.labels, ["wedding", "festive", "daily wear"]);
+  assert.equal(result.labels.length, 3);
+  assert.equal(isConfidentOccasionPrediction(result), false);
+});
+
+test("enforces the absolute occasion score floor even when scores are close", () => {
+  const result = selectOccasionPrediction([
+    { label: prompts.wedding, score: 0.12 },
+    { label: prompts.festive, score: 0.11 },
+    { label: prompts.daily, score: 0.08 }
+  ]);
+  assert.deepEqual(result.labels, ["wedding"]);
+  assert.equal(isConfidentOccasionPrediction(result), false);
+});
+
 test("returns all tied top occasions and measures confidence against the next distinct score", () => {
   const result = selectOccasionPrediction([
     { label: prompts.festive, score: 0.392 },
