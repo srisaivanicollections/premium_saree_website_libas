@@ -14992,133 +14992,6 @@ if ("serviceWorker" in navigator) {
     </div>
   </section>
 </div>
-</body>
-
-<style id="sv-review-mobile-full-card-fix-20261013">
-/* Mobile review carousel: show one full card at a time.
-   Scoped to customer reviews; desktop/wide-screen presentation stays unchanged. */
-@media (max-width: 760px) {
-  #reviews.sv-reviews .sv-reviews__track {
-    padding-left: 0 !important;
-    padding-right: 0 !important;
-  }
-  #reviews.sv-reviews .sv-reviews__track .sv-review-card {
-    flex: 0 0 100% !important;
-    width: 100% !important;
-    min-width: 100% !important;
-    max-width: 100% !important;
-    box-sizing: border-box !important;
-  }
-}
-</style>
-
-
-<style id="ssv-admin-enrich-finder-actions-fix-20261014">
-#admin .admin-products-heading-actions{display:flex!important;flex:0 1 auto!important;align-items:center!important;justify-content:flex-end!important;flex-wrap:wrap!important;gap:12px!important;min-width:0!important;margin-left:auto!important}
-#admin .admin-products-heading-actions>#adminEnrichFinderLink{display:inline-flex!important;align-items:center!important;gap:5px!important;min-height:40px!important;padding:8px 0!important;border:0!important;background:transparent!important;color:#80653f!important;font:600 11px/1.3 Montserrat,Inter,Arial,sans-serif!important;letter-spacing:.02em!important;text-decoration:none!important;white-space:nowrap!important;cursor:pointer}
-#admin .admin-products-heading-actions>#adminEnrichFinderLink:hover{color:#493A2B!important}
-#admin .admin-products-heading-actions>#adminAddProduct{display:inline-flex!important;flex:0 0 auto!important;align-items:center!important;justify-content:center!important;width:auto!important;min-width:0!important;min-height:42px!important;margin:0!important;padding:0 12px!important;white-space:nowrap!important;box-sizing:border-box!important}
-.ssv-enrich-popup-backdrop{position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(28,25,23,.58);backdrop-filter:blur(3px);animation:ssvEnrichBackdropIn .2s ease both}
-.ssv-enrich-popup-backdrop[hidden]{display:none!important}
-.ssv-enrich-popup{position:relative;width:min(620px,100%);max-height:min(88vh,800px);overflow:auto;overscroll-behavior:contain;padding:30px 28px 26px;background:#FAF7F2;color:#1C1917;border:1px solid #E4D8C5;box-shadow:0 22px 70px rgba(0,0,0,.28);animation:ssvEnrichPanelIn .28s cubic-bezier(.2,.75,.25,1) both}
-.ssv-enrich-popup h3{margin:0 38px 10px 0;font:500 28px/1.15 "Cormorant Garamond",Georgia,serif}
-.ssv-enrich-popup p{line-height:1.55}
-.ssv-enrich-popup-close{position:absolute;top:12px;right:12px;width:40px;height:40px;border:1px solid #E4D8C5;background:transparent;color:#1C1917;font-size:28px;line-height:1;cursor:pointer}
-.ssv-enrich-count-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:20px 0 12px}
-.ssv-enrich-count-grid>div{min-width:0;padding:14px 12px;border:1px solid #E4D8C5;background:rgba(255,255,255,.55)}
-.ssv-enrich-count-grid strong{display:block;font-size:22px;font-weight:600;font-variant-numeric:tabular-nums}
-.ssv-enrich-count-grid span{display:block;margin-top:6px;font-size:9px;letter-spacing:.08em;line-height:1.35;color:#6F6252}
-.ssv-enrich-safety-note{font-size:12px;color:#6F6252}
-#adminEnrichFinderStatus[data-state="error"]{color:#9b332b}
-#adminEnrichFinderStatus[data-state="success"]{color:#356347}
-#adminEnrichFinderFailures{font-size:12px;line-height:1.5;overflow-wrap:anywhere;min-width:0}#adminEnrichFinderFailures *{box-sizing:border-box;max-width:100%}.ssv-enrich-review-card{min-width:0;max-width:100%;overflow-wrap:anywhere}.ssv-enrich-review-card button{white-space:normal;overflow-wrap:anywhere}.ssv-enrich-review-card label{min-width:0}.ssv-enrich-review-card label span{min-width:0;overflow-wrap:anywhere}
-@media(max-width:600px){
- #admin .admin-products-heading{flex-wrap:wrap!important;align-items:center!important}
- #admin .admin-products-heading>div:first-child{flex:1 1 100%!important;min-width:0!important}
- #admin .admin-products-heading-actions{flex:1 1 100%!important;width:100%!important;justify-content:space-between!important;margin-left:0!important;gap:12px!important}
- #admin .admin-products-heading-actions>#adminEnrichFinderLink{font-size:10px!important}
- #admin .admin-products-heading-actions>#adminAddProduct{min-height:40px!important;padding:0 10px!important;font-size:10px!important}
- .ssv-enrich-popup-backdrop{align-items:flex-end;padding:0}
- .ssv-enrich-popup{width:100%;max-width:100vw;max-height:92dvh;max-height:92vh;padding:28px 18px 24px;border-left:0;border-right:0;border-bottom:0;box-sizing:border-box}
- #adminEnrichFinderPopup .ssv-enrich-review-card{padding:12px!important;margin-top:12px!important}
- #adminEnrichFinderPopup .ssv-enrich-review-image{width:64px!important;height:82px!important;flex-basis:64px!important}
- #adminEnrichFinderPopup .ssv-enrich-review-card button{min-height:44px;padding:10px 12px;line-height:1.35}
- .ssv-enrich-count-grid{gap:7px}
- .ssv-enrich-count-grid>div{padding:11px 8px}
- .ssv-enrich-count-grid strong{font-size:19px}
- .ssv-enrich-count-grid span{font-size:8px}
-}
-</style>
-
-<style id="ssv-admin-finder-polish-20261015">
-#admin .admin-enrich-finder-link{display:inline-flex!important;align-items:center!important;justify-content:center!important;gap:8px!important;padding:10px 0!important;border:0!important;border-bottom:1px solid rgba(179,142,93,.55)!important;color:#806641!important;text-decoration:none!important;font-weight:600!important;line-height:1.25!important;white-space:nowrap!important;transition:color .18s ease,transform .18s ease,border-color .18s ease!important}
-#admin .admin-enrich-finder-link span{display:inline-block!important;transition:transform .18s ease!important}
-#admin .admin-enrich-finder-link:hover span{transform:translateX(3px)!important}
-#admin #adminEnrichFinder:disabled{opacity:.86;cursor:progress}
-#admin #adminEnrichFinder:disabled::after{content:"";position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(100deg,transparent,rgba(255,255,255,.24),transparent);animation:ssvFinderShimmer 1.5s ease-in-out infinite}
-#adminEnrichFinderPopup .ssv-enrich-count-grid>div{animation:ssvFinderFadeIn .35s ease both}
-#adminEnrichFinderPopup .ssv-enrich-count-grid>div:nth-child(2){animation-delay:.06s}
-#adminEnrichFinderPopup .ssv-enrich-count-grid>div:nth-child(3){animation-delay:.12s}
-@keyframes ssvEnrichBackdropIn{from{opacity:0}to{opacity:1}}
-@keyframes ssvEnrichPanelIn{from{opacity:0;transform:translateY(12px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}
-@keyframes ssvFinderShimmer{to{transform:translateX(100%)}}
-@keyframes ssvFinderFadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
-#admin.modal:not(.hidden) #adminClose{display:none!important}
-#admin.modal:not(.hidden):has(#login:not(.hidden)) #adminClose{display:inline-flex!important}
-#admin.modal:not(.hidden):has(#studio.admin-view-add) #adminClose{display:inline-flex!important}
-@media(prefers-reduced-motion:reduce){.ssv-enrich-popup-backdrop,.ssv-enrich-popup,#admin .admin-enrich-finder-link,#admin .admin-enrich-finder-link span,#admin #adminEnrichFinder:disabled::after,#adminEnrichFinderPopup .ssv-enrich-count-grid>div{animation:none!important;transition:none!important}}
-</style>
-
-
-<style id="ssv-enrich-finder-final-polish-20261015">
-/* Size the actual TOP PICK badge rendered by Smart Finder. */
-.ssv-finder-top-pick{
-  box-sizing:border-box!important;display:inline-flex!important;align-items:center!important;
-  min-height:22px!important;max-width:calc(100% - 4px)!important;padding:4px 7px!important;
-  font-size:8px!important;line-height:1.2!important;letter-spacing:.10em!important;
-  font-weight:600!important;white-space:nowrap!important;
-}
-@media(max-width:600px){
-  .ssv-finder-top-pick{
-    min-height:20px!important;padding:3px 5px!important;font-size:8px!important;
-    line-height:1.2!important;letter-spacing:.06em!important;
-  }
-}
-</style>
-
-
-<style id="ssv-enrich-processing-animation-20261015">
-.ssv-enrich-processing{margin:18px 0 14px;padding:16px 14px;border:1px solid #E4D8C5;background:linear-gradient(135deg,rgba(255,255,255,.82),rgba(228,216,197,.24));overflow:hidden}
-.ssv-enrich-processing[hidden]{display:none!important}
-.ssv-enrich-processing-heading{display:flex;align-items:center;gap:9px;color:#6f5430;font-size:13px;line-height:1.4}
-.ssv-enrich-scan-icon{display:inline-flex;align-items:center;justify-content:center;color:#B38E4F;font-size:21px;animation:ssvEnrichSparkle 1.4s ease-in-out infinite}
-.ssv-enrich-progress-track{height:7px;margin-top:14px;border-radius:99px;background:#e9e1d5;overflow:hidden}
-.ssv-enrich-progress-track>span{display:block;width:0;height:100%;border-radius:inherit;background:linear-gradient(90deg,#9b7943,#d2b477,#a98245);background-size:200% 100%;transition:width .32s ease;animation:ssvEnrichGoldFlow 1.6s linear infinite}
-.ssv-enrich-progress-meta{display:flex;justify-content:space-between;gap:12px;margin-top:7px;color:#6f6252;font-size:11px;font-variant-numeric:tabular-nums}
-.ssv-enrich-current-product{display:flex;align-items:center;gap:11px;margin-top:14px;min-width:0}
-.ssv-enrich-current-product[hidden]{display:none!important}
-.ssv-enrich-current-product>img{width:48px;height:62px;flex:0 0 48px;object-fit:contain;border:1px solid #E4D8C5;background:#fff;animation:ssvEnrichImagePulse 1.8s ease-in-out infinite}
-.ssv-enrich-current-product>div{display:grid;gap:4px;min-width:0;flex:1}
-.ssv-enrich-current-product>div strong{font-size:12px;line-height:1.4;overflow-wrap:anywhere}
-.ssv-enrich-current-product>div span{font-size:11px;color:#6f6252}
-.ssv-enrich-live-dots{display:flex;gap:4px;align-items:center;flex:0 0 auto}
-.ssv-enrich-live-dots i{width:5px;height:5px;border-radius:50%;background:#c4a16b;animation:ssvEnrichDot 1s ease-in-out infinite}
-.ssv-enrich-live-dots i:nth-child(2){animation-delay:.15s}.ssv-enrich-live-dots i:nth-child(3){animation-delay:.3s}
-.ssv-enrich-processing-note{display:flex;gap:7px;align-items:flex-start;margin:13px 0 0;font-size:11px;line-height:1.5;color:#6f6252}
-.ssv-enrich-processing-note>span{color:#b38e4f}
-.ssv-enrich-processing.is-complete .ssv-enrich-scan-icon{animation:none;color:#356347}
-.ssv-enrich-processing.is-complete .ssv-enrich-progress-track>span{animation:none;background:#64866b}
-@keyframes ssvEnrichGoldFlow{from{background-position:100% 0}to{background-position:-100% 0}}
-@keyframes ssvEnrichSparkle{0%,100%{transform:rotate(0) scale(.9);opacity:.65}50%{transform:rotate(35deg) scale(1.12);opacity:1}}
-@keyframes ssvEnrichImagePulse{0%,100%{box-shadow:0 0 0 0 rgba(179,142,79,0)}50%{box-shadow:0 0 0 3px rgba(179,142,79,.16)}}
-@keyframes ssvEnrichDot{0%,60%,100%{transform:translateY(0);opacity:.45}30%{transform:translateY(-4px);opacity:1}}
-@media(max-width:600px){.ssv-enrich-processing{padding:13px 11px;margin:14px 0}.ssv-enrich-current-product>img{width:42px;height:56px;flex-basis:42px}}
-@media(prefers-reduced-motion:reduce){.ssv-enrich-scan-icon,.ssv-enrich-progress-track>span,.ssv-enrich-current-product>img,.ssv-enrich-live-dots i{animation:none!important}.ssv-enrich-progress-track>span{transition:none!important}}
-</style>
-</html>
-
-
-
 <style id="ssv-festival-greeting-styles">
 .ssv-festival-greeting-backdrop{position:fixed;inset:0;z-index:2147483100;display:flex;align-items:center;justify-content:center;padding:max(16px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(16px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left));background:rgba(28,25,23,.62);backdrop-filter:blur(3px);overscroll-behavior:contain}
 .ssv-festival-greeting-backdrop[hidden]{display:none!important}
@@ -15260,10 +15133,135 @@ if ("serviceWorker" in navigator) {
     if(previewTitle)previewTitle.textContent=title&&title.value.trim()?title.value.trim():(fallbackTitle[selected]||"Warm festive wishes");
     if(previewMessage)previewMessage.textContent=message&&message.value.trim()?message.value.trim():fallbackMessage;
   }
-  document.addEventListener("change",function(e){if(e.target.matches("#festivalGreetingFestival"))updateAdminPreview();});
-  document.addEventListener("input",function(e){if(e.target.matches("#festivalGreetingTitle,#festivalGreetingMessage"))updateAdminPreview();});
   window.addEventListener("ssv:settings-updated",function(e){checkSettings(e.detail&&e.detail.settings);});
   const readySettings=()=>{if(typeof settings!=="undefined")checkSettings(settings);};
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",readySettings,{once:true});else readySettings();
 })();
 </script>
+</body>
+
+<style id="sv-review-mobile-full-card-fix-20261013">
+/* Mobile review carousel: show one full card at a time.
+   Scoped to customer reviews; desktop/wide-screen presentation stays unchanged. */
+@media (max-width: 760px) {
+  #reviews.sv-reviews .sv-reviews__track {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+  #reviews.sv-reviews .sv-reviews__track .sv-review-card {
+    flex: 0 0 100% !important;
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+}
+</style>
+
+
+<style id="ssv-admin-enrich-finder-actions-fix-20261014">
+#admin .admin-products-heading-actions{display:flex!important;flex:0 1 auto!important;align-items:center!important;justify-content:flex-end!important;flex-wrap:wrap!important;gap:12px!important;min-width:0!important;margin-left:auto!important}
+#admin .admin-products-heading-actions>#adminEnrichFinderLink{display:inline-flex!important;align-items:center!important;gap:5px!important;min-height:40px!important;padding:8px 0!important;border:0!important;background:transparent!important;color:#80653f!important;font:600 11px/1.3 Montserrat,Inter,Arial,sans-serif!important;letter-spacing:.02em!important;text-decoration:none!important;white-space:nowrap!important;cursor:pointer}
+#admin .admin-products-heading-actions>#adminEnrichFinderLink:hover{color:#493A2B!important}
+#admin .admin-products-heading-actions>#adminAddProduct{display:inline-flex!important;flex:0 0 auto!important;align-items:center!important;justify-content:center!important;width:auto!important;min-width:0!important;min-height:42px!important;margin:0!important;padding:0 12px!important;white-space:nowrap!important;box-sizing:border-box!important}
+.ssv-enrich-popup-backdrop{position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(28,25,23,.58);backdrop-filter:blur(3px);animation:ssvEnrichBackdropIn .2s ease both}
+.ssv-enrich-popup-backdrop[hidden]{display:none!important}
+.ssv-enrich-popup{position:relative;width:min(620px,100%);max-height:min(88vh,800px);overflow:auto;overscroll-behavior:contain;padding:30px 28px 26px;background:#FAF7F2;color:#1C1917;border:1px solid #E4D8C5;box-shadow:0 22px 70px rgba(0,0,0,.28);animation:ssvEnrichPanelIn .28s cubic-bezier(.2,.75,.25,1) both}
+.ssv-enrich-popup h3{margin:0 38px 10px 0;font:500 28px/1.15 "Cormorant Garamond",Georgia,serif}
+.ssv-enrich-popup p{line-height:1.55}
+.ssv-enrich-popup-close{position:absolute;top:12px;right:12px;width:40px;height:40px;border:1px solid #E4D8C5;background:transparent;color:#1C1917;font-size:28px;line-height:1;cursor:pointer}
+.ssv-enrich-count-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:20px 0 12px}
+.ssv-enrich-count-grid>div{min-width:0;padding:14px 12px;border:1px solid #E4D8C5;background:rgba(255,255,255,.55)}
+.ssv-enrich-count-grid strong{display:block;font-size:22px;font-weight:600;font-variant-numeric:tabular-nums}
+.ssv-enrich-count-grid span{display:block;margin-top:6px;font-size:9px;letter-spacing:.08em;line-height:1.35;color:#6F6252}
+.ssv-enrich-safety-note{font-size:12px;color:#6F6252}
+#adminEnrichFinderStatus[data-state="error"]{color:#9b332b}
+#adminEnrichFinderStatus[data-state="success"]{color:#356347}
+#adminEnrichFinderFailures{font-size:12px;line-height:1.5;overflow-wrap:anywhere;min-width:0}#adminEnrichFinderFailures *{box-sizing:border-box;max-width:100%}.ssv-enrich-review-card{min-width:0;max-width:100%;overflow-wrap:anywhere}.ssv-enrich-review-card button{white-space:normal;overflow-wrap:anywhere}.ssv-enrich-review-card label{min-width:0}.ssv-enrich-review-card label span{min-width:0;overflow-wrap:anywhere}
+@media(max-width:600px){
+ #admin .admin-products-heading{flex-wrap:wrap!important;align-items:center!important}
+ #admin .admin-products-heading>div:first-child{flex:1 1 100%!important;min-width:0!important}
+ #admin .admin-products-heading-actions{flex:1 1 100%!important;width:100%!important;justify-content:space-between!important;margin-left:0!important;gap:12px!important}
+ #admin .admin-products-heading-actions>#adminEnrichFinderLink{font-size:10px!important}
+ #admin .admin-products-heading-actions>#adminAddProduct{min-height:40px!important;padding:0 10px!important;font-size:10px!important}
+ .ssv-enrich-popup-backdrop{align-items:flex-end;padding:0}
+ .ssv-enrich-popup{width:100%;max-width:100vw;max-height:92dvh;max-height:92vh;padding:28px 18px 24px;border-left:0;border-right:0;border-bottom:0;box-sizing:border-box}
+ #adminEnrichFinderPopup .ssv-enrich-review-card{padding:12px!important;margin-top:12px!important}
+ #adminEnrichFinderPopup .ssv-enrich-review-image{width:64px!important;height:82px!important;flex-basis:64px!important}
+ #adminEnrichFinderPopup .ssv-enrich-review-card button{min-height:44px;padding:10px 12px;line-height:1.35}
+ .ssv-enrich-count-grid{gap:7px}
+ .ssv-enrich-count-grid>div{padding:11px 8px}
+ .ssv-enrich-count-grid strong{font-size:19px}
+ .ssv-enrich-count-grid span{font-size:8px}
+}
+</style>
+
+<style id="ssv-admin-finder-polish-20261015">
+#admin .admin-enrich-finder-link{display:inline-flex!important;align-items:center!important;justify-content:center!important;gap:8px!important;padding:10px 0!important;border:0!important;border-bottom:1px solid rgba(179,142,93,.55)!important;color:#806641!important;text-decoration:none!important;font-weight:600!important;line-height:1.25!important;white-space:nowrap!important;transition:color .18s ease,transform .18s ease,border-color .18s ease!important}
+#admin .admin-enrich-finder-link span{display:inline-block!important;transition:transform .18s ease!important}
+#admin .admin-enrich-finder-link:hover span{transform:translateX(3px)!important}
+#admin #adminEnrichFinder:disabled{opacity:.86;cursor:progress}
+#admin #adminEnrichFinder:disabled::after{content:"";position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(100deg,transparent,rgba(255,255,255,.24),transparent);animation:ssvFinderShimmer 1.5s ease-in-out infinite}
+#adminEnrichFinderPopup .ssv-enrich-count-grid>div{animation:ssvFinderFadeIn .35s ease both}
+#adminEnrichFinderPopup .ssv-enrich-count-grid>div:nth-child(2){animation-delay:.06s}
+#adminEnrichFinderPopup .ssv-enrich-count-grid>div:nth-child(3){animation-delay:.12s}
+@keyframes ssvEnrichBackdropIn{from{opacity:0}to{opacity:1}}
+@keyframes ssvEnrichPanelIn{from{opacity:0;transform:translateY(12px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes ssvFinderShimmer{to{transform:translateX(100%)}}
+@keyframes ssvFinderFadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+#admin.modal:not(.hidden) #adminClose{display:none!important}
+#admin.modal:not(.hidden):has(#login:not(.hidden)) #adminClose{display:inline-flex!important}
+#admin.modal:not(.hidden):has(#studio.admin-view-add) #adminClose{display:inline-flex!important}
+@media(prefers-reduced-motion:reduce){.ssv-enrich-popup-backdrop,.ssv-enrich-popup,#admin .admin-enrich-finder-link,#admin .admin-enrich-finder-link span,#admin #adminEnrichFinder:disabled::after,#adminEnrichFinderPopup .ssv-enrich-count-grid>div{animation:none!important;transition:none!important}}
+</style>
+
+
+<style id="ssv-enrich-finder-final-polish-20261015">
+/* Size the actual TOP PICK badge rendered by Smart Finder. */
+.ssv-finder-top-pick{
+  box-sizing:border-box!important;display:inline-flex!important;align-items:center!important;
+  min-height:22px!important;max-width:calc(100% - 4px)!important;padding:4px 7px!important;
+  font-size:8px!important;line-height:1.2!important;letter-spacing:.10em!important;
+  font-weight:600!important;white-space:nowrap!important;
+}
+@media(max-width:600px){
+  .ssv-finder-top-pick{
+    min-height:20px!important;padding:3px 5px!important;font-size:8px!important;
+    line-height:1.2!important;letter-spacing:.06em!important;
+  }
+}
+</style>
+
+
+<style id="ssv-enrich-processing-animation-20261015">
+.ssv-enrich-processing{margin:18px 0 14px;padding:16px 14px;border:1px solid #E4D8C5;background:linear-gradient(135deg,rgba(255,255,255,.82),rgba(228,216,197,.24));overflow:hidden}
+.ssv-enrich-processing[hidden]{display:none!important}
+.ssv-enrich-processing-heading{display:flex;align-items:center;gap:9px;color:#6f5430;font-size:13px;line-height:1.4}
+.ssv-enrich-scan-icon{display:inline-flex;align-items:center;justify-content:center;color:#B38E4F;font-size:21px;animation:ssvEnrichSparkle 1.4s ease-in-out infinite}
+.ssv-enrich-progress-track{height:7px;margin-top:14px;border-radius:99px;background:#e9e1d5;overflow:hidden}
+.ssv-enrich-progress-track>span{display:block;width:0;height:100%;border-radius:inherit;background:linear-gradient(90deg,#9b7943,#d2b477,#a98245);background-size:200% 100%;transition:width .32s ease;animation:ssvEnrichGoldFlow 1.6s linear infinite}
+.ssv-enrich-progress-meta{display:flex;justify-content:space-between;gap:12px;margin-top:7px;color:#6f6252;font-size:11px;font-variant-numeric:tabular-nums}
+.ssv-enrich-current-product{display:flex;align-items:center;gap:11px;margin-top:14px;min-width:0}
+.ssv-enrich-current-product[hidden]{display:none!important}
+.ssv-enrich-current-product>img{width:48px;height:62px;flex:0 0 48px;object-fit:contain;border:1px solid #E4D8C5;background:#fff;animation:ssvEnrichImagePulse 1.8s ease-in-out infinite}
+.ssv-enrich-current-product>div{display:grid;gap:4px;min-width:0;flex:1}
+.ssv-enrich-current-product>div strong{font-size:12px;line-height:1.4;overflow-wrap:anywhere}
+.ssv-enrich-current-product>div span{font-size:11px;color:#6f6252}
+.ssv-enrich-live-dots{display:flex;gap:4px;align-items:center;flex:0 0 auto}
+.ssv-enrich-live-dots i{width:5px;height:5px;border-radius:50%;background:#c4a16b;animation:ssvEnrichDot 1s ease-in-out infinite}
+.ssv-enrich-live-dots i:nth-child(2){animation-delay:.15s}.ssv-enrich-live-dots i:nth-child(3){animation-delay:.3s}
+.ssv-enrich-processing-note{display:flex;gap:7px;align-items:flex-start;margin:13px 0 0;font-size:11px;line-height:1.5;color:#6f6252}
+.ssv-enrich-processing-note>span{color:#b38e4f}
+.ssv-enrich-processing.is-complete .ssv-enrich-scan-icon{animation:none;color:#356347}
+.ssv-enrich-processing.is-complete .ssv-enrich-progress-track>span{animation:none;background:#64866b}
+@keyframes ssvEnrichGoldFlow{from{background-position:100% 0}to{background-position:-100% 0}}
+@keyframes ssvEnrichSparkle{0%,100%{transform:rotate(0) scale(.9);opacity:.65}50%{transform:rotate(35deg) scale(1.12);opacity:1}}
+@keyframes ssvEnrichImagePulse{0%,100%{box-shadow:0 0 0 0 rgba(179,142,79,0)}50%{box-shadow:0 0 0 3px rgba(179,142,79,.16)}}
+@keyframes ssvEnrichDot{0%,60%,100%{transform:translateY(0);opacity:.45}30%{transform:translateY(-4px);opacity:1}}
+@media(max-width:600px){.ssv-enrich-processing{padding:13px 11px;margin:14px 0}.ssv-enrich-current-product>img{width:42px;height:56px;flex-basis:42px}}
+@media(prefers-reduced-motion:reduce){.ssv-enrich-scan-icon,.ssv-enrich-progress-track>span,.ssv-enrich-current-product>img,.ssv-enrich-live-dots i{animation:none!important}.ssv-enrich-progress-track>span{transition:none!important}}
+</style>
+</html>
+
+
+
