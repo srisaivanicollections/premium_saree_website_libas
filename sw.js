@@ -1,4 +1,4 @@
-const CACHE_NAME = "ssv-offline-v20";
+const CACHE_NAME = "ssv-offline-v21";
 const SCOPE_URL = self.registration.scope;
 const HOME_URL = new URL("./", SCOPE_URL).href;
 const INDEX_URL = new URL("index.html", SCOPE_URL).href;
