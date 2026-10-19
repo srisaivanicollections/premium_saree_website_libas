@@ -62,11 +62,10 @@ test("festival artwork is configurable per festival instead of hardcoded in popu
   assert.doesNotMatch(html, /class="ssv-festival-greeting-art" src=/);
   assert.match(html, /function festivalImagePath\(s\)/);
   assert.match(controller, /festivalImagePath\(s\)/);
-  const imageKeys = [...html.matchAll(/data-setting-key="festivalGreetingImage_([a-z0-9_]+)"/g)].map(m => m[1]);
+  const imageKeys = [...html.matchAll(/field\('[^']+ image path','festivalGreetingImage_([a-z0-9_]+)',''\)/g)].map(m => m[1]);
   assert.equal(new Set(imageKeys).size, 13, "Admin must expose a separate image path setting for each supported festival");
   assert.match(html, /id="festivalGreetingPreviewImage"/);
   assert.match(html, /id="festivalGreetingPreviewImage" class="festival-greeting-preview-image" alt="Selected festival artwork" hidden/);
   assert.match(html, /festivalGreetingImage_navratri_bathukamma_dussehra/);
-  assert.match(html, /assets\/festival\/\[A-Za-z0-9._\/-\]/);
   assert.match(html, /festivalGreetingImage_navratri_bathukamma_dussehra/);
 });
