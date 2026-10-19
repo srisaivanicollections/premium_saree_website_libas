@@ -10682,8 +10682,8 @@ const renderAdminProductList=()=>{
       '<option value="eid" '+(settings.festivalGreetingFestival==='eid'?'selected':'')+'>Eid al-Fitr / Eid al-Adha</option>'+
       '<option value="christmas_new_year" '+(settings.festivalGreetingFestival==='christmas_new_year'?'selected':'')+'>Christmas / New Year</option>'+
       '</select></label>'+
-      field('Greeting title','festivalGreetingTitle','Warm festive wishes')+
-      area('Greeting message','festivalGreetingMessage','May this special occasion bring happiness, peace and beautiful moments to you and your family.')+
+      field('Greeting title','festivalGreetingTitle','')+
+      area('Greeting message','festivalGreetingMessage','')+
       '<label class="admin-setting-field"><span>Start date (optional)</span><input type="date" data-setting-key="festivalGreetingStartDate" value="'+val('festivalGreetingStartDate')+'"></label>'+
       '<label class="admin-setting-field"><span>End date (optional)</span><input type="date" data-setting-key="festivalGreetingEndDate" value="'+val('festivalGreetingEndDate')+'"></label>'+
       '<div class="festival-greeting-admin-preview" aria-live="polite"><p class="admin-settings-intro">Preview</p><div class="festival-greeting-admin-preview-card"><p class="festival-greeting-preview-brand">SRI SAI VANI COLLECTIONS</p><h3 id="festivalGreetingPreviewTitle">Warm festive wishes</h3><p id="festivalGreetingPreviewMessage">May this special occasion bring happiness, peace and beautiful moments to you and your family.</p><p class="festival-greeting-preview-note">Text-only preview. The popup uses the saved festival selection.</p></div><button type="button" class="btn dark" id="previewFestivalGreeting">PREVIEW POPUP</button></div>'+
@@ -15096,8 +15096,21 @@ if ("serviceWorker" in navigator) {
     if(title)title.textContent=s.festivalGreetingTitle||(fallback?fallback[0]:"Warm festive wishes");
     if(message)message.textContent=s.festivalGreetingMessage||(fallback?fallback[1]:"May this special occasion bring happiness, peace and beautiful moments to you and your family.");
   }
+  let previousFestivalValue="";
+  document.addEventListener("focusin",e=>{if(e.target&&e.target.id==="festivalGreetingFestival")previousFestivalValue=e.target.value;});
+  document.addEventListener("change",e=>{
+    if(!e.target||!e.target.dataset||!/^festivalGreeting/.test(e.target.dataset.settingKey||""))return;
+    if(e.target.id==="festivalGreetingFestival"){
+      const prior=defaults[previousFestivalValue],next=defaults[e.target.value];
+      const title=document.querySelector('[data-setting-key="festivalGreetingTitle"]');
+      const message=document.querySelector('[data-setting-key="festivalGreetingMessage"]');
+      if(title&&(!title.value.trim()||(prior&&title.value.trim()===prior[0])))title.value=next?next[0]:"";
+      if(message&&(!message.value.trim()||(prior&&message.value.trim()===prior[1])))message.value=next?next[1]:"";
+      previousFestivalValue=e.target.value;
+    }
+    updatePreview();
+  });
   document.addEventListener("input",e=>{if(e.target&&e.target.dataset&&/^festivalGreeting/.test(e.target.dataset.settingKey||""))updatePreview();});
-  document.addEventListener("change",e=>{if(e.target&&e.target.dataset&&/^festivalGreeting/.test(e.target.dataset.settingKey||""))updatePreview();});
   document.addEventListener("click",e=>{if(e.target&&e.target.id==="previewFestivalGreeting"){e.preventDefault();const s=adminConfig(),fallback=defaults[s.festivalGreetingFestival];s.festivalGreetingTitle=s.festivalGreetingTitle||(fallback&&fallback[0]||"Warm festive wishes");s.festivalGreetingMessage=s.festivalGreetingMessage||(fallback&&fallback[1]||"May this special occasion bring happiness, peace and beautiful moments to you and your family.");show(s,true);}});
   updatePreview();
 })();
