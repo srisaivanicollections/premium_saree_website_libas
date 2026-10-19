@@ -1,0 +1,45 @@
+/* Shared text-based brand mark. Existing header sizing rules remain the responsive source of truth. */
+.brand-logo{
+  display:inline-flex;
+  flex-direction:column;
+  align-items:flex-start;
+  color:#1C1917;
+  text-decoration:none;
+}
+.brand-logo b{
+  display:block;
+  margin:0;
+  color:#1C1917;
+  font-family:"Cormorant Garamond",Georgia,serif;
+  font-size:21px;
+  line-height:.85;
+  letter-spacing:.12em;
+  font-weight:500;
+}
+.brand-logo small{
+  display:block;
+  margin-top:7px;
+  color:#78716C;
+  font-family:"Inter",Arial,sans-serif;
+  font-size:7px;
+  line-height:1;
+  letter-spacing:.31em;
+  font-weight:400;
+}
+.brand-logo--popup{
+  align-items:center;
+  margin:0 0 18px;
+  padding:0 0 10px;
+  border-bottom:1px solid #B38E5D;
+  color:#1C1917;
+}
+.brand-logo--popup b{font-size:21px}
+.brand-logo--popup small{font-size:7px}
+.festival-greeting-admin-preview-card .brand-logo{
+  align-items:center;
+  margin:0 0 12px;
+  padding:0 0 8px;
+  border-bottom:1px solid #B38E5D;
+}
+.festival-greeting-admin-preview-card .brand-logo b{font-size:16px}
+.festival-greeting-admin-preview-card .brand-logo small{font-size:6px}
