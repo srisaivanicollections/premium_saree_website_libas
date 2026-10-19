@@ -10682,14 +10682,13 @@ const renderAdminProductList=()=>{
     {const digits=String(settings.whatsapp||"").replace(/\D/g,"").replace(/^91(?=\d{10}$)/,"").slice(-10);settingsFormBaseline.whatsapp=digits.length===10?"91"+digits:"";}
     settingsFormBaseline.instagram=$("#setIg")?.value.trim()||"";
     // Greeting defaults are presentation-only until the admin enables the feature.
-    ["festivalGreetingFestival","festivalGreetingImage","festivalGreetingTitle","festivalGreetingMessage","festivalGreetingStartDate","festivalGreetingEndDate"].forEach(key=>{settingsFormBaseline[key]=String(settings[key]||"");});
     settingsFormBaseline.festivalGreetingEnabled=!!settings.festivalGreetingEnabled;
     (function initFestivalGreetingControls(){
       const festival=$("#festivalGreetingFestival"),image=$("#festivalGreetingImage");
       if(!festival||!image)return;
       const map={"Diwali":"assets/festival-greetings/diwali.svg","Sankranti":"assets/festival-greetings/sankranti.svg","Ugadi":"assets/festival-greetings/ugadi.svg","Dasara":"assets/festival-greetings/dasara.svg","Bathukamma":"assets/festival-greetings/bathukamma.svg","Eid":"assets/festival-greetings/eid.svg","Christmas":"assets/festival-greetings/christmas.svg","New Year":"assets/festival-greetings/new-year.svg","Vinayaka Chavithi":"assets/festival-greetings/vinayaka-chavithi.svg","Navaratri":"assets/festival-greetings/navaratri.svg"};
       const update=()=>{const f=festival.value in map?festival.value:"Diwali";image.replaceChildren(new Option(f,map[f],true,true));image.value=map[f];const pi=$("#festivalGreetingPreviewImage"),pt=$("#festivalGreetingPreviewTitle"),pm=$("#festivalGreetingPreviewMessage");if(pi){pi.src=map[f];pi.alt=f+" decorative festival artwork";}if(pt)pt.textContent=$("#festivalGreetingTitle")?.value.trim()||({"Diwali":"Wishing you a bright and joyful Diwali","Sankranti":"Warm wishes for a joyful Sankranti","Ugadi":"Wishing you a happy and prosperous Ugadi","Dasara":"Warm wishes for a blessed Dasara","Bathukamma":"Happy Bathukamma","Eid":"Eid Mubarak","Christmas":"Merry Christmas","New Year":"Wishing you a wonderful New Year","Vinayaka Chavithi":"Happy Vinayaka Chavithi","Navaratri":"Warm wishes for a joyful Navaratri"}[f]||"Warm festive wishes");if(pm)pm.textContent=$("#festivalGreetingMessage")?.value.trim()||"May this special occasion bring happiness, peace and beautiful moments to you and your family.";};
-      festival.addEventListener("change",update);$("#festivalGreetingTitle")?.addEventListener("input",update);$("#festivalGreetingMessage")?.addEventListener("input",update);update();
+      festival.addEventListener("change",update);$("#festivalGreetingTitle")?.addEventListener("input",update);$("#festivalGreetingMessage")?.addEventListener("input",update);update();settingsFormBaseline.festivalGreetingImage=image.value||"";
     })();
     renderImageDangerZone();
   }
