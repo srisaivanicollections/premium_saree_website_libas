@@ -40,5 +40,11 @@
   "showStore": true,
   "shippingAnnouncementText": "SHIPPING AVAILABLE  •  NO CASH ON DELIVERY  •    NO EXCHANGE  •  NO RETURN  •",
   "showShippingAnnouncement": true,
-  "categoryJewelryEnabled": false
+  "categoryJewelryEnabled": false,
+  "festivalGreetingEnabled": true,
+  "festivalGreetingFestival": "navratri_bathukamma_dussehra",
+  "festivalGreetingTitle": "Happy Dussehra",
+  "festivalGreetingMessage": "May this Dussehra bring happiness, prosperity, and new beginnings to you and your family.",
+  "festivalGreetingStartDate": "2026-10-20",
+  "festivalGreetingEndDate": "2026-10-20"
 }
