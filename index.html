@@ -10660,7 +10660,17 @@ const renderAdminProductList=()=>{
       '<details class="admin-settings-group"><summary>Shipping Announcement</summary><div class="admin-settings-grid">'+
       '<p class="admin-settings-help admin-shipping-announcement-help">Use • to separate phrases. It displays as ✦ on the website.</p>'+
       area('Announcement text','shippingAnnouncementText','SHIPPING AVAILABLE • NO CASH ON DELIVERY')+
-      '</div><div class="admin-settings-toggles">'+
+      '<details class="admin-settings-group" id="festivalGreetingSettings"><summary>Festival Greeting Popup</summary><div class="admin-settings-grid">'+
+      toggle('Enable festival greeting popup','festivalGreetingEnabled',false)+
+      '<label class="admin-setting-field"><span>Festival</span><select id="festivalGreetingFestival" data-setting-key="festivalGreetingFestival">'+
+      ['Diwali','Sankranti','Ugadi','Dasara','Bathukamma','Eid','Christmas','New Year','Vinayaka Chavithi','Navaratri'].map((festival,i)=>'<option value="'+festival+'" '+((settings.festivalGreetingFestival||'Diwali')===festival?'selected':'')+'>'+festival+'</option>').join('')+
+      '</select></label>'+
+      '<label class="admin-setting-field"><span>Festival artwork</span><select id="festivalGreetingImage" data-setting-key="festivalGreetingImage"></select></label>'+
+      '<label class="admin-setting-field"><span>Greeting title</span><input id="festivalGreetingTitle" maxlength="100" data-setting-key="festivalGreetingTitle" value="'+val('festivalGreetingTitle','Wishing you a joyful celebration')+'"></label>'+
+      '<label class="admin-setting-field"><span>Greeting message</span><textarea id="festivalGreetingMessage" rows="3" maxlength="300" data-setting-key="festivalGreetingMessage">'+val('festivalGreetingMessage','May this special occasion bring happiness, peace and beautiful moments to you and your family.')+'</textarea></label>'+
+      '<label class="admin-setting-field"><span>Start date (optional)</span><input type="date" id="festivalGreetingStartDate" data-setting-key="festivalGreetingStartDate" value="'+val('festivalGreetingStartDate')+'"></label>'+
+      '<label class="admin-setting-field"><span>End date (optional)</span><input type="date" id="festivalGreetingEndDate" data-setting-key="festivalGreetingEndDate" value="'+val('festivalGreetingEndDate')+'"></label>'+
+      '</div><div class="festival-greeting-admin-preview"><p class="admin-settings-intro">Live preview</p><div class="festival-greeting-admin-preview-card"><img id="festivalGreetingPreviewImage" src="assets/festival-greetings/diwali.svg" alt="Selected festival artwork"><div><p class="festival-greeting-admin-brand">Sri Sai Vani Collections</p><h3 id="festivalGreetingPreviewTitle">Wishing you a joyful celebration</h3><p id="festivalGreetingPreviewMessage">May this special occasion bring happiness, peace and beautiful moments to you and your family.</p></div></div></div></details>'+'</div><div class="admin-settings-toggles">'+
       toggle('Show shipping announcement','showShippingAnnouncement')+
       '</div></details>'+
       '<details class="admin-settings-group"><summary>Section Visibility</summary><div class="admin-settings-toggles">'+
@@ -10671,6 +10681,16 @@ const renderAdminProductList=()=>{
     settingsFormBaseline.name=$("#setName")?.value.trim()||"SRI SAI VANI";
     {const digits=String(settings.whatsapp||"").replace(/\D/g,"").replace(/^91(?=\d{10}$)/,"").slice(-10);settingsFormBaseline.whatsapp=digits.length===10?"91"+digits:"";}
     settingsFormBaseline.instagram=$("#setIg")?.value.trim()||"";
+    // Greeting defaults are presentation-only until the admin enables the feature.
+    ["festivalGreetingFestival","festivalGreetingImage","festivalGreetingTitle","festivalGreetingMessage","festivalGreetingStartDate","festivalGreetingEndDate"].forEach(key=>{settingsFormBaseline[key]=String(settings[key]||"");});
+    settingsFormBaseline.festivalGreetingEnabled=!!settings.festivalGreetingEnabled;
+    (function initFestivalGreetingControls(){
+      const festival=$("#festivalGreetingFestival"),image=$("#festivalGreetingImage");
+      if(!festival||!image)return;
+      const map={"Diwali":"assets/festival-greetings/diwali.svg","Sankranti":"assets/festival-greetings/sankranti.svg","Ugadi":"assets/festival-greetings/ugadi.svg","Dasara":"assets/festival-greetings/dasara.svg","Bathukamma":"assets/festival-greetings/bathukamma.svg","Eid":"assets/festival-greetings/eid.svg","Christmas":"assets/festival-greetings/christmas.svg","New Year":"assets/festival-greetings/new-year.svg","Vinayaka Chavithi":"assets/festival-greetings/vinayaka-chavithi.svg","Navaratri":"assets/festival-greetings/navaratri.svg"};
+      const update=()=>{const f=festival.value in map?festival.value:"Diwali";image.replaceChildren(new Option(f,map[f],true,true));image.value=map[f];const pi=$("#festivalGreetingPreviewImage"),pt=$("#festivalGreetingPreviewTitle"),pm=$("#festivalGreetingPreviewMessage");if(pi){pi.src=map[f];pi.alt=f+" decorative festival artwork";}if(pt)pt.textContent=$("#festivalGreetingTitle")?.value.trim()||({"Diwali":"Wishing you a bright and joyful Diwali","Sankranti":"Warm wishes for a joyful Sankranti","Ugadi":"Wishing you a happy and prosperous Ugadi","Dasara":"Warm wishes for a blessed Dasara","Bathukamma":"Happy Bathukamma","Eid":"Eid Mubarak","Christmas":"Merry Christmas","New Year":"Wishing you a wonderful New Year","Vinayaka Chavithi":"Happy Vinayaka Chavithi","Navaratri":"Warm wishes for a joyful Navaratri"}[f]||"Warm festive wishes");if(pm)pm.textContent=$("#festivalGreetingMessage")?.value.trim()||"May this special occasion bring happiness, peace and beautiful moments to you and your family.";};
+      festival.addEventListener("change",update);$("#festivalGreetingTitle")?.addEventListener("input",update);$("#festivalGreetingMessage")?.addEventListener("input",update);update();
+    })();
     renderImageDangerZone();
   }
 }
@@ -11678,6 +11698,16 @@ document.addEventListener("click",async e=>{const t=e.target.closest("[data-tab]
   const changedSettings={};
   for(const [key,value] of Object.entries(nextSettings)){
     if(JSON.stringify(value)!==JSON.stringify(settingsFormBaseline[key]))changedSettings[key]=value;
+  }
+  if(nextSettings.festivalGreetingEnabled===true){
+    const festival=String(nextSettings.festivalGreetingFestival||"");
+    const image=String(nextSettings.festivalGreetingImage||"");
+    if(!festival||!image||!String(nextSettings.festivalGreetingTitle||"").trim()||!String(nextSettings.festivalGreetingMessage||"").trim()){
+      showAdminToast("Choose a festival, artwork, title and message before enabling the greeting.","error");return;
+    }
+    if(!settings.festivalGreetingEnabled){
+      ["festivalGreetingFestival","festivalGreetingImage","festivalGreetingTitle","festivalGreetingMessage","festivalGreetingStartDate","festivalGreetingEndDate"].forEach(key=>{changedSettings[key]=nextSettings[key]??"";});
+    }
   }
   if(!Object.keys(changedSettings).length){showAdminToast("No changes to save.","success");return;}
   const btn=e.target;
@@ -14936,6 +14966,18 @@ if ("serviceWorker" in navigator) {
 #adminEnrichFinderFailures .ssv-enrich-review-status[data-state="error"]{color:#a32121}
 #adminEnrichFinderFailures .ssv-enrich-review-card button{width:100%;min-height:44px}
 </style>
+<div id="ssv-festival-greeting" class="ssv-festival-greeting-backdrop" hidden>
+  <section class="ssv-festival-greeting-dialog" role="dialog" aria-modal="true" aria-labelledby="ssv-festival-greeting-title" aria-describedby="ssv-festival-greeting-message" tabindex="-1">
+    <button type="button" class="ssv-festival-greeting-close" aria-label="Close festival greeting">×</button>
+    <img class="ssv-festival-greeting-art" id="ssv-festival-greeting-art" src="" alt="" decoding="async">
+    <div class="ssv-festival-greeting-copy">
+      <p class="ssv-festival-greeting-brand">Sri Sai Vani Collections</p>
+      <h2 id="ssv-festival-greeting-title"></h2>
+      <p id="ssv-festival-greeting-message"></p>
+      <button type="button" class="ssv-festival-greeting-continue">Continue Shopping</button>
+    </div>
+  </section>
+</div>
 </body>
 
 <style id="sv-review-mobile-full-card-fix-20261013">
@@ -15062,3 +15104,152 @@ if ("serviceWorker" in navigator) {
 </html>
 
 
+
+<style id="ssv-festival-greeting-styles">
+.ssv-festival-greeting-backdrop{position:fixed;inset:0;z-index:2147483100;display:flex;align-items:center;justify-content:center;padding:max(16px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(16px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left));background:rgba(28,25,23,.62);backdrop-filter:blur(3px);overscroll-behavior:contain}
+.ssv-festival-greeting-backdrop[hidden]{display:none!important}
+.ssv-festival-greeting-dialog{position:relative;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:center;gap:0;width:min(760px,100%);max-height:min(88dvh,760px);overflow:auto;overscroll-behavior:contain;border:1px solid #E4D8C5;border-radius:18px;background:#FAF7F2;color:#1C1917;box-shadow:0 28px 90px rgba(0,0,0,.3);animation:ssvFestivalGreetingIn .24s ease-out both}
+.ssv-festival-greeting-art{display:block;width:100%;height:100%;min-height:320px;max-height:520px;object-fit:contain;padding:18px;background:#F4EFEA}
+.ssv-festival-greeting-copy{padding:38px 34px;text-align:center}
+.ssv-festival-greeting-brand{margin:0 0 16px;color:#8B6D43;font:500 12px/1.4 "Cormorant Garamond",Georgia,serif;letter-spacing:.14em}
+.ssv-festival-greeting-copy h2{margin:0 0 14px;font:500 clamp(30px,4vw,44px)/1.05 "Cormorant Garamond",Georgia,serif;letter-spacing:-.025em}
+.ssv-festival-greeting-copy>p:not(.ssv-festival-greeting-brand){margin:0 auto 24px;max-width:32ch;color:#625950;font:400 13px/1.8 Inter,Arial,sans-serif}
+.ssv-festival-greeting-close{position:absolute;top:10px;right:10px;z-index:2;display:grid;place-items:center;width:44px;height:44px;border:1px solid #E4D8C5;border-radius:50%;background:rgba(250,247,242,.94);color:#1C1917;font:300 30px/1 Inter,Arial,sans-serif;cursor:pointer}
+.ssv-festival-greeting-continue{min-height:46px;padding:12px 22px;border:1px solid #1C1917;border-radius:2px;background:#1C1917;color:#FAF7F2;font:500 10px/1.2 Inter,Arial,sans-serif;letter-spacing:.12em;text-transform:uppercase;cursor:pointer}
+.ssv-festival-greeting-continue:hover{background:#B38E5D;border-color:#B38E5D;color:#1C1917}
+.ssv-festival-greeting-close:focus-visible,.ssv-festival-greeting-continue:focus-visible{outline:2px solid #B38E5D;outline-offset:3px}
+.festival-greeting-admin-preview{padding:16px;border-top:1px solid var(--line)}
+.festival-greeting-admin-preview-card{display:grid;grid-template-columns:minmax(120px,220px) minmax(0,1fr);align-items:center;gap:18px;padding:14px;border:1px solid var(--line);background:#fffaf5}
+.festival-greeting-admin-preview-card img{width:100%;max-height:180px;object-fit:contain;background:#F4EFEA}
+.festival-greeting-admin-brand{margin:0 0 8px;color:#8B6D43;font:500 11px/1.4 "Cormorant Garamond",Georgia,serif;letter-spacing:.1em}
+.festival-greeting-admin-preview-card h3{margin:0 0 8px;font:500 24px/1.1 "Cormorant Garamond",Georgia,serif}
+.festival-greeting-admin-preview-card p:last-child{margin:0;color:#625950;font-size:12px;line-height:1.6}
+@keyframes ssvFestivalGreetingIn{from{opacity:0;transform:translateY(8px) scale(.99)}to{opacity:1;transform:translateY(0) scale(1)}}
+@media(max-width:640px){.ssv-festival-greeting-backdrop{padding:12px}.ssv-festival-greeting-dialog{grid-template-columns:minmax(0,1fr);width:min(440px,100%);max-height:calc(100dvh - 24px);border-radius:14px}.ssv-festival-greeting-art{height:auto;min-height:0;max-height:38dvh;padding:12px}.ssv-festival-greeting-copy{padding:22px 22px 24px}.ssv-festival-greeting-brand{margin-bottom:10px}.ssv-festival-greeting-copy h2{font-size:clamp(28px,8vw,36px);margin-bottom:9px}.ssv-festival-greeting-copy>p:not(.ssv-festival-greeting-brand){margin-bottom:16px;font-size:12px;line-height:1.65}.ssv-festival-greeting-close{top:8px;right:8px;width:42px;height:42px}.festival-greeting-admin-preview-card{grid-template-columns:minmax(0,1fr);gap:12px}.festival-greeting-admin-preview-card img{max-height:140px}}
+@media(prefers-reduced-motion:reduce){.ssv-festival-greeting-dialog{animation:none}}
+</style>
+
+<script id="ssv-festival-greeting-controller">
+(function(){
+  "use strict";
+  if(window.__SSV_FESTIVAL_GREETING_BOUND)return;
+  window.__SSV_FESTIVAL_GREETING_BOUND=true;
+  const festivals={
+    "Diwali":"assets/festival-greetings/diwali.svg",
+    "Sankranti":"assets/festival-greetings/sankranti.svg",
+    "Ugadi":"assets/festival-greetings/ugadi.svg",
+    "Dasara":"assets/festival-greetings/dasara.svg",
+    "Bathukamma":"assets/festival-greetings/bathukamma.svg",
+    "Eid":"assets/festival-greetings/eid.svg",
+    "Christmas":"assets/festival-greetings/christmas.svg",
+    "New Year":"assets/festival-greetings/new-year.svg",
+    "Vinayaka Chavithi":"assets/festival-greetings/vinayaka-chavithi.svg",
+    "Navaratri":"assets/festival-greetings/navaratri.svg"
+  };
+  const fallbackTitle={
+    "Diwali":"Wishing you a bright and joyful Diwali",
+    "Sankranti":"Warm wishes for a joyful Sankranti",
+    "Ugadi":"Wishing you a happy and prosperous Ugadi",
+    "Dasara":"Warm wishes for a blessed Dasara",
+    "Bathukamma":"Happy Bathukamma",
+    "Eid":"Eid Mubarak",
+    "Christmas":"Merry Christmas",
+    "New Year":"Wishing you a wonderful New Year",
+    "Vinayaka Chavithi":"Happy Vinayaka Chavithi",
+    "Navaratri":"Warm wishes for a joyful Navaratri"
+  };
+  const fallbackMessage="May this special occasion bring happiness, peace and beautiful moments to you and your family.";
+  const backdrop=document.getElementById("ssv-festival-greeting");
+  if(!backdrop)return;
+  const dialog=backdrop.querySelector(".ssv-festival-greeting-dialog");
+  const closeButton=backdrop.querySelector(".ssv-festival-greeting-close");
+  const continueButton=backdrop.querySelector(".ssv-festival-greeting-continue");
+  const art=document.getElementById("ssv-festival-greeting-art");
+  let lastFocus=null,previousOverflow="",previousInert=[];
+  function localDateString(){const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
+  function cleanText(value,max){return String(value||"").trim().slice(0,max);}
+  function configKey(s){return [s.festivalGreetingFestival,s.festivalGreetingImage,s.festivalGreetingTitle,s.festivalGreetingMessage,s.festivalGreetingStartDate,s.festivalGreetingEndDate].map(v=>String(v||"")).join("|");}
+  function validConfig(s){
+    if(s.festivalGreetingEnabled!==true||!Object.prototype.hasOwnProperty.call(festivals,s.festivalGreetingFestival))return false;
+    if(s.festivalGreetingImage!==festivals[s.festivalGreetingFestival])return false;
+    if(!cleanText(s.festivalGreetingTitle,100)||!cleanText(s.festivalGreetingMessage,300))return false;
+    const today=localDateString(),start=String(s.festivalGreetingStartDate||""),end=String(s.festivalGreetingEndDate||"");
+    if(start&&(!/^\d{4}-\d{2}-\d{2}$/.test(start)||today<start))return false;
+    if(end&&(!/^\d{4}-\d{2}-\d{2}$/.test(end)||today>end))return false;
+    if(start&&end&&start>end)return false;
+    return true;
+  }
+  function closePopup(){
+    if(backdrop.hidden)return;
+    backdrop.hidden=true;
+    document.body.style.overflow=previousOverflow;
+    previousInert.forEach(item=>{item.el.inert=item.inert;});
+    previousInert=[];
+    document.removeEventListener("keydown",onKeyDown,true);
+    if(lastFocus&&typeof lastFocus.focus==="function")lastFocus.focus({preventScroll:true});
+    lastFocus=null;
+  }
+  function onKeyDown(e){
+    if(backdrop.hidden)return;
+    if(e.key==="Escape"){e.preventDefault();e.stopPropagation();closePopup();return;}
+    if(e.key!=="Tab")return;
+    const items=Array.from(dialog.querySelectorAll('button:not([disabled]),a[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])')).filter(el=>!el.hidden);
+    if(!items.length){e.preventDefault();dialog.focus();return;}
+    const first=items[0],last=items[items.length-1];
+    if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}
+    else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}
+  }
+  function openPopup(s,key){
+    const sessionKey="ssv_festival_greeting_seen_v1:"+key;
+    try{if(sessionStorage.getItem(sessionKey)==="1")return;}catch(_){}
+    const src=festivals[s.festivalGreetingFestival];
+    art.onerror=function(){closePopup();};
+    art.src=src;art.alt=s.festivalGreetingFestival+" decorative festival artwork";
+    document.getElementById("ssv-festival-greeting-title").textContent=cleanText(s.festivalGreetingTitle,100);
+    document.getElementById("ssv-festival-greeting-message").textContent=cleanText(s.festivalGreetingMessage,300);
+    lastFocus=document.activeElement;
+    previousOverflow=document.body.style.overflow;
+    previousInert=Array.from(document.body.children).filter(el=>el!==backdrop).map(el=>({el,inert:el.inert}));
+    previousInert.forEach(item=>{item.el.inert=true;});
+    document.body.style.overflow="hidden";
+    backdrop.hidden=false;
+    document.addEventListener("keydown",onKeyDown,true);
+    try{sessionStorage.setItem(sessionKey,"1");}catch(_){}
+    closeButton.focus({preventScroll:true});
+  }
+  function checkSettings(s){
+    if(!s||document.getElementById("admin")&&!document.getElementById("admin").classList.contains("hidden"))return;
+    if(!validConfig(s))return;
+    openPopup(s,configKey(s));
+  }
+  closeButton.addEventListener("click",closePopup);
+  continueButton.addEventListener("click",closePopup);
+  backdrop.addEventListener("click",function(e){if(e.target===backdrop)closePopup();});
+  function updateAdminPreview(){
+    const festival=document.getElementById("festivalGreetingFestival");
+    const image=document.getElementById("festivalGreetingImage");
+    if(!festival||!image)return;
+    const selected=festival.value in festivals?festival.value:"Diwali";
+    const expected=festivals[selected];
+    if(!Array.from(image.options).some(option=>option.value===expected)){
+      image.replaceChildren(new Option(selected,expected,true,true));
+    }else{
+      Array.from(image.options).forEach(option=>{option.hidden=option.value!==expected;});
+      image.value=expected;
+    }
+    const title=document.getElementById("festivalGreetingTitle");
+    const message=document.getElementById("festivalGreetingMessage");
+    const previewImage=document.getElementById("festivalGreetingPreviewImage");
+    const previewTitle=document.getElementById("festivalGreetingPreviewTitle");
+    const previewMessage=document.getElementById("festivalGreetingPreviewMessage");
+    if(previewImage){previewImage.src=image.value||expected;previewImage.alt=selected+" decorative festival artwork";}
+    if(previewTitle)previewTitle.textContent=title&&title.value.trim()?title.value.trim():(fallbackTitle[selected]||"Warm festive wishes");
+    if(previewMessage)previewMessage.textContent=message&&message.value.trim()?message.value.trim():fallbackMessage;
+  }
+  document.addEventListener("change",function(e){if(e.target.matches("#festivalGreetingFestival"))updateAdminPreview();});
+  document.addEventListener("input",function(e){if(e.target.matches("#festivalGreetingTitle,#festivalGreetingMessage"))updateAdminPreview();});
+  window.addEventListener("ssv:settings-updated",function(e){checkSettings(e.detail&&e.detail.settings);});
+  const readySettings=()=>{if(typeof settings!=="undefined")checkSettings(settings);};
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",readySettings,{once:true});else readySettings();
+})();
+</script>
