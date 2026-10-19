@@ -10663,6 +10663,31 @@ const renderAdminProductList=()=>{
       '</div><div class="admin-settings-toggles">'+
       toggle('Show shipping announcement','showShippingAnnouncement')+
       '</div></details>'+
+      '<details class="admin-settings-group"><summary>Festival Greeting</summary><div class="admin-settings-grid">'+
+      '<p class="admin-settings-help">Choose the exact festival greeting shown to visitors. The website never selects a festival automatically. Keep this feature off until you are ready to publish it.</p>'+
+      toggle('Enable festival greeting','festivalGreetingEnabled',false)+
+      '<label class="admin-setting-field"><span>Select festival</span><select id="festivalGreetingFestival" data-setting-key="festivalGreetingFestival">'+
+      '<option value="">Select a festival</option>'+
+      '<option value="sankranti_pongal_lohri" '+(settings.festivalGreetingFestival==='sankranti_pongal_lohri'?'selected':'')+'>Sankranti / Pongal / Lohri</option>'+
+      '<option value="maha_shivaratri" '+(settings.festivalGreetingFestival==='maha_shivaratri'?'selected':'')+'>Maha Shivaratri</option>'+
+      '<option value="holi" '+(settings.festivalGreetingFestival==='holi'?'selected':'')+'>Holi</option>'+
+      '<option value="ugadi_gudi_padwa" '+(settings.festivalGreetingFestival==='ugadi_gudi_padwa'?'selected':'')+'>Ugadi / Gudi Padwa</option>'+
+      '<option value="ram_navami" '+(settings.festivalGreetingFestival==='ram_navami'?'selected':'')+'>Ram Navami</option>'+
+      '<option value="raksha_bandhan" '+(settings.festivalGreetingFestival==='raksha_bandhan'?'selected':'')+'>Raksha Bandhan</option>'+
+      '<option value="janmashtami" '+(settings.festivalGreetingFestival==='janmashtami'?'selected':'')+'>Janmashtami</option>'+
+      '<option value="ganesh_chaturthi" '+(settings.festivalGreetingFestival==='ganesh_chaturthi'?'selected':'')+'>Ganesh Chaturthi</option>'+
+      '<option value="navratri_bathukamma_dussehra" '+(settings.festivalGreetingFestival==='navratri_bathukamma_dussehra'?'selected':'')+'>Navratri / Bathukamma / Dussehra</option>'+
+      '<option value="karwa_chauth" '+(settings.festivalGreetingFestival==='karwa_chauth'?'selected':'')+'>Karwa Chauth</option>'+
+      '<option value="diwali" '+(settings.festivalGreetingFestival==='diwali'?'selected':'')+'>Diwali</option>'+
+      '<option value="eid" '+(settings.festivalGreetingFestival==='eid'?'selected':'')+'>Eid al-Fitr / Eid al-Adha</option>'+
+      '<option value="christmas_new_year" '+(settings.festivalGreetingFestival==='christmas_new_year'?'selected':'')+'>Christmas / New Year</option>'+
+      '</select></label>'+
+      field('Greeting title','festivalGreetingTitle','Warm festive wishes')+
+      area('Greeting message','festivalGreetingMessage','May this special occasion bring happiness, peace and beautiful moments to you and your family.')+
+      '<label class="admin-setting-field"><span>Start date (optional)</span><input type="date" data-setting-key="festivalGreetingStartDate" value="'+val('festivalGreetingStartDate')+'"></label>'+
+      '<label class="admin-setting-field"><span>End date (optional)</span><input type="date" data-setting-key="festivalGreetingEndDate" value="'+val('festivalGreetingEndDate')+'"></label>'+
+      '<div class="festival-greeting-admin-preview" aria-live="polite"><p class="admin-settings-intro">Preview</p><div class="festival-greeting-admin-preview-card"><p class="festival-greeting-preview-brand">SRI SAI VANI COLLECTIONS</p><h3 id="festivalGreetingPreviewTitle">Warm festive wishes</h3><p id="festivalGreetingPreviewMessage">May this special occasion bring happiness, peace and beautiful moments to you and your family.</p><p class="festival-greeting-preview-note">Text-only preview. The popup uses the saved festival selection.</p></div><button type="button" class="btn dark" id="previewFestivalGreeting">PREVIEW POPUP</button></div>'+
+      '</div></details>'+
       '<details class="admin-settings-group"><summary>Section Visibility</summary><div class="admin-settings-toggles">'+
       toggle('Show customer reviews section','showReviews')+toggle('Show Visual Journal section','showJournal')+toggle('Show store details section','showStore')+
       '</div></details><button type="button" class="btn dark" id="saveSettings">SAVE ALL WEBSITE SETTINGS</button><section id="imageDangerZone" class="admin-settings-group" style="padding:16px;border:1px solid var(--line);margin-top:18px"><h3>Unused Image Cleanup</h3><p>Review and remove unused product images from the archive.</p><p id="unusedImageCount" role="status" aria-live="polite">Checking count…</p><button type="button" class="btn dark" id="scanUnusedImages">REFRESH COUNT</button> <button type="button" class="btn dark" id="cleanupUnusedImages" disabled>CLEAN UNUSED IMAGES</button><p id="unusedImageStatus" role="status" aria-live="polite"></p></section></div>';
@@ -14936,6 +14961,147 @@ if ("serviceWorker" in navigator) {
 #adminEnrichFinderFailures .ssv-enrich-review-status[data-state="error"]{color:#a32121}
 #adminEnrichFinderFailures .ssv-enrich-review-card button{width:100%;min-height:44px}
 </style>
+
+<div id="ssv-festival-greeting" class="ssv-festival-greeting-backdrop" hidden>
+  <section class="ssv-festival-greeting-dialog" role="dialog" aria-modal="true" aria-labelledby="ssv-festival-greeting-title" aria-describedby="ssv-festival-greeting-message" tabindex="-1">
+    <button type="button" class="ssv-festival-greeting-close" aria-label="Close festival greeting">&times;</button>
+    <p class="ssv-festival-greeting-brand">SRI SAI VANI COLLECTIONS</p>
+    <h2 id="ssv-festival-greeting-title"></h2>
+    <p id="ssv-festival-greeting-message"></p>
+  </section>
+</div>
+<style id="ssv-festival-greeting-text-only-styles">
+.ssv-festival-greeting-backdrop{position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;padding:max(16px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(16px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left));background:rgba(28,25,23,.62);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);overscroll-behavior:contain}
+.ssv-festival-greeting-backdrop[hidden]{display:none!important}
+.ssv-festival-greeting-dialog{position:relative;width:min(520px,100%);max-height:calc(100dvh - 32px);overflow:auto;padding:clamp(34px,7vw,58px) clamp(24px,6vw,52px);border:1px solid #E4D8C5;border-radius:16px;background:#FAF7F2;color:#1C1917;text-align:center;box-shadow:0 24px 80px rgba(0,0,0,.28);overscroll-behavior:contain;animation:ssvFestivalGreetingIn .22s ease-out both}
+.ssv-festival-greeting-brand{margin:0 0 18px;color:#8B6D43;font:500 11px/1.5 "Cormorant Garamond",Georgia,serif;letter-spacing:.16em}
+.ssv-festival-greeting-dialog h2{margin:0 0 16px;color:#6E2735;font:500 clamp(32px,6vw,46px)/1.08 "Cormorant Garamond",Georgia,serif;overflow-wrap:anywhere}
+.ssv-festival-greeting-dialog>p:not(.ssv-festival-greeting-brand){margin:0 auto;max-width:36ch;color:#625950;font:400 14px/1.8 Inter,Arial,sans-serif;overflow-wrap:anywhere}
+.ssv-festival-greeting-close{position:absolute;top:10px;right:10px;display:grid;place-items:center;width:44px;height:44px;border:1px solid #E4D8C5;border-radius:50%;background:#fffaf5;color:#1C1917;font:300 28px/1 Inter,Arial,sans-serif;cursor:pointer}
+.ssv-festival-greeting-close:focus-visible{outline:2px solid #B38E5D;outline-offset:3px}
+.festival-greeting-admin-preview{grid-column:1/-1;padding:16px;border-top:1px solid var(--line)}
+.festival-greeting-admin-preview-card{padding:24px 18px;border:1px solid #E4D8C5;background:#FAF7F2;text-align:center}
+.festival-greeting-preview-brand{margin:0 0 12px;color:#8B6D43;font:500 10px/1.5 "Cormorant Garamond",Georgia,serif;letter-spacing:.15em}
+.festival-greeting-admin-preview-card h3{margin:0 0 12px;color:#6E2735;font:500 30px/1.1 "Cormorant Garamond",Georgia,serif}
+.festival-greeting-admin-preview-card>p:not(.festival-greeting-preview-brand){margin:0 auto;max-width:36ch;color:#625950;font-size:12px;line-height:1.7}
+.festival-greeting-admin-preview-card .festival-greeting-preview-note{margin-top:12px;color:#8a8177;font-size:10px}
+#previewFestivalGreeting{width:100%;margin-top:12px}
+@keyframes ssvFestivalGreetingIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@media(prefers-reduced-motion:reduce){.ssv-festival-greeting-dialog{animation:none}}
+</style>
+<script id="ssv-festival-greeting-text-only-controller">
+(function(){
+  "use strict";
+  if(window.__SSV_FESTIVAL_GREETING_TEXT_ONLY_BOUND)return;
+  window.__SSV_FESTIVAL_GREETING_TEXT_ONLY_BOUND=true;
+  const defaults={
+    sankranti_pongal_lohri:["Warm wishes for Sankranti","May this harvest season bring happiness, prosperity and new beginnings."],
+    maha_shivaratri:["Wishing you a peaceful Maha Shivaratri","May this sacred occasion bring peace, strength and harmony."],
+    holi:["Happy Holi","Wishing you a joyful celebration filled with colour, warmth and togetherness."],
+    ugadi_gudi_padwa:["Happy Ugadi","May the new year bring prosperity, good health and beautiful beginnings."],
+    ram_navami:["Warm wishes on Ram Navami","May this auspicious occasion bring peace, kindness and happiness to your home."],
+    raksha_bandhan:["Happy Raksha Bandhan","Celebrating the love, care and special bonds that bring families together."],
+    janmashtami:["Happy Janmashtami","May this joyful occasion bring love, peace and happiness to your family."],
+    ganesh_chaturthi:["Happy Ganesh Chaturthi","Wishing you wisdom, prosperity and new beginnings."],
+    navratri_bathukamma_dussehra:["Warm festive wishes","Wishing you joy, prosperity and meaningful celebrations this festive season."],
+    karwa_chauth:["Warm wishes on Karwa Chauth","Wishing you love, happiness and cherished moments together."],
+    diwali:["Wishing you a bright and joyful Diwali","May your celebrations be filled with light, happiness and beautiful moments."],
+    eid:["Eid Mubarak","Wishing you and your family peace, happiness and a blessed celebration."],
+    christmas_new_year:["Season's greetings","Wishing you a joyful festive season and a happy year ahead."]
+  };
+  const backdrop=document.getElementById("ssv-festival-greeting");
+  if(!backdrop)return;
+  const dialog=backdrop.querySelector(".ssv-festival-greeting-dialog");
+  const closeButton=backdrop.querySelector(".ssv-festival-greeting-close");
+  const titleNode=document.getElementById("ssv-festival-greeting-title");
+  const messageNode=document.getElementById("ssv-festival-greeting-message");
+  let lastFocus=null,previousOverflow="",previousInert=[];
+  function cleanText(value,max){return String(value||"").trim().slice(0,max);}
+  function localDateString(){const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
+  function signature(s){return [s.festivalGreetingFestival,s.festivalGreetingTitle,s.festivalGreetingMessage,s.festivalGreetingStartDate,s.festivalGreetingEndDate].map(v=>String(v||"")).join("|");}
+  function isValidDate(value){if(!value)return true;if(!/^\d{4}-\d{2}-\d{2}$/.test(value))return false;const d=new Date(value+"T00:00:00");return Number.isFinite(d.getTime())&&d.toISOString().slice(0,10)===value;}
+  function validConfig(s){
+    if(!s||s.festivalGreetingEnabled!==true)return false;
+    if(!Object.prototype.hasOwnProperty.call(defaults,s.festivalGreetingFestival))return false;
+    if(!cleanText(s.festivalGreetingTitle,100)||!cleanText(s.festivalGreetingMessage,300))return false;
+    const today=localDateString(),start=String(s.festivalGreetingStartDate||""),end=String(s.festivalGreetingEndDate||"");
+    if(!isValidDate(start)||!isValidDate(end)||(start&&end&&start>end))return false;
+    if(start&&today<start)return false;
+    if(end&&today>end)return false;
+    return true;
+  }
+  function closePopup(){
+    if(backdrop.hidden)return;
+    backdrop.hidden=true;
+    document.body.style.overflow=previousOverflow;
+    previousInert.forEach(item=>{item.el.inert=item.inert;});
+    previousInert=[];
+    document.removeEventListener("keydown",onKeyDown,true);
+    if(lastFocus&&typeof lastFocus.focus==="function")lastFocus.focus({preventScroll:true});
+    lastFocus=null;
+  }
+  function onKeyDown(e){
+    if(backdrop.hidden)return;
+    if(e.key==="Escape"){e.preventDefault();e.stopPropagation();closePopup();return;}
+    if(e.key!=="Tab")return;
+    const focusable=Array.from(dialog.querySelectorAll('button:not([disabled]),a[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])')).filter(el=>!el.hidden);
+    if(!focusable.length){e.preventDefault();dialog.focus();return;}
+    const first=focusable[0],last=focusable[focusable.length-1];
+    if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}
+    else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}
+  }
+  function show(s,preview){
+    const key=signature(s);
+    if(!preview){
+      const admin=document.getElementById("admin");
+      if(admin&&!admin.classList.contains("hidden"))return;
+      try{if(sessionStorage.getItem("ssv_festival_greeting_seen_v2:"+key)==="1")return;}catch(_){}
+    }
+    titleNode.textContent=cleanText(s.festivalGreetingTitle,100);
+    messageNode.textContent=cleanText(s.festivalGreetingMessage,300);
+    lastFocus=document.activeElement;
+    previousOverflow=document.body.style.overflow;
+    previousInert=Array.from(document.body.children).filter(el=>el!==backdrop).map(el=>({el,inert:el.inert}));
+    previousInert.forEach(item=>{item.el.inert=true;});
+    document.body.style.overflow="hidden";
+    backdrop.hidden=false;
+    document.addEventListener("keydown",onKeyDown,true);
+    if(!preview){try{sessionStorage.setItem("ssv_festival_greeting_seen_v2:"+key,"1");}catch(_){}}
+    closeButton.focus({preventScroll:true});
+  }
+  function checkSettings(s){if(validConfig(s))show(s,false);}
+  closeButton.addEventListener("click",closePopup);
+  backdrop.addEventListener("click",e=>{if(e.target===backdrop)closePopup();});
+  window.addEventListener("ssv:settings-updated",e=>checkSettings(e.detail&&e.detail.settings));
+  function adminConfig(){
+    const festival=document.getElementById("festivalGreetingFestival");
+    const enabled=document.querySelector('[data-setting-key="festivalGreetingEnabled"]');
+    const title=document.querySelector('[data-setting-key="festivalGreetingTitle"]');
+    const message=document.querySelector('[data-setting-key="festivalGreetingMessage"]');
+    const start=document.querySelector('[data-setting-key="festivalGreetingStartDate"]');
+    const end=document.querySelector('[data-setting-key="festivalGreetingEndDate"]');
+    return {
+      festivalGreetingEnabled:!!(enabled&&enabled.checked),
+      festivalGreetingFestival:festival?festival.value:"",
+      festivalGreetingTitle:title?title.value.trim():"",
+      festivalGreetingMessage:message?message.value.trim():"",
+      festivalGreetingStartDate:start?start.value:"",
+      festivalGreetingEndDate:end?end.value:""
+    };
+  }
+  function updatePreview(){
+    const s=adminConfig(),fallback=defaults[s.festivalGreetingFestival];
+    const title=document.getElementById("festivalGreetingPreviewTitle");
+    const message=document.getElementById("festivalGreetingPreviewMessage");
+    if(title)title.textContent=s.festivalGreetingTitle||(fallback?fallback[0]:"Warm festive wishes");
+    if(message)message.textContent=s.festivalGreetingMessage||(fallback?fallback[1]:"May this special occasion bring happiness, peace and beautiful moments to you and your family.");
+  }
+  document.addEventListener("input",e=>{if(e.target&&e.target.dataset&&/^festivalGreeting/.test(e.target.dataset.settingKey||""))updatePreview();});
+  document.addEventListener("change",e=>{if(e.target&&e.target.dataset&&/^festivalGreeting/.test(e.target.dataset.settingKey||""))updatePreview();});
+  document.addEventListener("click",e=>{if(e.target&&e.target.id==="previewFestivalGreeting"){e.preventDefault();const s=adminConfig(),fallback=defaults[s.festivalGreetingFestival];s.festivalGreetingTitle=s.festivalGreetingTitle||(fallback&&fallback[0]||"Warm festive wishes");s.festivalGreetingMessage=s.festivalGreetingMessage||(fallback&&fallback[1]||"May this special occasion bring happiness, peace and beautiful moments to you and your family.");show(s,true);}});
+  updatePreview();
+})();
+</script>
 </body>
 
 <style id="sv-review-mobile-full-card-fix-20261013">
