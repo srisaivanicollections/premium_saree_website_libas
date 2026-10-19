@@ -15037,10 +15037,12 @@ if ("serviceWorker" in navigator) {
   const closeButton=backdrop.querySelector(".ssv-festival-greeting-close");
   const titleNode=document.getElementById("ssv-festival-greeting-title");
   const messageNode=document.getElementById("ssv-festival-greeting-message");
+  const imageNode=backdrop.querySelector(".ssv-festival-greeting-art");
   let lastFocus=null,previousOverflow="",previousInert=[];
   function cleanText(value,max){return String(value||"").trim().slice(0,max);}
+  function festivalImagePath(s){const raw=cleanText(s&&s["festivalGreetingImage_"+s.festivalGreetingFestival],300);return /^assets\/festival\/[A-Za-z0-9._/-]+\.(?:webp|png|jpe?g|avif|svg)$/i.test(raw)&&!raw.includes("..")?raw:"";}
   function localDateString(){const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
-  function signature(s){return [s.festivalGreetingFestival,s.festivalGreetingTitle,s.festivalGreetingMessage,s.festivalGreetingStartDate,s.festivalGreetingEndDate].map(v=>String(v||"")).join("|");}
+  function signature(s){return [s.festivalGreetingFestival,s.festivalGreetingTitle,s.festivalGreetingMessage,s.festivalGreetingStartDate,s.festivalGreetingEndDate,festivalImagePath(s)].map(v=>String(v||"")).join("|");}
   function isValidDate(value){if(!value)return true;const match=/^(\d{4})-(\d{2})-(\d{2})$/.exec(value);if(!match)return false;const year=Number(match[1]),month=Number(match[2]),day=Number(match[3]);const date=new Date(year,month-1,day);return Number.isFinite(date.getTime())&&date.getFullYear()===year&&date.getMonth()===month-1&&date.getDate()===day;}
   function effectiveConfig(s){
     if(!s)return s;
@@ -15092,6 +15094,9 @@ if ("serviceWorker" in navigator) {
     }
     titleNode.textContent=cleanText(s.festivalGreetingTitle,100);
     messageNode.textContent=cleanText(s.festivalGreetingMessage,300);
+    const imagePath=festivalImagePath(s);
+    imageNode.hidden=!imagePath;
+    if(imagePath){imageNode.src="./"+imagePath;imageNode.alt=cleanText(s.festivalGreetingFestival.replace(/_/g," "),100)+" festival artwork";}else{imageNode.removeAttribute("src");imageNode.alt="";}
     lastFocus=document.activeElement;
     previousOverflow=document.body.style.overflow;
     previousInert=Array.from(document.body.children).filter(el=>el!==backdrop).map(el=>({el,inert:el.inert}));
@@ -15121,6 +15126,7 @@ if ("serviceWorker" in navigator) {
       festivalGreetingFestival:festival?festival.value:"",
       festivalGreetingTitle:title?title.value.trim():"",
       festivalGreetingMessage:message?message.value.trim():"",
+      festivalGreetingImage:(()=>{const image=document.querySelector('[data-setting-key="festivalGreetingImage_'+(festival?festival.value:"") + '"]');return image?image.value.trim():"";})(),
       festivalGreetingStartDate:start?start.value:"",
       festivalGreetingEndDate:end?end.value:""
     };
@@ -15139,6 +15145,8 @@ if ("serviceWorker" in navigator) {
     const message=document.getElementById("festivalGreetingPreviewMessage");
     if(title)title.textContent=s.festivalGreetingTitle||(fallback?fallback[0]:"Warm festive wishes");
     if(message)message.textContent=s.festivalGreetingMessage||(fallback?fallback[1]:"May this special occasion bring happiness, peace and beautiful moments to you and your family.");
+    const image=document.getElementById("festivalGreetingPreviewImage"),path=s.festivalGreetingImage;
+    if(image){image.hidden=!/^assets\/festival\/[A-Za-z0-9._/-]+\.(?:webp|png|jpe?g|avif|svg)$/i.test(path||"")||(path||"").includes("..");if(!image.hidden){image.src="./"+path;image.alt=(s.festivalGreetingFestival||"Selected").replace(/_/g," ")+" festival artwork";}else{image.removeAttribute("src");image.alt="";}}
   }
   let previousFestivalValue="";
   document.addEventListener("focusin",e=>{if(e.target&&e.target.id==="festivalGreetingFestival")previousFestivalValue=e.target.value;});
