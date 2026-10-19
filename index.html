@@ -15040,7 +15040,7 @@ if ("serviceWorker" in navigator) {
   const imageNode=backdrop.querySelector(".ssv-festival-greeting-art");
   let lastFocus=null,previousOverflow="",previousInert=[];
   function cleanText(value,max){return String(value||"").trim().slice(0,max);}
-  function festivalImagePath(s){const raw=cleanText(s&&s["festivalGreetingImage_"+s.festivalGreetingFestival],300);return /^assets\/festival\/[A-Za-z0-9._/-]+\.(?:webp|png|jpe?g|avif|svg)$/i.test(raw)&&!raw.includes("..")?raw:"";}
+  function festivalImagePath(s){const raw=cleanText(s&&(s.festivalGreetingImage||s["festivalGreetingImage_"+s.festivalGreetingFestival]),300);return /^assets\/festival\/[A-Za-z0-9._/-]+\.(?:webp|png|jpe?g|avif|svg)$/i.test(raw)&&!raw.includes("..")?raw:"";}
   function localDateString(){const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
   function signature(s){return [s.festivalGreetingFestival,s.festivalGreetingTitle,s.festivalGreetingMessage,s.festivalGreetingStartDate,s.festivalGreetingEndDate,festivalImagePath(s)].map(v=>String(v||"")).join("|");}
   function isValidDate(value){if(!value)return true;const match=/^(\d{4})-(\d{2})-(\d{2})$/.exec(value);if(!match)return false;const year=Number(match[1]),month=Number(match[2]),day=Number(match[3]);const date=new Date(year,month-1,day);return Number.isFinite(date.getTime())&&date.getFullYear()===year&&date.getMonth()===month-1&&date.getDate()===day;}
