@@ -14967,6 +14967,7 @@ if ("serviceWorker" in navigator) {
   <section class="ssv-festival-greeting-dialog" role="dialog" aria-modal="true" aria-labelledby="ssv-festival-greeting-title" aria-describedby="ssv-festival-greeting-message" tabindex="-1">
     <button type="button" class="ssv-festival-greeting-close" aria-label="Close festival greeting">&times;</button>
     <p class="ssv-festival-greeting-brand brand-logo brand-logo--popup"><b>SRI SAI VANI</b><small>COLLECTIONS</small></p>
+    <img class="ssv-festival-greeting-art" src="./assets/festival/maa-durga-symbol.webp" alt="Maa Durga symbol with trishul" width="240" height="275" decoding="async">
     <h2 id="ssv-festival-greeting-title"></h2>
     <p id="ssv-festival-greeting-message"></p>
   </section>
@@ -14976,6 +14977,9 @@ if ("serviceWorker" in navigator) {
 .ssv-festival-greeting-backdrop[hidden]{display:none!important}
 .ssv-festival-greeting-dialog{position:relative;width:min(520px,100%);max-height:calc(100dvh - 32px);overflow:auto;padding:clamp(34px,7vw,58px) clamp(24px,6vw,52px);border:1px solid #E4D8C5;border-radius:16px;background:#FAF7F2;color:#1C1917;text-align:center;box-shadow:0 24px 80px rgba(0,0,0,.28);overscroll-behavior:contain;animation:ssvFestivalGreetingIn .22s ease-out both}
 .ssv-festival-greeting-brand{margin:0 0 18px;color:#8B6D43;font:500 11px/1.5 "Cormorant Garamond",Georgia,serif;letter-spacing:.16em}
+.ssv-festival-greeting-art{display:block;width:clamp(112px,34vw,160px);height:auto;max-height:clamp(112px,34vw,160px);object-fit:contain;margin:0 auto 10px;mix-blend-mode:multiply;border:0;border-radius:0;box-shadow:none;pointer-events:none}
+@media(min-width:601px){.ssv-festival-greeting-art{width:164px;max-height:164px;margin-bottom:10px}}
+@media(max-height:600px){.ssv-festival-greeting-dialog{padding-top:24px;padding-bottom:24px}.ssv-festival-greeting-art{width:100px;max-height:100px;margin-bottom:6px}.ssv-festival-greeting-brand{margin-bottom:10px}.ssv-festival-greeting-dialog h2{font-size:32px;margin-bottom:10px}}
 .ssv-festival-greeting-dialog h2{margin:0 0 16px;color:#6E2735;font:500 clamp(32px,6vw,46px)/1.08 "Cormorant Garamond",Georgia,serif;overflow-wrap:anywhere}
 .ssv-festival-greeting-dialog>p:not(.ssv-festival-greeting-brand){margin:0 auto;max-width:36ch;color:#625950;font:400 14px/1.8 Inter,Arial,sans-serif;overflow-wrap:anywhere}
 .ssv-festival-greeting-close{position:absolute;top:10px;right:10px;display:grid;place-items:center;width:44px;height:44px;border:1px solid #E4D8C5;border-radius:50%;background:#fffaf5;color:#1C1917;font:300 28px/1 Inter,Arial,sans-serif;cursor:pointer}
