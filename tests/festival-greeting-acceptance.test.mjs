@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
+const settings = JSON.parse(readFileSync(new URL("../data/settings.json", import.meta.url), "utf8"));
 const controller = html.match(/<script id="ssv-festival-greeting-text-only-controller">([\s\S]*?)<\/script>/)?.[1];
 assert.ok(controller, "Festival greeting controller must exist");
 
@@ -66,6 +67,5 @@ test("festival artwork is configurable per festival instead of hardcoded in popu
   assert.equal(new Set(imageKeys).size, 13, "Admin must expose a separate image path setting for each supported festival");
   assert.match(html, /id="festivalGreetingPreviewImage"/);
   assert.match(html, /id="festivalGreetingPreviewImage" class="festival-greeting-preview-image" alt="Selected festival artwork" hidden/);
-  assert.match(html, /festivalGreetingImage_navratri_bathukamma_dussehra/);
-  assert.match(html, /festivalGreetingImage_navratri_bathukamma_dussehra/);
+  assert.equal(settings.festivalGreetingImage_navratri_bathukamma_dussehra, "assets/festival/maa-durga-symbol.webp", "Dussehra artwork should be configured through settings data");
 });
