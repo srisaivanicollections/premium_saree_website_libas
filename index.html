@@ -15020,10 +15020,20 @@ if ("serviceWorker" in navigator) {
   function localDateString(){const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
   function signature(s){return [s.festivalGreetingFestival,s.festivalGreetingTitle,s.festivalGreetingMessage,s.festivalGreetingStartDate,s.festivalGreetingEndDate].map(v=>String(v||"")).join("|");}
   function isValidDate(value){if(!value)return true;if(!/^\d{4}-\d{2}-\d{2}$/.test(value))return false;const d=new Date(value+"T00:00:00");return Number.isFinite(d.getTime())&&d.toISOString().slice(0,10)===value;}
+  function effectiveConfig(s){
+    if(!s)return s;
+    const fallback=defaults[s.festivalGreetingFestival];
+    return {
+      ...s,
+      festivalGreetingTitle:cleanText(s.festivalGreetingTitle,100)||(fallback?fallback[0]:""),
+      festivalGreetingMessage:cleanText(s.festivalGreetingMessage,300)||(fallback?fallback[1]:"")
+    };
+  }
   function validConfig(s){
     if(!s||s.festivalGreetingEnabled!==true)return false;
     if(!Object.prototype.hasOwnProperty.call(defaults,s.festivalGreetingFestival))return false;
-    if(!cleanText(s.festivalGreetingTitle,100)||!cleanText(s.festivalGreetingMessage,300))return false;
+    const effective=effectiveConfig(s);
+    if(!effective.festivalGreetingTitle||!effective.festivalGreetingMessage)return false;
     const today=localDateString(),start=String(s.festivalGreetingStartDate||""),end=String(s.festivalGreetingEndDate||"");
     if(!isValidDate(start)||!isValidDate(end)||(start&&end&&start>end))return false;
     if(start&&today<start)return false;
@@ -15051,6 +15061,7 @@ if ("serviceWorker" in navigator) {
     else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}
   }
   function show(s,preview){
+    s=effectiveConfig(s);
     const key=signature(s);
     if(!preview){
       const admin=document.getElementById("admin");
@@ -15073,6 +15084,9 @@ if ("serviceWorker" in navigator) {
   closeButton.addEventListener("click",closePopup);
   backdrop.addEventListener("click",e=>{if(e.target===backdrop)closePopup();});
   window.addEventListener("ssv:settings-updated",e=>checkSettings(e.detail&&e.detail.settings));
+  // The main page loads settings asynchronously. Check the current snapshot too,
+  // so the greeting still works if the settings-updated event fired before this listener.
+  if(typeof settings!=="undefined"&&settings)checkSettings(settings);
   function adminConfig(){
     const festival=document.getElementById("festivalGreetingFestival");
     const enabled=document.querySelector('[data-setting-key="festivalGreetingEnabled"]');
@@ -15088,6 +15102,14 @@ if ("serviceWorker" in navigator) {
       festivalGreetingStartDate:start?start.value:"",
       festivalGreetingEndDate:end?end.value:""
     };
+  }
+  function hydrateAdminDefaults(){
+    const s=adminConfig(),fallback=defaults[s.festivalGreetingFestival];
+    if(!fallback)return;
+    const title=document.querySelector('[data-setting-key="festivalGreetingTitle"]');
+    const message=document.querySelector('[data-setting-key="festivalGreetingMessage"]');
+    if(title&&!title.value.trim())title.value=fallback[0];
+    if(message&&!message.value.trim())message.value=fallback[1];
   }
   function updatePreview(){
     const s=adminConfig(),fallback=defaults[s.festivalGreetingFestival];
@@ -15111,7 +15133,19 @@ if ("serviceWorker" in navigator) {
     updatePreview();
   });
   document.addEventListener("input",e=>{if(e.target&&e.target.dataset&&/^festivalGreeting/.test(e.target.dataset.settingKey||""))updatePreview();});
-  document.addEventListener("click",e=>{if(e.target&&e.target.id==="previewFestivalGreeting"){e.preventDefault();const s=adminConfig(),fallback=defaults[s.festivalGreetingFestival];s.festivalGreetingTitle=s.festivalGreetingTitle||(fallback&&fallback[0]||"Warm festive wishes");s.festivalGreetingMessage=s.festivalGreetingMessage||(fallback&&fallback[1]||"May this special occasion bring happiness, peace and beautiful moments to you and your family.");show(s,true);}});
+  document.addEventListener("click",e=>{
+    if(e.target&&e.target.closest&&e.target.closest('[data-view="settings"]')){
+      hydrateAdminDefaults();
+      updatePreview();
+    }
+    if(e.target&&e.target.id==="previewFestivalGreeting"){
+      e.preventDefault();
+      const s=adminConfig(),fallback=defaults[s.festivalGreetingFestival];
+      s.festivalGreetingTitle=s.festivalGreetingTitle||(fallback&&fallback[0]||"Warm festive wishes");
+      s.festivalGreetingMessage=s.festivalGreetingMessage||(fallback&&fallback[1]||"May this special occasion bring happiness, peace and beautiful moments to you and your family.");
+      show(s,true);
+    }
+  });
   updatePreview();
 })();
 </script>
