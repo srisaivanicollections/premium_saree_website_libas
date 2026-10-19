@@ -25,7 +25,7 @@ test("blank title and message use the selected festival defaults", () => {
 });
 
 test("date validation rejects impossible dates and honors inclusive boundaries", () => {
-  const fnSource = controller.match(/function isValidDate\(value\)\{[\s\S]*?\}/)?.[0];
+  const fnSource = controller.match(/function isValidDate\(value\)\{([^\n]*)\}/)?.[0];
   assert.ok(fnSource, "Date validation function must exist");
   const isValidDate = new Function("value", fnSource.replace(/^function isValidDate\(value\)\{/, "").replace(/\}$/, ""));
   assert.equal(isValidDate("2026-10-20"), true);
