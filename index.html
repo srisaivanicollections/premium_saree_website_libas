@@ -15019,7 +15019,7 @@ if ("serviceWorker" in navigator) {
   function cleanText(value,max){return String(value||"").trim().slice(0,max);}
   function localDateString(){const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
   function signature(s){return [s.festivalGreetingFestival,s.festivalGreetingTitle,s.festivalGreetingMessage,s.festivalGreetingStartDate,s.festivalGreetingEndDate].map(v=>String(v||"")).join("|");}
-  function isValidDate(value){if(!value)return true;if(!/^\d{4}-\d{2}-\d{2}$/.test(value))return false;const d=new Date(value+"T00:00:00");return Number.isFinite(d.getTime())&&d.toISOString().slice(0,10)===value;}
+  function isValidDate(value){if(!value)return true;const match=/^(\d{4})-(\d{2})-(\d{2})$/.exec(value);if(!match)return false;const year=Number(match[1]),month=Number(match[2]),day=Number(match[3]);const date=new Date(year,month-1,day);return Number.isFinite(date.getTime())&&date.getFullYear()===year&&date.getMonth()===month-1&&date.getDate()===day;}
   function effectiveConfig(s){
     if(!s)return s;
     const fallback=defaults[s.festivalGreetingFestival];
