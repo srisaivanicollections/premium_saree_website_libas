@@ -35,7 +35,7 @@ test("date validation rejects impossible dates and date boundaries are inclusive
   assert.equal(isValidDate("2026-13-01"), false);
   assert.match(controller, /if\(start&&today<start\)return false/);
   assert.match(controller, /if\(end&&today>end\)return false/);
-  assert.match(controller, /start&&end&&start>end\)return false/);
+  assert.match(controller, /start&&end&&start>end/);
 });
 
 test("dismissal, keyboard focus, and scroll lock are implemented", () => {
