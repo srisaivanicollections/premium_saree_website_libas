@@ -10667,6 +10667,7 @@ const renderAdminProductList=()=>{
       '<details class="admin-settings-group"><summary>Festival Greeting</summary><div class="admin-settings-grid">'+
       '<p class="admin-settings-help">Choose the exact festival greeting shown to visitors. The website never selects a festival automatically. Keep this feature off until you are ready to publish it.</p>'+
       toggle('Enable festival greeting','festivalGreetingEnabled',false)+
+      toggle('Enable festive twinkling','festivalGreetingTwinkleEnabled',true)+
       '<label class="admin-setting-field"><span>Select festival</span><select id="festivalGreetingFestival" data-setting-key="festivalGreetingFestival">'+
       '<option value="">Select a festival</option>'+
       '<option value="sankranti_pongal_lohri" '+(settings.festivalGreetingFestival==='sankranti_pongal_lohri'?'selected':'')+'>Sankranti / Pongal / Lohri</option>'+
@@ -14978,6 +14979,7 @@ if ("serviceWorker" in navigator) {
 .ssv-festival-greeting-brand{margin:0 0 18px;color:#8B6D43;font:500 11px/1.5 "Cormorant Garamond",Georgia,serif;letter-spacing:.16em}
 .ssv-festival-greeting-brand.brand-logo--popup{display:flex!important;flex-direction:column!important;align-items:flex-start!important;text-align:left!important;width:max-content!important;max-width:100%!important;margin-left:auto!important;margin-right:auto!important}.ssv-festival-greeting-brand.brand-logo--popup b,.ssv-festival-greeting-brand.brand-logo--popup small{display:block!important;text-align:left!important;width:auto!important;margin-left:0!important;margin-right:0!important}.ssv-festival-greeting-brand.brand-logo--popup small{align-self:flex-start!important}
 .ssv-festival-greeting-dialog h2{position:relative;margin:0 0 18px;color:#6E2735;font:500 clamp(32px,6vw,46px)/1.08 "Cormorant Garamond",Georgia,serif;overflow-wrap:anywhere}.ssv-festival-greeting-dialog h2::before{content:"✧";position:absolute;top:-.12em;left:4%;color:#B38E5D;font:16px/1 Inter,Arial,sans-serif;pointer-events:none;animation:ssvFestivalTwinkle 2.8s ease-in-out infinite}.ssv-festival-greeting-dialog h2::after{content:"✦";display:block;margin:12px auto 0;color:#B38E5D;font:12px/1 Inter,Arial,sans-serif;letter-spacing:.12em;animation:ssvFestivalTwinkle 2.8s ease-in-out infinite .7s}@keyframes ssvFestivalTwinkle{0%,100%{opacity:.48;transform:scale(.88)}50%{opacity:1;transform:scale(1.12)}}@media(prefers-reduced-motion:reduce){.ssv-festival-greeting-dialog h2::before,.ssv-festival-greeting-dialog h2::after{animation:none!important;opacity:1;transform:none}}
+.ssv-festival-greeting-dialog:not(.ssv-festival-twinkle-enabled) h2::before,.ssv-festival-greeting-dialog:not(.ssv-festival-twinkle-enabled) h2::after{animation:none!important;opacity:1;transform:none}
 .ssv-festival-greeting-dialog>p:not(.ssv-festival-greeting-brand){margin:0 auto;max-width:36ch;color:#625950;font:400 14px/1.65 Inter,Arial,sans-serif;overflow-wrap:anywhere}
 .ssv-festival-greeting-close{appearance:none!important;-webkit-appearance:none!important;position:absolute;top:12px;right:12px;z-index:2;display:grid!important;place-items:center;box-sizing:border-box!important;width:44px!important;height:44px!important;min-width:44px!important;min-height:44px!important;max-width:44px!important;max-height:44px!important;flex:0 0 44px!important;margin:0!important;padding:0!important;border:0!important;border-radius:0!important;background:transparent!important;color:#6E2735!important;font:400 25px/1 Inter,Arial,sans-serif!important;letter-spacing:0!important;text-align:center!important;text-shadow:none!important;box-shadow:none!important;transform:none!important;outline:none;cursor:pointer;transition:color .18s ease}.ssv-festival-greeting-close::before,.ssv-festival-greeting-close::after{content:none!important;display:none!important}
 /* Keep the festival close control icon-only even when global button styles are loaded. */
@@ -15076,6 +15078,7 @@ html body #ssv-festival-greeting button.ssv-festival-greeting-close::before,html
       if(admin&&!admin.classList.contains("hidden"))return;
       try{if(sessionStorage.getItem("ssv_festival_greeting_seen_v2:"+key)==="1")return;}catch(_){}
     }
+    dialog.classList.toggle("ssv-festival-twinkle-enabled",s.festivalGreetingTwinkleEnabled!==false&&s.festivalGreetingTwinkleEnabled!=="false"&&s.festivalGreetingTwinkleEnabled!==0&&s.festivalGreetingTwinkleEnabled!=="0");
     titleNode.textContent=cleanText(s.festivalGreetingTitle,100);
     messageNode.textContent=cleanText(s.festivalGreetingMessage,300);
     lastFocus=document.activeElement;
