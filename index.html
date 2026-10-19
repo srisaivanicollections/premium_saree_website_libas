@@ -8925,6 +8925,7 @@ body:not(#admin) [style*="font-size:7px"]{font-size:8px!important}
   }
 }
 </style>
+<link rel="stylesheet" href="./brand-logo.css?v=1">
 <link rel="stylesheet" href="./checkout.css?v=guest-cart-1">
   <link rel="stylesheet" href="./saree-finder.css?v=2">
 <style id="admin-luxury-occasion-badges">
@@ -9029,7 +9030,7 @@ body:not(#admin) [style*="font-size:7px"]{font-size:8px!important}
   setTimeout(hideLoader,4000);
 })();
 </script>
-<header class="header"><div class="header-inner"><button class="menu" id="menu" aria-label="Menu"><i></i><i></i><i></i></button><a class="brand" href="#home"><span><b>SRI SAI VANI</b><small>COLLECTIONS</small></span></a><div class="mobile-social-actions" aria-label="Quick contact"><a href="https://www.instagram.com/sri_sai_vani_collections/" target="_blank" rel="noopener" aria-label="Instagram"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="5"></rect><circle cx="12" cy="12" r="3.5"></circle><circle cx="17.2" cy="6.8" r=".8" fill="currentColor" stroke="none"></circle></svg></a><a id="mobileHeaderWhatsApp" href="#" target="_blank" rel="noopener" aria-label="WhatsApp"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.2 11.7a7.2 7.2 0 0 1-10.6 6.1L5 19l1.3-3.4a7.2 7.2 0 1 1 12.9-3.9Z"></path><path d="M9.3 8.8c.2-.35.4-.35.65-.35h.45c.2 0 .35.1.45.3l.7 1.45c.1.2.08.38-.08.55l-.45.5c.55 1 1.3 1.7 2.35 2.15l.48-.45c.16-.16.34-.18.54-.08l1.4.68c.24.12.32.3.25.55-.18.62-.7 1.05-1.3 1.08-2.45-.04-5.45-2.5-5.9-5.2-.06-.4.08-.75.46-1.18Z"></path></svg></a></div><nav id="nav"><a href="#shop" class="shop-link">SHOP NOW</a><a href="https://www.instagram.com/sri_sai_vani_collections/" target="_blank" rel="noopener">INSTAGRAM</a><button id="adminOpen" type="button" class="admin-link" aria-label="Open Admin Studio">ADMIN</button></nav></div></header>
+<header class="header"><div class="header-inner"><button class="menu" id="menu" aria-label="Menu"><i></i><i></i><i></i></button><a class="brand" href="#home"><span class="brand-logo"><b>SRI SAI VANI</b><small>COLLECTIONS</small></span></a><div class="mobile-social-actions" aria-label="Quick contact"><a href="https://www.instagram.com/sri_sai_vani_collections/" target="_blank" rel="noopener" aria-label="Instagram"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="5"></rect><circle cx="12" cy="12" r="3.5"></circle><circle cx="17.2" cy="6.8" r=".8" fill="currentColor" stroke="none"></circle></svg></a><a id="mobileHeaderWhatsApp" href="#" target="_blank" rel="noopener" aria-label="WhatsApp"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.2 11.7a7.2 7.2 0 0 1-10.6 6.1L5 19l1.3-3.4a7.2 7.2 0 1 1 12.9-3.9Z"></path><path d="M9.3 8.8c.2-.35.4-.35.65-.35h.45c.2 0 .35.1.45.3l.7 1.45c.1.2.08.38-.08.55l-.45.5c.55 1 1.3 1.7 2.35 2.15l.48-.45c.16-.16.34-.18.54-.08l1.4.68c.24.12.32.3.25.55-.18.62-.7 1.05-1.3 1.08-2.45-.04-5.45-2.5-5.9-5.2-.06-.4.08-.75.46-1.18Z"></path></svg></a></div><nav id="nav"><a href="#shop" class="shop-link">SHOP NOW</a><a href="https://www.instagram.com/sri_sai_vani_collections/" target="_blank" rel="noopener">INSTAGRAM</a><button id="adminOpen" type="button" class="admin-link" aria-label="Open Admin Studio">ADMIN</button></nav></div></header>
 <section class="womens-world-marquee-section" aria-label="Saree and dress varieties">
   <div class="womens-world-marquee-viewport">
     <div class="womens-world-marquee-track">
@@ -9193,7 +9194,7 @@ body:not(#admin) [style*="font-size:7px"]{font-size:8px!important}
   </div>
 </section>
 
-<footer><div class="footer-brand"><a class="brand" href="#home"><span><b>SRI SAI VANI</b><small>COLLECTIONS</small></span></a></div><div class="footer-links"><a href="#shop">Shop</a><a href="#reviews">Reviews</a><a href="#instagram">Latest Collection</a><a href="#visit">Visit Us</a></div></footer>
+<footer><div class="footer-brand"><a class="brand" href="#home"><span class="brand-logo"><b>SRI SAI VANI</b><small>COLLECTIONS</small></span></a></div><div class="footer-links"><a href="#shop">Shop</a><a href="#reviews">Reviews</a><a href="#instagram">Latest Collection</a><a href="#visit">Visit Us</a></div></footer>
 <div id="admin" class="modal hidden"><div class="panel"><div class="panel-top"><div><h2 id="adminTitle" tabindex="-1">Admin Studio</h2></div><div class="admin-header-actions"><button type="button" id="logoutBtn" class="admin-logout" aria-label="Log out of Admin Studio">LOG OUT</button><button id="adminClose" type="button" aria-label="Close Admin Studio">×</button></div></div><div id="login" class="admin-auth-screen">
   <div class="admin-auth-copy">
     <p class="admin-login-title" id="adminAuthEyebrow" aria-hidden="true">PRIVATE ACCESS</p>
@@ -10686,7 +10687,7 @@ const renderAdminProductList=()=>{
       area('Greeting message','festivalGreetingMessage','')+
       '<label class="admin-setting-field"><span>Start date (optional)</span><input type="date" data-setting-key="festivalGreetingStartDate" value="'+val('festivalGreetingStartDate')+'"></label>'+
       '<label class="admin-setting-field"><span>End date (optional)</span><input type="date" data-setting-key="festivalGreetingEndDate" value="'+val('festivalGreetingEndDate')+'"></label>'+
-      '<div class="festival-greeting-admin-preview" aria-live="polite"><p class="admin-settings-intro">Preview</p><div class="festival-greeting-admin-preview-card"><p class="festival-greeting-preview-brand">SRI SAI VANI COLLECTIONS</p><h3 id="festivalGreetingPreviewTitle">Warm festive wishes</h3><p id="festivalGreetingPreviewMessage">May this special occasion bring happiness, peace and beautiful moments to you and your family.</p><p class="festival-greeting-preview-note">Text-only preview. The popup uses the saved festival selection.</p></div><button type="button" class="btn dark" id="previewFestivalGreeting">PREVIEW POPUP</button></div>'+
+      '<div class="festival-greeting-admin-preview" aria-live="polite"><p class="admin-settings-intro">Preview</p><div class="festival-greeting-admin-preview-card"><p class="festival-greeting-preview-brand brand-logo"><b>SRI SAI VANI</b><small>COLLECTIONS</small></p><h3 id="festivalGreetingPreviewTitle">Warm festive wishes</h3><p id="festivalGreetingPreviewMessage">May this special occasion bring happiness, peace and beautiful moments to you and your family.</p><p class="festival-greeting-preview-note">Text-only preview. The popup uses the saved festival selection.</p></div><button type="button" class="btn dark" id="previewFestivalGreeting">PREVIEW POPUP</button></div>'+
       '</div></details>'+
       '<details class="admin-settings-group"><summary>Section Visibility</summary><div class="admin-settings-toggles">'+
       toggle('Show customer reviews section','showReviews')+toggle('Show Visual Journal section','showJournal')+toggle('Show store details section','showStore')+
@@ -14965,7 +14966,7 @@ if ("serviceWorker" in navigator) {
 <div id="ssv-festival-greeting" class="ssv-festival-greeting-backdrop" hidden>
   <section class="ssv-festival-greeting-dialog" role="dialog" aria-modal="true" aria-labelledby="ssv-festival-greeting-title" aria-describedby="ssv-festival-greeting-message" tabindex="-1">
     <button type="button" class="ssv-festival-greeting-close" aria-label="Close festival greeting">&times;</button>
-    <p class="ssv-festival-greeting-brand">SRI SAI VANI COLLECTIONS</p>
+    <p class="ssv-festival-greeting-brand brand-logo brand-logo--popup"><b>SRI SAI VANI</b><small>COLLECTIONS</small></p>
     <h2 id="ssv-festival-greeting-title"></h2>
     <p id="ssv-festival-greeting-message"></p>
   </section>
