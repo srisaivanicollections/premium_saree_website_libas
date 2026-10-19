@@ -10687,7 +10687,22 @@ const renderAdminProductList=()=>{
       area('Greeting message','festivalGreetingMessage','')+
       '<label class="admin-setting-field"><span>Start date (optional)</span><input type="date" data-setting-key="festivalGreetingStartDate" value="'+val('festivalGreetingStartDate')+'"></label>'+
       '<label class="admin-setting-field"><span>End date (optional)</span><input type="date" data-setting-key="festivalGreetingEndDate" value="'+val('festivalGreetingEndDate')+'"></label>'+
-      '<div class="festival-greeting-admin-preview" aria-live="polite"><p class="admin-settings-intro">Preview</p><div class="festival-greeting-admin-preview-card"><p class="festival-greeting-preview-brand brand-logo"><b>SRI SAI VANI</b><small>COLLECTIONS</small></p><h3 id="festivalGreetingPreviewTitle">Warm festive wishes</h3><p id="festivalGreetingPreviewMessage">May this special occasion bring happiness, peace and beautiful moments to you and your family.</p><p class="festival-greeting-preview-note">Text-only preview. The popup uses the saved festival selection.</p></div><button type="button" class="btn dark" id="previewFestivalGreeting">PREVIEW POPUP</button></div>'+
+      '<details class="admin-settings-group"><summary>Festival image overrides (optional)</summary><div class="admin-settings-grid"><p class="admin-settings-help">Set an image path separately for each festival. Upload the image under assets/festival/ first. Leave a field blank to show a text-only greeting for that festival.</p>'+
+      field('Sankranti / Pongal / Lohri image path','festivalGreetingImage_sankranti_pongal_lohri','')+
+      field('Maha Shivaratri image path','festivalGreetingImage_maha_shivaratri','')+
+      field('Holi image path','festivalGreetingImage_holi','')+
+      field('Ugadi / Gudi Padwa image path','festivalGreetingImage_ugadi_gudi_padwa','')+
+      field('Ram Navami image path','festivalGreetingImage_ram_navami','')+
+      field('Raksha Bandhan image path','festivalGreetingImage_raksha_bandhan','')+
+      field('Janmashtami image path','festivalGreetingImage_janmashtami','')+
+      field('Ganesh Chaturthi image path','festivalGreetingImage_ganesh_chaturthi','')+
+      field('Navratri / Bathukamma / Dussehra image path','festivalGreetingImage_navratri_bathukamma_dussehra','')+
+      field('Karwa Chauth image path','festivalGreetingImage_karwa_chauth','')+
+      field('Diwali image path','festivalGreetingImage_diwali','')+
+      field('Eid image path','festivalGreetingImage_eid','')+
+      field('Christmas / New Year image path','festivalGreetingImage_christmas_new_year','')+
+      '</div></details>'+
+       '<div class="festival-greeting-admin-preview" aria-live="polite"><p class="admin-settings-intro">Preview</p><div class="festival-greeting-admin-preview-card"><p class="festival-greeting-preview-brand brand-logo"><b>SRI SAI VANI</b><small>COLLECTIONS</small></p><img id="festivalGreetingPreviewImage" class="festival-greeting-preview-image" alt="Selected festival artwork" hidden><h3 id="festivalGreetingPreviewTitle">Warm festive wishes</h3><p id="festivalGreetingPreviewMessage">May this special occasion bring happiness, peace and beautiful moments to you and your family.</p><p class="festival-greeting-preview-note">Preview uses the selected festival image and greeting.</p></div><button type="button" class="btn dark" id="previewFestivalGreeting">PREVIEW POPUP</button></div>'+
       '</div></details>'+
       '<details class="admin-settings-group"><summary>Section Visibility</summary><div class="admin-settings-toggles">'+
       toggle('Show customer reviews section','showReviews')+toggle('Show Visual Journal section','showJournal')+toggle('Show store details section','showStore')+
@@ -14967,6 +14982,7 @@ if ("serviceWorker" in navigator) {
   <section class="ssv-festival-greeting-dialog" role="dialog" aria-modal="true" aria-labelledby="ssv-festival-greeting-title" aria-describedby="ssv-festival-greeting-message" tabindex="-1">
     <button type="button" class="ssv-festival-greeting-close" aria-label="Close festival greeting">&times;</button>
     <p class="ssv-festival-greeting-brand brand-logo brand-logo--popup"><b>SRI SAI VANI</b><small>COLLECTIONS</small></p>
+    <img class="ssv-festival-greeting-art" alt="Festival artwork" width="240" height="275" decoding="async" hidden>
     <h2 id="ssv-festival-greeting-title"></h2>
     <p id="ssv-festival-greeting-message"></p>
   </section>
@@ -14976,12 +14992,17 @@ if ("serviceWorker" in navigator) {
 .ssv-festival-greeting-backdrop[hidden]{display:none!important}
 .ssv-festival-greeting-dialog{position:relative;width:min(520px,100%);max-height:calc(100dvh - 32px);overflow:auto;padding:clamp(34px,7vw,58px) clamp(24px,6vw,52px);border:1px solid #E4D8C5;border-radius:16px;background:#FAF7F2;color:#1C1917;text-align:center;box-shadow:0 24px 80px rgba(0,0,0,.28);overscroll-behavior:contain;animation:ssvFestivalGreetingIn .22s ease-out both}
 .ssv-festival-greeting-brand{margin:0 0 18px;color:#8B6D43;font:500 11px/1.5 "Cormorant Garamond",Georgia,serif;letter-spacing:.16em}
+.ssv-festival-greeting-art{display:block;width:clamp(112px,34vw,160px);height:auto;max-height:clamp(112px,34vw,160px);object-fit:contain;margin:0 auto 10px;mix-blend-mode:multiply;border:0;border-radius:0;box-shadow:none;pointer-events:none}
+.ssv-festival-greeting-art[hidden]{display:none!important}
+@media(min-width:601px){.ssv-festival-greeting-art{width:164px;max-height:164px;margin-bottom:10px}}
+@media(max-height:600px){.ssv-festival-greeting-dialog{padding-top:24px;padding-bottom:24px}.ssv-festival-greeting-art{width:100px;max-height:100px;margin-bottom:6px}.ssv-festival-greeting-brand{margin-bottom:10px}.ssv-festival-greeting-dialog h2{font-size:32px;margin-bottom:10px}}
 .ssv-festival-greeting-dialog h2{margin:0 0 16px;color:#6E2735;font:500 clamp(32px,6vw,46px)/1.08 "Cormorant Garamond",Georgia,serif;overflow-wrap:anywhere}
 .ssv-festival-greeting-dialog>p:not(.ssv-festival-greeting-brand){margin:0 auto;max-width:36ch;color:#625950;font:400 14px/1.8 Inter,Arial,sans-serif;overflow-wrap:anywhere}
 .ssv-festival-greeting-close{position:absolute;top:10px;right:10px;display:grid;place-items:center;width:44px;height:44px;border:1px solid #E4D8C5;border-radius:50%;background:#fffaf5;color:#1C1917;font:300 28px/1 Inter,Arial,sans-serif;cursor:pointer}
 .ssv-festival-greeting-close:focus-visible{outline:2px solid #B38E5D;outline-offset:3px}
 .festival-greeting-admin-preview{grid-column:1/-1;padding:16px;border-top:1px solid var(--line)}
 .festival-greeting-admin-preview-card{padding:24px 18px;border:1px solid #E4D8C5;background:#FAF7F2;text-align:center}
+.festival-greeting-preview-image{display:block;width:112px;height:112px;max-width:100%;object-fit:contain;margin:0 auto 10px;mix-blend-mode:multiply}.festival-greeting-preview-image[hidden]{display:none!important}
 .festival-greeting-preview-brand{margin:0 0 12px;color:#8B6D43;font:500 10px/1.5 "Cormorant Garamond",Georgia,serif;letter-spacing:.15em}
 .festival-greeting-admin-preview-card h3{margin:0 0 12px;color:#6E2735;font:500 30px/1.1 "Cormorant Garamond",Georgia,serif}
 .festival-greeting-admin-preview-card>p:not(.festival-greeting-preview-brand){margin:0 auto;max-width:36ch;color:#625950;font-size:12px;line-height:1.7}
@@ -15016,10 +15037,12 @@ if ("serviceWorker" in navigator) {
   const closeButton=backdrop.querySelector(".ssv-festival-greeting-close");
   const titleNode=document.getElementById("ssv-festival-greeting-title");
   const messageNode=document.getElementById("ssv-festival-greeting-message");
+  const imageNode=backdrop.querySelector(".ssv-festival-greeting-art");
   let lastFocus=null,previousOverflow="",previousInert=[];
   function cleanText(value,max){return String(value||"").trim().slice(0,max);}
+  function festivalImagePath(s){const raw=cleanText(s&&(s.festivalGreetingImage||s["festivalGreetingImage_"+s.festivalGreetingFestival]),300);return /^assets\/festival\/[A-Za-z0-9._/-]+\.(?:webp|png|jpe?g|avif|svg)$/i.test(raw)&&!raw.includes("..")?raw:"";}
   function localDateString(){const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
-  function signature(s){return [s.festivalGreetingFestival,s.festivalGreetingTitle,s.festivalGreetingMessage,s.festivalGreetingStartDate,s.festivalGreetingEndDate].map(v=>String(v||"")).join("|");}
+  function signature(s){return [s.festivalGreetingFestival,s.festivalGreetingTitle,s.festivalGreetingMessage,s.festivalGreetingStartDate,s.festivalGreetingEndDate,festivalImagePath(s)].map(v=>String(v||"")).join("|");}
   function isValidDate(value){if(!value)return true;const match=/^(\d{4})-(\d{2})-(\d{2})$/.exec(value);if(!match)return false;const year=Number(match[1]),month=Number(match[2]),day=Number(match[3]);const date=new Date(year,month-1,day);return Number.isFinite(date.getTime())&&date.getFullYear()===year&&date.getMonth()===month-1&&date.getDate()===day;}
   function effectiveConfig(s){
     if(!s)return s;
@@ -15071,6 +15094,9 @@ if ("serviceWorker" in navigator) {
     }
     titleNode.textContent=cleanText(s.festivalGreetingTitle,100);
     messageNode.textContent=cleanText(s.festivalGreetingMessage,300);
+    const imagePath=festivalImagePath(s);
+    imageNode.hidden=!imagePath;
+    if(imagePath){imageNode.src="./"+imagePath;imageNode.alt=cleanText(s.festivalGreetingFestival.replace(/_/g," "),100)+" festival artwork";}else{imageNode.removeAttribute("src");imageNode.alt="";}
     lastFocus=document.activeElement;
     previousOverflow=document.body.style.overflow;
     previousInert=Array.from(document.body.children).filter(el=>el!==backdrop).map(el=>({el,inert:el.inert}));
@@ -15100,6 +15126,7 @@ if ("serviceWorker" in navigator) {
       festivalGreetingFestival:festival?festival.value:"",
       festivalGreetingTitle:title?title.value.trim():"",
       festivalGreetingMessage:message?message.value.trim():"",
+      festivalGreetingImage:(()=>{const image=document.querySelector('[data-setting-key="festivalGreetingImage_'+(festival?festival.value:"") + '"]');return image?image.value.trim():"";})(),
       festivalGreetingStartDate:start?start.value:"",
       festivalGreetingEndDate:end?end.value:""
     };
@@ -15118,6 +15145,8 @@ if ("serviceWorker" in navigator) {
     const message=document.getElementById("festivalGreetingPreviewMessage");
     if(title)title.textContent=s.festivalGreetingTitle||(fallback?fallback[0]:"Warm festive wishes");
     if(message)message.textContent=s.festivalGreetingMessage||(fallback?fallback[1]:"May this special occasion bring happiness, peace and beautiful moments to you and your family.");
+    const image=document.getElementById("festivalGreetingPreviewImage"),path=s.festivalGreetingImage;
+    if(image){image.hidden=!/^assets\/festival\/[A-Za-z0-9._/-]+\.(?:webp|png|jpe?g|avif|svg)$/i.test(path||"")||(path||"").includes("..");if(!image.hidden){image.src="./"+path;image.alt=(s.festivalGreetingFestival||"Selected").replace(/_/g," ")+" festival artwork";}else{image.removeAttribute("src");image.alt="";}}
   }
   let previousFestivalValue="";
   document.addEventListener("focusin",e=>{if(e.target&&e.target.id==="festivalGreetingFestival")previousFestivalValue=e.target.value;});
