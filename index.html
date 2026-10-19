@@ -10687,7 +10687,22 @@ const renderAdminProductList=()=>{
       area('Greeting message','festivalGreetingMessage','')+
       '<label class="admin-setting-field"><span>Start date (optional)</span><input type="date" data-setting-key="festivalGreetingStartDate" value="'+val('festivalGreetingStartDate')+'"></label>'+
       '<label class="admin-setting-field"><span>End date (optional)</span><input type="date" data-setting-key="festivalGreetingEndDate" value="'+val('festivalGreetingEndDate')+'"></label>'+
-      '<div class="festival-greeting-admin-preview" aria-live="polite"><p class="admin-settings-intro">Preview</p><div class="festival-greeting-admin-preview-card"><p class="festival-greeting-preview-brand brand-logo"><b>SRI SAI VANI</b><small>COLLECTIONS</small></p><h3 id="festivalGreetingPreviewTitle">Warm festive wishes</h3><p id="festivalGreetingPreviewMessage">May this special occasion bring happiness, peace and beautiful moments to you and your family.</p><p class="festival-greeting-preview-note">Text-only preview. The popup uses the saved festival selection.</p></div><button type="button" class="btn dark" id="previewFestivalGreeting">PREVIEW POPUP</button></div>'+
+      '<details class="admin-settings-group"><summary>Festival image overrides (optional)</summary><div class="admin-settings-grid"><p class="admin-settings-help">Set an image path separately for each festival. Upload the image under assets/festival/ first. Leave a field blank to show a text-only greeting for that festival.</p>'+
+      field('Sankranti / Pongal / Lohri image path','festivalGreetingImage_sankranti_pongal_lohri','')+
+      +field('Maha Shivaratri image path','festivalGreetingImage_maha_shivaratri','')+
+      +field('Holi image path','festivalGreetingImage_holi','')+
+      +field('Ugadi / Gudi Padwa image path','festivalGreetingImage_ugadi_gudi_padwa','')+
+      +field('Ram Navami image path','festivalGreetingImage_ram_navami','')+
+      +field('Raksha Bandhan image path','festivalGreetingImage_raksha_bandhan','')+
+      +field('Janmashtami image path','festivalGreetingImage_janmashtami','')+
+      +field('Ganesh Chaturthi image path','festivalGreetingImage_ganesh_chaturthi','')+
+      +field('Navratri / Bathukamma / Dussehra image path','festivalGreetingImage_navratri_bathukamma_dussehra','')+
+      +field('Karwa Chauth image path','festivalGreetingImage_karwa_chauth','')+
+      +field('Diwali image path','festivalGreetingImage_diwali','')+
+      +field('Eid image path','festivalGreetingImage_eid','')+
+      +field('Christmas / New Year image path','festivalGreetingImage_christmas_new_year','')
+      '</div></details>'+
+       '<div class="festival-greeting-admin-preview" aria-live="polite"><p class="admin-settings-intro">Preview</p><div class="festival-greeting-admin-preview-card"><p class="festival-greeting-preview-brand brand-logo"><b>SRI SAI VANI</b><small>COLLECTIONS</small></p><img id="festivalGreetingPreviewImage" class="festival-greeting-preview-image" alt="Selected festival artwork" hidden><h3 id="festivalGreetingPreviewTitle">Warm festive wishes</h3><p id="festivalGreetingPreviewMessage">May this special occasion bring happiness, peace and beautiful moments to you and your family.</p><p class="festival-greeting-preview-note">Preview uses the selected festival image and greeting.</p></div><button type="button" class="btn dark" id="previewFestivalGreeting">PREVIEW POPUP</button></div>'+
       '</div></details>'+
       '<details class="admin-settings-group"><summary>Section Visibility</summary><div class="admin-settings-toggles">'+
       toggle('Show customer reviews section','showReviews')+toggle('Show Visual Journal section','showJournal')+toggle('Show store details section','showStore')+
@@ -14967,7 +14982,7 @@ if ("serviceWorker" in navigator) {
   <section class="ssv-festival-greeting-dialog" role="dialog" aria-modal="true" aria-labelledby="ssv-festival-greeting-title" aria-describedby="ssv-festival-greeting-message" tabindex="-1">
     <button type="button" class="ssv-festival-greeting-close" aria-label="Close festival greeting">&times;</button>
     <p class="ssv-festival-greeting-brand brand-logo brand-logo--popup"><b>SRI SAI VANI</b><small>COLLECTIONS</small></p>
-    <img class="ssv-festival-greeting-art" src="./assets/festival/maa-durga-symbol.webp" alt="Maa Durga symbol with trishul" width="240" height="275" decoding="async">
+    <img class="ssv-festival-greeting-art" alt="Festival artwork" width="240" height="275" decoding="async" hidden>
     <h2 id="ssv-festival-greeting-title"></h2>
     <p id="ssv-festival-greeting-message"></p>
   </section>
@@ -14978,6 +14993,7 @@ if ("serviceWorker" in navigator) {
 .ssv-festival-greeting-dialog{position:relative;width:min(520px,100%);max-height:calc(100dvh - 32px);overflow:auto;padding:clamp(34px,7vw,58px) clamp(24px,6vw,52px);border:1px solid #E4D8C5;border-radius:16px;background:#FAF7F2;color:#1C1917;text-align:center;box-shadow:0 24px 80px rgba(0,0,0,.28);overscroll-behavior:contain;animation:ssvFestivalGreetingIn .22s ease-out both}
 .ssv-festival-greeting-brand{margin:0 0 18px;color:#8B6D43;font:500 11px/1.5 "Cormorant Garamond",Georgia,serif;letter-spacing:.16em}
 .ssv-festival-greeting-art{display:block;width:clamp(112px,34vw,160px);height:auto;max-height:clamp(112px,34vw,160px);object-fit:contain;margin:0 auto 10px;mix-blend-mode:multiply;border:0;border-radius:0;box-shadow:none;pointer-events:none}
+.ssv-festival-greeting-art[hidden]{display:none!important}
 @media(min-width:601px){.ssv-festival-greeting-art{width:164px;max-height:164px;margin-bottom:10px}}
 @media(max-height:600px){.ssv-festival-greeting-dialog{padding-top:24px;padding-bottom:24px}.ssv-festival-greeting-art{width:100px;max-height:100px;margin-bottom:6px}.ssv-festival-greeting-brand{margin-bottom:10px}.ssv-festival-greeting-dialog h2{font-size:32px;margin-bottom:10px}}
 .ssv-festival-greeting-dialog h2{margin:0 0 16px;color:#6E2735;font:500 clamp(32px,6vw,46px)/1.08 "Cormorant Garamond",Georgia,serif;overflow-wrap:anywhere}
@@ -14986,6 +15002,7 @@ if ("serviceWorker" in navigator) {
 .ssv-festival-greeting-close:focus-visible{outline:2px solid #B38E5D;outline-offset:3px}
 .festival-greeting-admin-preview{grid-column:1/-1;padding:16px;border-top:1px solid var(--line)}
 .festival-greeting-admin-preview-card{padding:24px 18px;border:1px solid #E4D8C5;background:#FAF7F2;text-align:center}
+.festival-greeting-preview-image{display:block;width:112px;height:112px;max-width:100%;object-fit:contain;margin:0 auto 10px;mix-blend-mode:multiply}.festival-greeting-preview-image[hidden]{display:none!important}
 .festival-greeting-preview-brand{margin:0 0 12px;color:#8B6D43;font:500 10px/1.5 "Cormorant Garamond",Georgia,serif;letter-spacing:.15em}
 .festival-greeting-admin-preview-card h3{margin:0 0 12px;color:#6E2735;font:500 30px/1.1 "Cormorant Garamond",Georgia,serif}
 .festival-greeting-admin-preview-card>p:not(.festival-greeting-preview-brand){margin:0 auto;max-width:36ch;color:#625950;font-size:12px;line-height:1.7}
