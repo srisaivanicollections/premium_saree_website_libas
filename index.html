@@ -9894,6 +9894,21 @@ function validateSettingsInput(settingsValue){
     try{url=new URL(instagram)}catch(_){throw new Error("Enter a valid Instagram URL.");}
     if(!["https:","http:"].includes(url.protocol)||!/instagram\.com$/i.test(url.hostname.replace(/^www\./i,""))) throw new Error("Instagram URL must point to Instagram.");
   }
+  const festivalNames=["Diwali","Sankranti","Ugadi","Dasara","Bathukamma","Eid","Christmas","New Year","Vinayaka Chavithi","Navaratri"];
+  const festivalPaths={"Diwali":"assets/festival-greetings/diwali.svg","Sankranti":"assets/festival-greetings/sankranti.svg","Ugadi":"assets/festival-greetings/ugadi.svg","Dasara":"assets/festival-greetings/dasara.svg","Bathukamma":"assets/festival-greetings/bathukamma.svg","Eid":"assets/festival-greetings/eid.svg","Christmas":"assets/festival-greetings/christmas.svg","New Year":"assets/festival-greetings/new-year.svg","Vinayaka Chavithi":"assets/festival-greetings/vinayaka-chavithi.svg","Navaratri":"assets/festival-greetings/navaratri.svg"};
+  if(s.festivalGreetingEnabled===true){
+    const festival=String(s.festivalGreetingFestival||"");
+    if(!festivalNames.includes(festival))throw new Error("Choose a supported festival before enabling the greeting.");
+    if(String(s.festivalGreetingImage||"")!==festivalPaths[festival])throw new Error("Choose the matching local festival artwork.");
+    if(!String(s.festivalGreetingTitle||"").trim()||String(s.festivalGreetingTitle).length>100)throw new Error("Greeting title must contain 1-100 characters.");
+    if(!String(s.festivalGreetingMessage||"").trim()||String(s.festivalGreetingMessage).length>300)throw new Error("Greeting message must contain 1-300 characters.");
+  }
+  for(const key of ["festivalGreetingStartDate","festivalGreetingEndDate"]){
+    const value=String(s[key]||"");
+    if(value&&(!/^\\d{4}-\\d{2}-\\d{2}$/.test(value)||!Number.isFinite(Date.parse(value+"T00:00:00"))||new Date(value+"T00:00:00").toISOString().slice(0,10)!==value))throw new Error("Enter a valid festival greeting date.");
+  }
+  const start=String(s.festivalGreetingStartDate||""),end=String(s.festivalGreetingEndDate||"");
+  if(start&&end&&start>end)throw new Error("The festival greeting end date must be on or after its start date.");
   return true;
 }
 let settingsWriteQueue=Promise.resolve();
@@ -10681,8 +10696,8 @@ const renderAdminProductList=()=>{
     settingsFormBaseline.name=$("#setName")?.value.trim()||"SRI SAI VANI";
     {const digits=String(settings.whatsapp||"").replace(/\D/g,"").replace(/^91(?=\d{10}$)/,"").slice(-10);settingsFormBaseline.whatsapp=digits.length===10?"91"+digits:"";}
     settingsFormBaseline.instagram=$("#setIg")?.value.trim()||"";
-    // Greeting defaults are presentation-only until the admin enables the feature.
-    settingsFormBaseline.festivalGreetingEnabled=!!settings.festivalGreetingEnabled;
+    // Baseline must match the rendered controls, not missing stored values. Otherwise saving an unrelated setting would persist presentation defaults.
+    settingsFormBaseline.festivalGreetingEnabled=$("#studioBody [data-setting-key=\"festivalGreetingEnabled\"]")?.checked===true;
     (function initFestivalGreetingControls(){
       const festival=$("#festivalGreetingFestival"),image=$("#festivalGreetingImage");
       if(!festival||!image)return;
