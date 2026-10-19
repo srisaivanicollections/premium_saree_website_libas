@@ -10660,6 +10660,9 @@ const renderAdminProductList=()=>{
       '<details class="admin-settings-group"><summary>Shipping Announcement</summary><div class="admin-settings-grid">'+
       '<p class="admin-settings-help admin-shipping-announcement-help">Use • to separate phrases. It displays as ✦ on the website.</p>'+
       area('Announcement text','shippingAnnouncementText','SHIPPING AVAILABLE • NO CASH ON DELIVERY')+
+      '</div><div class="admin-settings-toggles">'+
+      toggle('Show shipping announcement','showShippingAnnouncement')+
+      '</div></details>'+
       '<details class="admin-settings-group" id="festivalGreetingSettings"><summary>Festival Greeting Popup</summary><div class="admin-settings-grid">'+
       toggle('Enable festival greeting popup','festivalGreetingEnabled',false)+
       '<label class="admin-setting-field"><span>Festival</span><select id="festivalGreetingFestival" data-setting-key="festivalGreetingFestival">'+
@@ -10670,10 +10673,7 @@ const renderAdminProductList=()=>{
       '<label class="admin-setting-field"><span>Greeting message</span><textarea id="festivalGreetingMessage" rows="3" maxlength="300" data-setting-key="festivalGreetingMessage">'+val('festivalGreetingMessage','May this special occasion bring happiness, peace and beautiful moments to you and your family.')+'</textarea></label>'+
       '<label class="admin-setting-field"><span>Start date (optional)</span><input type="date" id="festivalGreetingStartDate" data-setting-key="festivalGreetingStartDate" value="'+val('festivalGreetingStartDate')+'"></label>'+
       '<label class="admin-setting-field"><span>End date (optional)</span><input type="date" id="festivalGreetingEndDate" data-setting-key="festivalGreetingEndDate" value="'+val('festivalGreetingEndDate')+'"></label>'+
-      '</div><div class="festival-greeting-admin-preview"><p class="admin-settings-intro">Live preview</p><div class="festival-greeting-admin-preview-card"><img id="festivalGreetingPreviewImage" src="assets/festival-greetings/diwali.svg" alt="Selected festival artwork"><div><p class="festival-greeting-admin-brand">Sri Sai Vani Collections</p><h3 id="festivalGreetingPreviewTitle">Wishing you a joyful celebration</h3><p id="festivalGreetingPreviewMessage">May this special occasion bring happiness, peace and beautiful moments to you and your family.</p></div></div></div></details>'+'</div><div class="admin-settings-toggles">'+
-      toggle('Show shipping announcement','showShippingAnnouncement')+
-      '</div></details>'+
-      '<details class="admin-settings-group"><summary>Section Visibility</summary><div class="admin-settings-toggles">'+
+      '</div><div class="festival-greeting-admin-preview"><p class="admin-settings-intro">Live preview</p><div class="festival-greeting-admin-preview-card"><img id="festivalGreetingPreviewImage" src="assets/festival-greetings/diwali.svg" alt="Selected festival artwork"><div><p class="festival-greeting-admin-brand">Sri Sai Vani Collections</p><h3 id="festivalGreetingPreviewTitle">Wishing you a joyful celebration</h3><p id="festivalGreetingPreviewMessage">May this special occasion bring happiness, peace and beautiful moments to you and your family.</p></div></div></div></details>'+'<details class="admin-settings-group"><summary>Section Visibility</summary><div class="admin-settings-toggles">'+
       toggle('Show customer reviews section','showReviews')+toggle('Show Visual Journal section','showJournal')+toggle('Show store details section','showStore')+
       '</div></details><button type="button" class="btn dark" id="saveSettings">SAVE ALL WEBSITE SETTINGS</button><section id="imageDangerZone" class="admin-settings-group" style="padding:16px;border:1px solid var(--line);margin-top:18px"><h3>Unused Image Cleanup</h3><p>Review and remove unused product images from the archive.</p><p id="unusedImageCount" role="status" aria-live="polite">Checking count…</p><button type="button" class="btn dark" id="scanUnusedImages">REFRESH COUNT</button> <button type="button" class="btn dark" id="cleanupUnusedImages" disabled>CLEAN UNUSED IMAGES</button><p id="unusedImageStatus" role="status" aria-live="polite"></p></section></div>';
     settingsFormBaseline={};
