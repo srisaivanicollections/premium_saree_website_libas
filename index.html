@@ -15134,7 +15134,7 @@ html body #ssv-festival-greeting button.ssv-festival-greeting-close::before,html
   document.addEventListener("change",e=>{
     if(!e.target||!e.target.dataset||!/^festivalGreeting/.test(e.target.dataset.settingKey||""))return;
     if(e.target.id==="festivalGreetingFestival"){
-      const prior=defaults[previousFestivalValue],next=defaults[e.target.value];
+      const next=defaults[e.target.value];
       const title=document.querySelector('[data-setting-key="festivalGreetingTitle"]');
       const message=document.querySelector('[data-setting-key="festivalGreetingMessage"]');
       // Selecting a festival always loads that festival's matching defaults.
