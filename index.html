@@ -15137,8 +15137,10 @@ html body #ssv-festival-greeting button.ssv-festival-greeting-close::before,html
       const prior=defaults[previousFestivalValue],next=defaults[e.target.value];
       const title=document.querySelector('[data-setting-key="festivalGreetingTitle"]');
       const message=document.querySelector('[data-setting-key="festivalGreetingMessage"]');
-      if(title&&(!title.value.trim()||(prior&&title.value.trim()===prior[0])))title.value=next?next[0]:"";
-      if(message&&(!message.value.trim()||(prior&&message.value.trim()===prior[1])))message.value=next?next[1]:"";
+      // Selecting a festival always loads that festival's matching defaults.
+      // Admins can then customise either field before saving.
+      if(title)title.value=next?next[0]:"";
+      if(message)message.value=next?next[1]:"";
       previousFestivalValue=e.target.value;
     }
     updatePreview();
