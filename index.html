@@ -14966,6 +14966,10 @@ if ("serviceWorker" in navigator) {
 
 <div id="ssv-festival-greeting" class="ssv-festival-greeting-backdrop" hidden>
   <section class="ssv-festival-greeting-dialog" role="dialog" aria-modal="true" aria-labelledby="ssv-festival-greeting-title" aria-describedby="ssv-festival-greeting-message" tabindex="-1">
+    <span class="ssv-festival-corner ssv-festival-corner--top-left" aria-hidden="true"><svg viewBox="0 0 48 48" focusable="false"><path d="M3 29V8Q3 3 8 3H29"/><path d="M6 24C13 22 21 15 24 6"/><path d="M11 20C5 17 5 12 6 10C12 10 16 14 15 18"/><path d="M18 13C15 7 19 4 22 4C25 9 23 13 18 13"/><path d="M9 29C15 29 19 32 19 37C13 38 9 34 9 29"/><path d="M21 18C26 17 30 20 30 24C25 26 21 23 21 18"/></svg></span>
+    <span class="ssv-festival-corner ssv-festival-corner--top-right" aria-hidden="true"><svg viewBox="0 0 48 48" focusable="false"><path d="M3 29V8Q3 3 8 3H29"/><path d="M6 24C13 22 21 15 24 6"/><path d="M11 20C5 17 5 12 6 10C12 10 16 14 15 18"/><path d="M18 13C15 7 19 4 22 4C25 9 23 13 18 13"/><path d="M9 29C15 29 19 32 19 37C13 38 9 34 9 29"/><path d="M21 18C26 17 30 20 30 24C25 26 21 23 21 18"/></svg></span>
+    <span class="ssv-festival-corner ssv-festival-corner--bottom-left" aria-hidden="true"><svg viewBox="0 0 48 48" focusable="false"><path d="M3 29V8Q3 3 8 3H29"/><path d="M6 24C13 22 21 15 24 6"/><path d="M11 20C5 17 5 12 6 10C12 10 16 14 15 18"/><path d="M18 13C15 7 19 4 22 4C25 9 23 13 18 13"/><path d="M9 29C15 29 19 32 19 37C13 38 9 34 9 29"/><path d="M21 18C26 17 30 20 30 24C25 26 21 23 21 18"/></svg></span>
+    <span class="ssv-festival-corner ssv-festival-corner--bottom-right" aria-hidden="true"><svg viewBox="0 0 48 48" focusable="false"><path d="M3 29V8Q3 3 8 3H29"/><path d="M6 24C13 22 21 15 24 6"/><path d="M11 20C5 17 5 12 6 10C12 10 16 14 15 18"/><path d="M18 13C15 7 19 4 22 4C25 9 23 13 18 13"/><path d="M9 29C15 29 19 32 19 37C13 38 9 34 9 29"/><path d="M21 18C26 17 30 20 30 24C25 26 21 23 21 18"/></svg></span>
     <button type="button" class="ssv-festival-greeting-close" aria-label="Close festival greeting">&times;</button>
     <p class="ssv-festival-greeting-brand brand-logo brand-logo--popup"><b>SRI SAI VANI</b><small>COLLECTIONS</small></p>
     <h2 id="ssv-festival-greeting-title"></h2>
@@ -14998,6 +15002,23 @@ html body #ssv-festival-greeting button.ssv-festival-greeting-close::before,html
 #previewFestivalGreeting{width:100%;margin-top:12px}
 @keyframes ssvFestivalGreetingIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 @media(prefers-reduced-motion:reduce){.ssv-festival-greeting-dialog{animation:none}}
+/* Universal festival frame: subtle botanical corners, independent of selected festival. */
+.ssv-festival-greeting-dialog{isolation:isolate}
+.ssv-festival-corner{position:absolute;z-index:0;display:block;width:48px;height:48px;color:#C8B28A;opacity:.82;pointer-events:none}
+.ssv-festival-corner svg{display:block;width:100%;height:100%;overflow:visible;fill:none;stroke:currentColor;stroke-width:1.05;stroke-linecap:round;stroke-linejoin:round}
+.ssv-festival-corner--top-left{top:10px;left:10px}
+.ssv-festival-corner--top-right{top:58px;right:10px;transform:rotate(90deg)}
+.ssv-festival-corner--bottom-left{bottom:10px;left:10px;transform:rotate(-90deg)}
+.ssv-festival-corner--bottom-right{right:10px;bottom:10px;transform:rotate(180deg)}
+.ssv-festival-greeting-close{z-index:1}
+.ssv-festival-greeting-brand,.ssv-festival-greeting-dialog h2,.ssv-festival-greeting-dialog>p:not(.ssv-festival-greeting-brand){position:relative;z-index:1}
+@media(max-width:600px){
+ .ssv-festival-corner{width:34px;height:34px;opacity:.76}
+ .ssv-festival-corner--top-left{top:8px;left:8px}
+ .ssv-festival-corner--top-right{top:54px;right:8px}
+ .ssv-festival-corner--bottom-left{bottom:8px;left:8px}
+ .ssv-festival-corner--bottom-right{right:8px;bottom:8px}
+}
 </style>
 <script id="ssv-festival-greeting-text-only-controller">
 (function(){
