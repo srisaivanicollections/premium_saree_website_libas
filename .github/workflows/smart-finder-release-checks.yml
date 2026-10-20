@@ -173,9 +173,8 @@ jobs:
           async function installMocks(page) {
             const state = { products: structuredClone(productsFixture), settings: structuredClone(settingsFixture), workerActions: [], settingsReads: 0 };
             await page.addInitScript(() => {
-              // Observe the app's authoritative settings event before storefront interactions.
-              // The festival greeting is opened by this same event, so checking visibility before
-              // it fires creates a race where the modal appears after the test's dismissal check.
+              // Observe settings readiness before storefront interactions. The festival
+              // greeting opens on this event and can otherwise intercept Finder clicks.
               window.__ssvSettingsUpdatedObserved = false;
               window.addEventListener("ssv:settings-updated", () => {
                 window.__ssvSettingsUpdatedObserved = true;
@@ -355,8 +354,6 @@ jobs:
             const state = await installMocks(page);
             try {
               await page.goto("http://127.0.0.1:4173/");
-              // Wait for the authoritative settings event before inspecting the greeting.
-              // Its visibility is decided by that event, not by initial DOM readiness.
               await page.waitForFunction(() => window.__ssvSettingsUpdatedObserved === true, null, { timeout: 10000 });
               const festivalGreeting = page.locator("#ssv-festival-greeting");
               if (await festivalGreeting.isVisible()) {
