@@ -59,6 +59,15 @@ test("popup is disabled by default and has small-viewport layout safeguards", ()
   assert.match(html, /width:44px;height:44px/);
 });
 
+test("universal botanical corner ornaments are decorative and responsive across festivals", () => {
+  assert.equal((html.match(/class="ssv-festival-corner ssv-festival-corner--/g) || []).length, 4, "Popup must include four corner ornaments");
+  assert.match(html, /class="ssv-festival-corner[^"]*" aria-hidden="true"/);
+  assert.match(html, /\.ssv-festival-corner\{[^}]*pointer-events:none/s);
+  assert.match(html, /\.ssv-festival-corner--top-right\{[^}]*transform:rotate\(90deg\)/);
+  assert.match(html, /@media\(max-width:600px\)\{\s*\.ssv-festival-corner\{width:34px;height:34px/s);
+  assert.match(html, /\.ssv-festival-greeting-close\{z-index:1\}/);
+});
+
 test("festival artwork is configurable per festival instead of hardcoded in popup markup", () => {
   assert.doesNotMatch(html, /class="ssv-festival-greeting-art" src=/);
   assert.match(html, /function festivalImagePath\(s\)/);
