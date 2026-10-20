@@ -239,6 +239,8 @@ jobs:
             toggleState.settings[categorySettingKey] = true;
             try {
               await togglePage.goto("http://127.0.0.1:4173/");
+              const greeting = togglePage.locator("#ssv-festival-greeting");
+              if (await greeting.isVisible()) { await greeting.locator(".ssv-festival-greeting-close").click(); await greeting.waitFor({ state: "hidden" }); }
               await togglePage.locator("#products [data-product-id]").first().waitFor();
               await togglePage.locator("#ssv-smart-finder-trigger").click();
               await togglePage.locator("#ssv-finder-category").selectOption(category);
@@ -304,6 +306,8 @@ jobs:
             safetyState.settings[settingKey] = true;
             try {
               await safetyPage.goto("http://127.0.0.1:4173/");
+              const greeting = safetyPage.locator("#ssv-festival-greeting");
+              if (await greeting.isVisible()) { await greeting.locator(".ssv-festival-greeting-close").click(); await greeting.waitFor({ state: "hidden" }); }
               await safetyPage.locator("#products [data-product-id]").first().waitFor();
               await safetyPage.locator("#ssv-smart-finder-trigger").click();
               await safetyPage.locator("#ssv-finder-category").selectOption(category);
