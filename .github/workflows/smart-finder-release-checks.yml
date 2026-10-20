@@ -342,6 +342,13 @@ jobs:
             const state = await installMocks(page);
             try {
               await page.goto("http://127.0.0.1:4173/");
+              // The festival greeting is intentionally modal when enabled in settings. Dismiss it
+              // through its real close control before testing unrelated customer journeys.
+              const festivalGreeting = page.locator("#ssv-festival-greeting");
+              if (await festivalGreeting.isVisible()) {
+                await festivalGreeting.locator(".ssv-festival-greeting-close").click();
+                await festivalGreeting.waitFor({ state: "hidden" });
+              }
               await page.locator("#products [data-product-id]").first().waitFor();
               await page.locator("#ssv-finder-hint").waitFor({ state: "visible" });
               assert.ok(await page.locator("#ssv-smart-finder-trigger").isVisible(), label + ": Finder trigger remains visible with first-load hint");
