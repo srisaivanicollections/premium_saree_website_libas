@@ -173,13 +173,6 @@ jobs:
           async function installMocks(page) {
             const state = { products: structuredClone(productsFixture), settings: structuredClone(settingsFixture), workerActions: [], settingsReads: 0 };
             await page.addInitScript(() => {
-              // Observe the app's authoritative settings event before storefront interactions.
-              // The festival greeting is opened by this same event, so checking visibility before
-              // it fires creates a race where the modal appears after the test's dismissal check.
-              window.__ssvSettingsUpdatedObserved = false;
-              window.addEventListener("ssv:settings-updated", () => {
-                window.__ssvSettingsUpdatedObserved = true;
-              }, { once: true });
               // Syntactically valid test-only token. All GitHub requests are intercepted below.
               localStorage.setItem("ssv_github_token_v1", "ghp_" + "e2eTestToken012345678901234567890123456789");
             });
@@ -246,9 +239,6 @@ jobs:
             toggleState.settings[categorySettingKey] = true;
             try {
               await togglePage.goto("http://127.0.0.1:4173/");
-              await togglePage.waitForFunction(() => window.__ssvSettingsUpdatedObserved === true, null, { timeout: 10000 });
-              const greeting = togglePage.locator("#ssv-festival-greeting");
-              if (await greeting.isVisible()) { await greeting.locator(".ssv-festival-greeting-close").click(); await greeting.waitFor({ state: "hidden" }); }
               await togglePage.locator("#products [data-product-id]").first().waitFor();
               await togglePage.locator("#ssv-smart-finder-trigger").click();
               await togglePage.locator("#ssv-finder-category").selectOption(category);
@@ -314,9 +304,6 @@ jobs:
             safetyState.settings[settingKey] = true;
             try {
               await safetyPage.goto("http://127.0.0.1:4173/");
-              await safetyPage.waitForFunction(() => window.__ssvSettingsUpdatedObserved === true, null, { timeout: 10000 });
-              const greeting = safetyPage.locator("#ssv-festival-greeting");
-              if (await greeting.isVisible()) { await greeting.locator(".ssv-festival-greeting-close").click(); await greeting.waitFor({ state: "hidden" }); }
               await safetyPage.locator("#products [data-product-id]").first().waitFor();
               await safetyPage.locator("#ssv-smart-finder-trigger").click();
               await safetyPage.locator("#ssv-finder-category").selectOption(category);
@@ -355,14 +342,6 @@ jobs:
             const state = await installMocks(page);
             try {
               await page.goto("http://127.0.0.1:4173/");
-              // Wait for the authoritative settings event before inspecting the greeting.
-              // Its visibility is decided by that event, not by initial DOM readiness.
-              await page.waitForFunction(() => window.__ssvSettingsUpdatedObserved === true, null, { timeout: 10000 });
-              const festivalGreeting = page.locator("#ssv-festival-greeting");
-              if (await festivalGreeting.isVisible()) {
-                await festivalGreeting.locator(".ssv-festival-greeting-close").click();
-                await festivalGreeting.waitFor({ state: "hidden" });
-              }
               await page.locator("#products [data-product-id]").first().waitFor();
               await page.locator("#ssv-finder-hint").waitFor({ state: "visible" });
               assert.ok(await page.locator("#ssv-smart-finder-trigger").isVisible(), label + ": Finder trigger remains visible with first-load hint");
