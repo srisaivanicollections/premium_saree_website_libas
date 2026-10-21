@@ -1,5 +1,19 @@
 [
   {
+    "id": 1792607688220,
+    "name": "Chiniya pattu",
+    "category": "Sarees",
+    "occasions": [],
+    "color": "",
+    "price": 4500,
+    "originalPrice": 5500,
+    "image": "assets/products/1792607684175-f0beb1cb56bb-file_0000000092748211ae7a7d975fac7b62.png",
+    "dateAdded": "2026-10-21T18:34:48.220Z",
+    "newArrival": true,
+    "bestSeller": false,
+    "availability": true
+  },
+  {
     "id": 1792607614138,
     "name": "Double shaded floral boarder",
     "category": "Sarees",
