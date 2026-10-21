@@ -248,6 +248,15 @@ jobs:
               await togglePage.waitForFunction(() => window.__ssvSettingsUpdatedObserved === true, null, { timeout: 10000 });
               const greeting = togglePage.locator("#ssv-festival-greeting");
               if (await greeting.isVisible()) { await greeting.locator(".ssv-festival-greeting-close").click(); await greeting.waitFor({ state: "hidden" }); }
+              // This isolated OFF/ON journey may start on an enabled but empty category (for example Dresses).
+              // Choose a populated enabled category for its product/cart setup; the empty-category behavior is tested separately.
+              const setupCategory = ["Sarees", "Dresses", "Jewellery"].find(name =>
+                productsFixture.some(product => String(product.category || "").trim().toLowerCase() === name.toLowerCase()) &&
+                toggleState.settings[({ Sarees: "categorySareesEnabled", Dresses: "categoryDressesEnabled", Jewellery: "categoryJewelryEnabled" })[name]] !== false
+              );
+              if (setupCategory && await togglePage.locator('#tabs button[data-tab="' + setupCategory + '"]').count()) {
+                await togglePage.locator('#tabs button[data-tab="' + setupCategory + '"]').click();
+              }
               await togglePage.locator("#products [data-product-id]").first().waitFor();
               await togglePage.locator("#ssv-smart-finder-trigger").click();
               await togglePage.locator("#ssv-finder-category").selectOption(category);
