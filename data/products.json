@@ -1,5 +1,19 @@
 [
   {
+    "id": 1792607416386,
+    "name": "Vintage pattu",
+    "category": "Sarees",
+    "occasions": [],
+    "color": "Vintage pattu",
+    "price": 2500,
+    "originalPrice": 3500,
+    "image": "assets/products/1792607412483-4eb0311103ba-file_00000000b34c8211bc540b3c1e35ff42.png",
+    "dateAdded": "2026-10-21T18:30:16.387Z",
+    "newArrival": true,
+    "bestSeller": false,
+    "availability": true
+  },
+  {
     "id": 1791912684577,
     "name": "Boarder less saree",
     "category": "Sarees",
