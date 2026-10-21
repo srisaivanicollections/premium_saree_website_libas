@@ -9827,7 +9827,7 @@ async function load(){
   delete settings.githubToken;
   // Never broadcast fallback settings as if category availability were verified.
   // Finder and cart remain fail-closed until a successful settings read or Admin refresh.
-  if(categorySettingsReady){if(!categoryWasManuallySelected&&(category==="__browse_all__"||!isCategoryEnabled(category)||!products.some(p=>normalizeCategoryName(p?.category).toLowerCase()===normalizeCategoryName(category).toLowerCase())))category=ssvDefaultStorefrontCategory(products);window.dispatchEvent(new CustomEvent("ssv:settings-updated",{detail:{settings:{...settings}}}));}
+  if(categorySettingsReady){if(!categoryWasManuallySelected&&(category==="__browse_all__"||!isCategoryEnabled(category)))category=ssvDefaultStorefrontCategory(products);window.dispatchEvent(new CustomEvent("ssv:settings-updated",{detail:{settings:{...settings}}}));}
 
   try{
     apply();
@@ -10010,8 +10010,8 @@ function apply(){
 }
 function normalizeCategoryName(name){const value=String(name||"").trim().toLowerCase();if(value==="jewellery"||value==="jewelry")return "Jewellery";if(value==="sarees")return "Sarees";if(value==="dresses")return "Dresses";return "";}
 function isCategoryEnabled(name){if(!categorySettingsReady)return false;const normalized=normalizeCategoryName(name);const key=({Sarees:"categorySareesEnabled",Dresses:"categoryDressesEnabled",Jewellery:"categoryJewelryEnabled"})[normalized];return !!key&&!(settings[key]===false||settings[key]==="false"||settings[key]===0||settings[key]==="0")}
-window.addEventListener("ssv:settings-updated",event=>{if(event.detail?.settings&&typeof event.detail.settings==="object"){categorySettingsReady=true;if(!categoryWasManuallySelected&&category!=="__browse_all__"&&(!isCategoryEnabled(category)||!products.some(p=>normalizeCategoryName(p?.category).toLowerCase()===normalizeCategoryName(category).toLowerCase())))category=ssvDefaultStorefrontCategory(products);}});
-function ssvDefaultStorefrontCategory(items=products){const list=Array.isArray(items)?items:[];const enabled=["Sarees","Dresses","Jewellery"].filter(isCategoryEnabled);for(const name of enabled){if(list.some(p=>normalizeCategoryName(p?.category).toLowerCase()===name.toLowerCase()))return name;}return enabled[0]||"Sarees";}
+window.addEventListener("ssv:settings-updated",event=>{if(event.detail?.settings&&typeof event.detail.settings==="object"){categorySettingsReady=true;if(!categoryWasManuallySelected&&category!=="__browse_all__"&&!isCategoryEnabled(category))category=ssvDefaultStorefrontCategory(products);}});
+function ssvDefaultStorefrontCategory(items=products){const enabled=["Sarees","Dresses","Jewellery"].filter(isCategoryEnabled);return enabled[0]||"Sarees";}
 function renderTabs(){const enabled=["Sarees","Dresses","Jewellery"].filter(isCategoryEnabled);if(categorySettingsReady&&category!=="__browse_all__"&&!enabled.includes(category))category=ssvDefaultStorefrontCategory(products);$("#tabs").innerHTML=enabled.map(c=>'<button class="'+(category===c?"active":"")+'" data-tab="'+c+'">'+(c==="Jewellery"?"JEWELLERY":c.toUpperCase())+"</button>").join("")}
 function render(){
   renderTabs();
