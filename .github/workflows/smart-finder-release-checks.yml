@@ -178,6 +178,17 @@ jobs:
 
           const productsFixture = JSON.parse(readFileSync("data/products.json", "utf8"));
           const settingsFixture = JSON.parse(readFileSync("data/settings.json", "utf8"));
+          // Keep browser journeys deterministic even when the real catalogue contains no Dresses.
+          // These synthetic rows exist only in the intercepted browser fixture, never in production data.
+          const dressFixtureTemplate = productsFixture[0] || {};
+          for (const dress of [
+            { id: 990000001, name: "Blue frock", color: "Blue", price: 450 },
+            { id: 990000002, name: "Printed frock", color: "Pink", price: 750 }
+          ]) {
+            if (!productsFixture.some(product => product.name === dress.name && product.category === "Dresses")) {
+              productsFixture.push({ ...structuredClone(dressFixtureTemplate), ...dress, category: "Dresses", originalPrice: dress.price + 100, image: dressFixtureTemplate.image || "assets/products/test-dress.jpg", inStock: true, occasion: ["Casual"] });
+            }
+          }
           const workerPattern = /^https:\/\/ssv-admin-otp\.vinith-paithari\.workers\.dev\/?/;
           const githubPattern = /^https:\/\/api\.github\.com\/repos\/srisaivanicollections\/srisaivanicollections\.github\.io\/contents\/data\/(products|settings)\.json/;
 
@@ -363,7 +374,7 @@ jobs:
               await safetyPage.waitForFunction(() => window.__ssvSettingsUpdatedObserved === true, null, { timeout: 10000 });
               const greeting = safetyPage.locator("#ssv-festival-greeting");
               if (await greeting.isVisible()) { await greeting.locator(".ssv-festival-greeting-close").click(); await greeting.waitFor({ state: "hidden" }); }
-              await safetyPage.locator("#products [data-product-id]").first().waitFor();
+              await waitForProductCards(safetyPage, safetyState, label + " checkout-safety catalogue");
               await safetyPage.locator("#ssv-smart-finder-trigger").click();
               await safetyPage.locator("#ssv-finder-category").selectOption(category);
               await safetyPage.locator("#ssv-finder-budget").fill("");
@@ -407,21 +418,20 @@ jobs:
                 await festivalGreeting.locator(".ssv-festival-greeting-close").click();
                 await festivalGreeting.waitFor({ state: "hidden" });
               }
-              await page.locator("#products [data-product-id]").first().waitFor();
+              await waitForProductCards(page, state, label + " main catalogue");
               await page.locator("#ssv-finder-hint").waitFor({ state: "visible" });
               assert.ok(await page.locator("#ssv-smart-finder-trigger").isVisible(), label + ": Finder trigger remains visible with first-load hint");
               const enabledCategoryNames = ["Sarees", "Dresses", "Jewellery"].filter(category => {
                 const key = ({ Sarees: "categorySareesEnabled", Dresses: "categoryDressesEnabled", Jewellery: "categoryJewelryEnabled" })[category];
                 const value = settingsFixture[key];
-                const enabled = !(value === false || value === "false" || value === 0 || value === "0");
-                return enabled && productsFixture.some(product => String(product.category || "").trim().toLowerCase() === category.toLowerCase());
+                return !(value === false || value === "false" || value === 0 || value === "0");
               });
               const expectedDefaultCategory = enabledCategoryNames[0] || "";
               const hasDefaultCategoryBehavior = await page.evaluate(async () => /function ssvDefaultStorefrontCategory/.test(await (await fetch("/index.html")).text()));
               if (hasDefaultCategoryBehavior) {
-                assert.equal(await page.locator("#tabs button.active").getAttribute("data-tab"), expectedDefaultCategory, label + ": first populated enabled category is selected on load");
+                assert.equal(await page.locator("#tabs button.active").getAttribute("data-tab"), expectedDefaultCategory, label + ": first enabled category is selected on load, regardless of product count");
                 const expectedDefaultCount = productsFixture.filter(product => String(product.category || "").trim().toLowerCase() === expectedDefaultCategory.toLowerCase()).length;
-                assert.equal(await page.locator("#products [data-product-id]").count(), expectedDefaultCount, label + ": default catalogue shows only the first populated enabled category");
+                assert.equal(await page.locator("#products [data-product-id]").count(), expectedDefaultCount, label + ": default catalogue shows only products in the selected category, which may be empty");
               } else {
                 const expectedEnabledCount = productsFixture.filter(product => {
                   const category = String(product.category || "").trim().toLowerCase();
