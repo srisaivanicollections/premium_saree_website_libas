@@ -87,7 +87,7 @@ jobs:
           assert.doesNotMatch(page, /data-tab=["\x27](?:All|Best Seller)["\x27]/i, "All and Best Seller must not be customer-facing catalogue tabs");
           assert.match(page, /if\(!categorySettingsReady\)return false/, "Storefront must fail closed until category settings are verified");
           assert.match(page, /window\.addEventListener\("ssv:settings-updated",event=>\{if\(event\.detail\?\.settings/, "Successful Admin settings refresh must restore storefront category visibility");
-          assert.match(page, /if\(categorySettingsReady\)\{if\(category==="__browse_all__"\|\|!isCategoryEnabled\(category\)\)category=ssvDefaultStorefrontCategory\(products\);window\.dispatchEvent\(new CustomEvent\("ssv:settings-updated"/, "Verified settings select a default category before broadcasting the settings event");
+          assert.match(page, /if\(categorySettingsReady\)\{if\(!categoryWasManuallySelected&&\(category==="__browse_all__"\|\|!isCategoryEnabled\(category\)\|\|!products\.some[\s\S]*?category=ssvDefaultStorefrontCategory\(products\);window\.dispatchEvent\(new CustomEvent\("ssv:settings-updated"/, "Verified initial settings select a populated default category without overriding manual selection");
           assert.doesNotMatch(page, /selectedCategory==="best seller"|special==="best seller"/, "Best Seller must not be a customer-facing catalogue filter");
           assert.match(checkout, /if\(!categorySettingsReady\)return false/, "Cart must fail closed until category settings are loaded");
           assert.match(checkout, /if\(!categorySettingsReady\)\{showStatus\(/, "Checkout submission must wait for verified category settings");
