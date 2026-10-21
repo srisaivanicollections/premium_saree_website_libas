@@ -27,7 +27,7 @@ test("default category falls back through the visible category order and then th
 
 test("live GitHub Pages storefront selects the first populated enabled category after settings load", () => {
   assert.match(liveSource, /function ssvDefaultStorefrontCategory\(items=products\)/);
-  assert.match(liveSource, /if\(category==="__browse_all__"\|\|!isCategoryEnabled\(category\)\)category=ssvDefaultStorefrontCategory\(products\)/);
+  assert.match(liveSource, /if\(!categoryWasManuallySelected&&\(category==="__browse_all__"\|\|!isCategoryEnabled\(category\)\|\|!products\.some/);
   assert.match(liveSource, /category=ssvDefaultStorefrontCategory\(products\);window\.dispatchEvent\(new CustomEvent\("ssv:settings-updated"/, "Active inline storefront must select the default category before first render, not rely only on app.js");
   assert.match(liveSource, /if\(categorySettingsReady&&category!=="__browse_all__"&&!enabled\.includes\(category\)/, "Render tabs must only fall back when the selected category is disabled");
   assert.match(liveSource, /categoryWasManuallySelected=true/, "A user-selected empty category must not be overridden by settings refresh");
