@@ -10000,14 +10000,29 @@ function productImageSrc(value){
     if(!shareable)return;
     event.preventDefault();
     const message="Hi Sri Sai Vani Collections! I'm interested in "+(link.dataset.productName||"this product")+" ("+(link.dataset.productPrice||"price not listed")+"). Is it available?";
+    // Reserve a fallback tab during the original click so popup blockers do not
+    // suppress WhatsApp if the native share attempt fails.
+    const fallbackWindow=window.open("about:blank","_blank");
+    if(fallbackWindow)fallbackWindow.opener=null;
+    const closeFallback=()=>{if(fallbackWindow&&!fallbackWindow.closed)fallbackWindow.close();};
+    const openFallback=()=>{
+      if(fallbackWindow&&!fallbackWindow.closed)fallbackWindow.location.href=link.href;
+      else if(!fallbackWindow)window.open(link.href,"_blank","noopener,noreferrer");
+    };
     try{
       // Call share synchronously in the original click handler to retain user activation.
       const result=navigator.share({files:[entry.file],title:link.dataset.productName||"Product enquiry",text:message});
-      Promise.resolve(result).catch(error=>{
-        if(error&&error.name!=="AbortError")console.warn("[SSV WhatsApp image share] Native share failed:",error);
+      Promise.resolve(result).then(closeFallback).catch(error=>{
+        if(error&&error.name==="AbortError"){closeFallback();return;}
+        console.warn("[SSV WhatsApp image share] Native share failed:",error);
+        openFallback();
       });
     }catch(error){
-      if(!(error&&error.name==="AbortError"))console.warn("[SSV WhatsApp image share] Native share failed:",error);
+      if(error&&error.name==="AbortError")closeFallback();
+      else{
+        console.warn("[SSV WhatsApp image share] Native share failed:",error);
+        openFallback();
+      }
     }
   });
 })();
