@@ -345,44 +345,6 @@
     }
   },
   {
-    "id": 1791751843478,
-    "name": "Printed frock",
-    "category": "Dresses",
-    "color": "Pink",
-    "price": 800,
-    "originalPrice": 1000,
-    "image": "assets/products/1791751841674-b68899c92514-palmona-printed-viscose-satin-midi-dress-with-voluminous-sleeves-5633534.jpg",
-    "dateAdded": "2026-10-11T20:50:43.479Z",
-    "newArrival": true,
-    "bestSeller": true,
-    "availability": true,
-    "occasions": [
-      "Daily Wear"
-    ],
-    "occasionMetadata": {
-      "source": "ai",
-      "model": "CLIP-ViT-B-32",
-      "score": 0.4641,
-      "margin": 0.2829,
-      "scores": [
-        {
-          "label": "Daily Wear",
-          "score": 0.4641
-        }
-      ],
-      "image": "assets/products/1791751841674-b68899c92514-palmona-printed-viscose-satin-midi-dress-with-voluminous-sleeves-5633534.jpg",
-      "version": 1
-    },
-    "colourMetadata": {
-      "source": "ai",
-      "model": "CLIP-ViT-B-32",
-      "score": 0.4065,
-      "margin": 0.1881,
-      "image": "assets/products/1791751841674-b68899c92514-palmona-printed-viscose-satin-midi-dress-with-voluminous-sleeves-5633534.jpg",
-      "version": 1
-    }
-  },
-  {
     "id": 1791744300158,
     "name": "Designer Saree",
     "category": "Sarees",
