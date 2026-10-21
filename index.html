@@ -15406,6 +15406,45 @@ html body #ssv-festival-greeting button.ssv-festival-greeting-close::before,html
   }
 }
 </style>
+
+
+<style id="ssv-admin-status-label-consistency-20261022">
+/* Keep NEW, BEST SELLER and availability labels on one consistent baseline. */
+#admin .admin-product-status .admin-status {
+  display: inline-flex !important;
+  align-items: center !important;
+  flex: 0 0 auto !important;
+  min-height: 18px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  font-family: "Montserrat", "Inter", Arial, sans-serif !important;
+  font-size: 9px !important;
+  font-weight: 600 !important;
+  line-height: 1.25 !important;
+  letter-spacing: .025em !important;
+  text-transform: uppercase !important;
+  white-space: nowrap !important;
+}
+#admin .admin-product-status .admin-status::before { display: none !important; content: none !important; }
+#admin .admin-product-status .admin-status + .admin-status::before {
+  display: inline-block !important;
+  content: "" !important;
+  width: 1px !important;
+  height: 12px !important;
+  margin: 0 10px 0 0 !important;
+  background: #E5DED3 !important;
+}
+#admin .admin-product-status .admin-status.is-new { color: #9A8055 !important; }
+#admin .admin-product-status .admin-status.is-best { color: #713D49 !important; }
+#admin .admin-product-status .admin-status.is-available { color: #647A60 !important; }
+#admin .admin-product-status .admin-status.is-unavailable { color: #A7655B !important; }
+@media (max-width: 600px) {
+  #admin .admin-product-status .admin-status { font-size: 8px !important; letter-spacing: 0 !important; }
+  #admin .admin-product-status .admin-status + .admin-status::before { margin-right: 6px !important; }
+}
+</style>
 </html>
 
 
