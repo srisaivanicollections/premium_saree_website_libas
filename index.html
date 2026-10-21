@@ -9920,31 +9920,63 @@ function productImageSrc(value){
   return path;
 }
 
-// On supported mobile browsers, share the actual product image file through
-// the native share sheet. Keep the existing WhatsApp text link as a fallback.
-document.addEventListener("click", async function(event){
-  const link=event.target.closest(".lux-wa-action");
-  if(!link || !navigator.share || typeof File==="undefined" || typeof navigator.canShare!=="function") return;
-  const imageUrl=String(link.dataset.productImage||"").trim();
-  if(!imageUrl) return;
-  event.preventDefault();
-  try{
-    const response=await fetch(imageUrl,{mode:"cors",credentials:"omit",cache:"force-cache"});
-    if(!response.ok) throw new Error("Product image could not be loaded.");
-    const blob=await response.blob();
-    if(!blob.type.startsWith("image/")) throw new Error("Product asset is not an image.");
-    const extension=({ "image/jpeg":"jpg","image/png":"png","image/webp":"webp","image/gif":"gif" })[blob.type]||"jpg";
-    const safeName=String(link.dataset.productName||"product").normalize("NFKD").replace(/[^a-zA-Z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,60)||"product";
-    const file=new File([blob],safeName+"."+extension,{type:blob.type});
-    if(!navigator.canShare({files:[file]})) throw new Error("This browser cannot share image files.");
-    const message="Hi Sri Sai Vani Collections! I'm interested in "+(link.dataset.productName||"this product")+" ("+(link.dataset.productPrice||"price not listed")+"). Is it available?";
-    await navigator.share({files:[file],title:link.dataset.productName||"Product enquiry",text:message});
-  }catch(error){
-    if(error && error.name==="AbortError") return;
-    // Preserve the existing enquiry flow if image sharing is unavailable.
-    window.location.href=link.href;
+// Cache product files before a click so navigator.share() is invoked while
+// the browser's user activation is still valid. If a file is not ready, leave
+// the original target="_blank" WhatsApp link untouched as the safe fallback.
+(function(){
+  const productFiles=new Map();
+  function loadProductFile(link){
+    const imageUrl=String(link.dataset.productImage||"").trim();
+    if(!imageUrl)return Promise.reject(new Error("No product image."));
+    if(!productFiles.has(imageUrl)){
+      const promise=fetch(imageUrl,{mode:"cors",credentials:"omit",cache:"force-cache"})
+        .then(response=>{if(!response.ok)throw new Error("Product image could not be loaded.");return response.blob();})
+        .then(blob=>{
+          if(!blob.type.startsWith("image/"))throw new Error("Product asset is not an image.");
+          const extension=({"image/jpeg":"jpg","image/png":"png","image/webp":"webp","image/gif":"gif"})[blob.type]||"jpg";
+          const safeName=String(link.dataset.productName||"product").normalize("NFKD").replace(/[^a-zA-Z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,60)||"product";
+          return new File([blob],safeName+"."+extension,{type:blob.type});
+        });
+      productFiles.set(imageUrl,promise);
+      promise.catch(()=>{if(productFiles.get(imageUrl)===promise)productFiles.delete(imageUrl);});
+    }
+    return productFiles.get(imageUrl);
   }
-});
+  function warm(link){if(link&&link.matches(".lux-wa-action")&&navigator.share&&typeof File!=="undefined"&&typeof navigator.canShare==="function")loadProductFile(link).catch(()=>{});}
+  function watch(root){
+    if(!root)return;
+    const links=[];
+    if(root.matches&&root.matches(".lux-wa-action"))links.push(root);
+    if(root.querySelectorAll)links.push(...root.querySelectorAll(".lux-wa-action"));
+    links.forEach(link=>{if("IntersectionObserver" in window){const observer=new IntersectionObserver(entries=>{if(entries.some(entry=>entry.isIntersecting)){observer.disconnect();warm(link);}});observer.observe(link);}else warm(link);});
+  }
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",()=>watch(document),{once:true});else watch(document);
+  if("MutationObserver" in window)new MutationObserver(records=>records.forEach(record=>record.addedNodes.forEach(node=>{if(node.nodeType===1)watch(node);}))).observe(document.documentElement,{childList:true,subtree:true});
+  document.addEventListener("pointerover",event=>{const link=event.target.closest&&event.target.closest(".lux-wa-action");if(link)warm(link);},{passive:true});
+  document.addEventListener("focusin",event=>{const link=event.target.closest&&event.target.closest(".lux-wa-action");if(link)warm(link);});
+  document.addEventListener("click",function(event){
+    const link=event.target.closest&&event.target.closest(".lux-wa-action");
+    if(!link||!navigator.share||typeof File==="undefined"||typeof navigator.canShare!=="function")return;
+    const imageUrl=String(link.dataset.productImage||"").trim();
+    if(!imageUrl)return;
+    const filePromise=productFiles.get(imageUrl);
+    // Do not intercept a click while the image is still downloading. The
+    // existing link opens WhatsApp in a new tab, without delaying navigation.
+    if(!filePromise)return;
+    event.preventDefault();
+    filePromise.then(file=>{
+      if(!navigator.canShare({files:[file]})){window.open(link.href,"_blank","noopener,noreferrer");return;}
+      const message="Hi Sri Sai Vani Collections! I'm interested in "+(link.dataset.productName||"this product")+" ("+(link.dataset.productPrice||"price not listed")+"). Is it available?";
+      // Call share immediately in this click's promise continuation only after
+      // preloading; if activation has expired, the normal fallback is used.
+      return navigator.share({files:[file],title:link.dataset.productName||"Product enquiry",text:message});
+    }).catch(error=>{
+      if(error&&error.name==="AbortError")return;
+      // Keep the storefront in place and preserve the original new-tab behavior.
+      window.open(link.href,"_blank","noopener,noreferrer");
+    });
+  });
+})();
 function apply(){
   all(".brand b").forEach(x=>x.textContent=settings.name||"SRI SAI VANI");
   const setText=(selector,key,fallback)=>{const el=$(selector);if(el&&settings[key]!==undefined)el.textContent=String(settings[key]);else if(el&&fallback!==undefined)el.textContent=fallback;};
