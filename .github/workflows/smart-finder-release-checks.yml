@@ -237,6 +237,7 @@ jobs:
               const url = new URL(request.url());
               const isProducts = url.pathname.endsWith("/data/products.json");
               if (request.method() === "GET") {
+                if (!isProducts) state.settingsReads++;
                 const value = isProducts ? state.products : state.settings;
                 await route.fulfill({
                   status: 200,
