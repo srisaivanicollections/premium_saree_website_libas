@@ -15355,6 +15355,97 @@ html body #ssv-festival-greeting button.ssv-festival-greeting-close::before,html
 }
 </style>
 
+
+
+<style id="ssv-admin-edit-desktop-layout-only-20261022">
+/* Desktop-only product editor layout. Mobile styles are intentionally unchanged. */
+@media (min-width: 901px) {
+  #admin.modal:not(.hidden):has(#studio:not(.hidden)) #studioBody:has(#fName) {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+    grid-auto-rows: max-content !important;
+    align-content: start !important;
+    align-items: start !important;
+    gap: 8px 14px !important;
+    padding: 10px 18px 14px !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+  }
+  #admin.modal:not(.hidden):has(#studio:not(.hidden)) #studioBody:has(#fName) > .admin-row {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    align-items: start !important;
+    gap: 8px !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+  }
+  #admin.modal:not(.hidden):has(#studio:not(.hidden)) #studioBody:has(#fName) > .admin-row:first-child,
+  #admin.modal:not(.hidden):has(#studio:not(.hidden)) #studioBody:has(#fName) > .admin-occasion-row,
+  #admin.modal:not(.hidden):has(#studio:not(.hidden)) #studioBody:has(#fName) > .upload-row,
+  #admin.modal:not(.hidden):has(#studio:not(.hidden)) #studioBody:has(#fName) > .admin-image-preview-wrap {
+    grid-column: 1 / -1 !important;
+  }
+  #admin.modal:not(.hidden):has(#studio:not(.hidden)) #studioBody:has(#fName) > .admin-row:nth-of-type(3) {
+    grid-template-columns: minmax(0, 1fr) repeat(2, minmax(105px, .55fr)) !important;
+  }
+  #admin.modal:not(.hidden):has(#studio:not(.hidden)) #studioBody:has(#fName) .admin-occasion-field {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    gap: 4px 12px !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    padding: 6px 10px 8px !important;
+  }
+  #admin.modal:not(.hidden):has(#studio:not(.hidden)) #studioBody:has(#fName) input:not([type="checkbox"]):not([type="file"]),
+  #admin.modal:not(.hidden):has(#studio:not(.hidden)) #studioBody:has(#fName) select {
+    box-sizing: border-box !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 36px !important;
+    padding: 7px 10px !important;
+  }
+  #admin.modal:not(.hidden):has(#studio:not(.hidden)) #studioBody:has(#fName) > .upload-row {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1.4fr) minmax(210px, .8fr) !important;
+    align-items: center !important;
+    gap: 8px !important;
+    margin: 0 !important;
+  }
+  #admin.modal:not(.hidden):has(#studio:not(.hidden)) #studioBody:has(#fName) .admin-image-preview-wrap {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    min-height: 66px !important;
+    height: 66px !important;
+    box-sizing: border-box !important;
+    margin: 0 !important;
+    padding: 3px 8px !important;
+    overflow: hidden !important;
+  }
+  #admin.modal:not(.hidden):has(#studio:not(.hidden)) #studioBody:has(#fName) .admin-image-preview {
+    width: auto !important;
+    height: 58px !important;
+    max-width: 100% !important;
+    object-fit: contain !important;
+  }
+  #admin.modal:not(.hidden):has(#studio:not(.hidden)) #studioBody:has(#fName) > label {
+    align-self: center !important;
+    margin: 0 8px 0 0 !important;
+    font-size: 12px !important;
+  }
+  #admin.modal:not(.hidden):has(#studio:not(.hidden)) #studioBody:has(#fName) > br {
+    display: none !important;
+  }
+  #admin.modal:not(.hidden):has(#studio:not(.hidden)) #studioBody:has(#fName) #saveItem,
+  #admin.modal:not(.hidden):has(#studio:not(.hidden)) #studioBody:has(#fName) #deleteItem {
+    align-self: center !important;
+    min-height: 36px !important;
+    margin: 2px 8px 0 0 !important;
+    padding: 8px 16px !important;
+  }
+}
+</style>
 </html>
 
 
