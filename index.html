@@ -9904,7 +9904,10 @@ function waNumber(){const digits=String(settings.whatsapp||"").replace(/\D/g,"")
 function wa(p){
   const n=waNumber();
   if(!n)return "#";
-  return "https://wa.me/"+n+"?text="+encodeURIComponent("Hi Sri Sai Vani Collections, I'd like to know more about "+p.name+" ("+money(p.price)+"). Is it available?");
+  const productName=cleanProductName(p.name);
+  const imageUrl=productImageSrc(p.image);
+  const message="Hi Sri Sai Vani Collections! I'm interested in "+productName+" ("+money(p.price)+"). Is it available?"+(imageUrl?"\n\nProduct image: "+imageUrl:"");
+  return "https://wa.me/"+n+"?text="+encodeURIComponent(message);
 }
 function productImageSrc(value){
   const src=String(value||"").trim();
