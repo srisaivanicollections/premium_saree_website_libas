@@ -128,7 +128,9 @@
     "id": 1792607532378,
     "name": "Fancy checks boarder",
     "category": "Sarees",
-    "occasions": [],
+    "occasions": [
+      "Traditional"
+    ],
     "color": "",
     "price": 1800,
     "originalPrice": 2500,
@@ -136,7 +138,21 @@
     "dateAdded": "2026-10-21T18:32:12.378Z",
     "newArrival": true,
     "bestSeller": false,
-    "availability": true
+    "availability": true,
+    "occasionMetadata": {
+      "source": "ai",
+      "model": "CLIP-ViT-B-32",
+      "score": 0.5795,
+      "margin": 0.3839,
+      "scores": [
+        {
+          "label": "Traditional",
+          "score": 0.5795
+        }
+      ],
+      "image": "assets/products/1792607528735-67cce3542150-file_000000004f9c8211bd06f0ab9c364085.png",
+      "version": 1
+    }
   },
   {
     "id": 1792607416386,
