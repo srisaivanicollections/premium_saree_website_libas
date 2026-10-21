@@ -9985,16 +9985,39 @@ function productImageSrc(value){
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",()=>watch(document),{once:true});else watch(document);
   if("MutationObserver" in window)new MutationObserver(records=>records.forEach(record=>record.addedNodes.forEach(node=>{if(node.nodeType===1)watch(node);}))).observe(document.documentElement,{childList:true,subtree:true});
   document.addEventListener("pointerover",event=>{const link=event.target.closest&&event.target.closest(".lux-wa-action");if(link)warm(link);},{passive:true});
+  // Touch browsers may not fire pointerover reliably before a tap. Begin warming
+  // on pointerdown as well, while still leaving the actual share call to click.
+  document.addEventListener("pointerdown",event=>{const link=event.target.closest&&event.target.closest(".lux-wa-action");if(link)warm(link);},{passive:true});
   document.addEventListener("focusin",event=>{const link=event.target.closest&&event.target.closest(".lux-wa-action");if(link)warm(link);});
   document.addEventListener("click",function(event){
     const link=event.target.closest&&event.target.closest(".lux-wa-action");
-    if(!link||!canShareFiles())return;
+    if(!link)return;
+    if(!canShareFiles()){
+      console.warn("[SSV WhatsApp image share] This browser does not support sharing files from a secure page.");
+      return;
+    }
     const urls=imageCandidates(link);
     if(!urls.length)return;
     const entry=productFiles.get(urls[0]);
-    // Do not silently intercept a click unless the image file is already ready.
-    // If preload failed or is still running, preserve the original WhatsApp link.
-    if(!entry||!entry.file)return;
+    // If the file is still loading, do not silently open WhatsApp without it.
+    // Prepare the file and ask for a second tap, preserving the browser's
+    // user-activation requirement for navigator.share().
+    if(!entry||!entry.file){
+      event.preventDefault();
+      warm(link);
+      const pending=productFiles.get(urls[0]);
+      if(pending&&pending.promise){
+        pending.promise.then(()=>{
+          window.alert("Product photo is ready. Please tap the WhatsApp enquiry button once more to share it.");
+        }).catch(error=>{
+          console.warn("[SSV WhatsApp image share] Product image preload failed:",error);
+          window.alert("Could not prepare this product photo. Please check your connection and try again.");
+        });
+      }else{
+        window.alert("Preparing the product photo. Please tap the enquiry button again in a moment.");
+      }
+      return;
+    }
     let shareable=false;
     try{shareable=navigator.canShare({files:[entry.file]});}catch(error){console.warn("[SSV WhatsApp image share] File-share capability check failed:",error);}
     if(!shareable)return;
