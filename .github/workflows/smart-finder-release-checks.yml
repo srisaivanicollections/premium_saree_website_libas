@@ -406,6 +406,43 @@ jobs:
             }
           }
 
+          async function runEmptyEnabledCategoryJourney(label, context) {
+            const page = await context.newPage();
+            const state = await installMocks(page);
+            // Simulate a real catalogue with no Dresses while preserving other categories.
+            state.products = state.products.filter(product => String(product.category || "").trim().toLowerCase() !== "dresses");
+            state.settings.categorySareesEnabled = false;
+            state.settings.categoryDressesEnabled = true;
+            state.settings.categoryJewelryEnabled = false;
+            try {
+              await page.goto("http://127.0.0.1:4173/");
+              await page.waitForFunction(() => window.__ssvSettingsUpdatedObserved === true, null, { timeout: 10000 });
+              await page.locator("#tabs button.active[data-tab='Dresses']").waitFor({ state: "visible" });
+              await page.locator("#products .lux-empty").waitFor({ state: "visible" });
+              assert.equal(await page.locator("#products [data-product-id]").count(), 0, label + ": enabled empty Dresses category has no product cards");
+              assert.match(await page.locator("#products .lux-empty").innerText(), /No styles found/i, label + ": empty category shows the empty state");
+              assert.equal(await page.locator('[data-tab="Sarees"]').count(), 0, label + ": disabled Sarees tab is hidden");
+              assert.equal(await page.locator('[data-tab="Jewellery"]').count(), 0, label + ": disabled Jewellery tab is hidden");
+              await page.locator('[data-tab="Dresses"]').click();
+              await page.evaluate(settings => {
+                window.dispatchEvent(new CustomEvent("ssv:settings-updated", { detail: { settings } }));
+                render();
+              }, state.settings);
+              assert.equal(await page.locator("#tabs button.active").getAttribute("data-tab"), "Dresses", label + ": settings refresh preserves manual selection of an empty enabled category");
+              assert.equal(await page.locator("#products [data-product-id]").count(), 0, label + ": settings refresh does not populate or switch away from empty Dresses");
+              state.settings.categorySareesEnabled = true;
+              state.settings.categoryDressesEnabled = false;
+              await page.reload();
+              await page.waitForFunction(() => window.__ssvSettingsUpdatedObserved === true, null, { timeout: 10000 });
+              await page.locator("#products [data-product-id]").first().waitFor({ state: "visible" });
+              assert.equal(await page.locator('[data-tab="Dresses"]').count(), 0, label + ": disabled Dresses tab is hidden");
+              assert.equal(await page.locator("#tabs button.active").getAttribute("data-tab"), "Sarees", label + ": first remaining enabled category becomes default");
+              console.log("PASS " + label + ": empty enabled category remains selectable; disabled categories stay hidden.");
+            } finally {
+              await page.close();
+            }
+          }
+
           async function runJourney(label, viewport, mobile) {
             const browser = await chromium.launch({ headless: true });
             const context = await browser.newContext({ viewport, isMobile: mobile, hasTouch: mobile });
@@ -454,6 +491,8 @@ jobs:
                   });
               const expectedBestSellerBadges = expectedBadgeProducts.filter(p => p.bestSeller === true || p.bestSeller === "true" || p.bestSeller === 1 || p.bestSeller === "1").length;
               assert.equal(await page.locator("#products .pill-best").count(), expectedBestSellerBadges, label + ": original Best Seller ribbons remain on the same products");
+
+              await runEmptyEnabledCategoryJourney(label, context);
 
               for (const [index, category] of ["Sarees", "Dresses", "Jewellery"].entries()) {
                 await runCategoryToggleJourney(label, context, category, index);
