@@ -9968,15 +9968,25 @@ function productImageSrc(value){
     event.preventDefault();
     if(!navigator.canShare({files:[entry.file]})){window.open(link.href,"_blank","noopener,noreferrer");return;}
     const message="Hi Sri Sai Vani Collections! I'm interested in "+(link.dataset.productName||"this product")+" ("+(link.dataset.productPrice||"price not listed")+"). Is it available?";
+    // Reserve a fallback tab during the original click so popup blockers do not
+    // suppress WhatsApp if the asynchronous native share attempt fails.
+    const fallbackWindow=window.open("about:blank","_blank");
+    if(fallbackWindow)fallbackWindow.opener=null;
+    const closeFallback=()=>{if(fallbackWindow&&!fallbackWindow.closed)fallbackWindow.close();};
+    const openFallback=()=>{
+      if(fallbackWindow&&!fallbackWindow.closed)fallbackWindow.location.href=link.href;
+      else if(!fallbackWindow)window.open(link.href,"_blank","noopener,noreferrer");
+    };
     try{
       const sharePromise=navigator.share({files:[entry.file],title:link.dataset.productName||"Product enquiry",text:message});
-      Promise.resolve(sharePromise).catch(error=>{
-        if(error&&error.name==="AbortError")return;
-        // Keep the storefront in place and preserve the original new-tab behavior.
-        window.open(link.href,"_blank","noopener,noreferrer");
+      Promise.resolve(sharePromise).then(closeFallback).catch(error=>{
+        if(error&&error.name==="AbortError"){closeFallback();return;}
+        // Reuse the tab reserved during the click; keep the storefront open.
+        openFallback();
       });
     }catch(error){
-      if(!(error&&error.name==="AbortError"))window.open(link.href,"_blank","noopener,noreferrer");
+      if(error&&error.name==="AbortError")closeFallback();
+      else openFallback();
     }
   });
 })();
