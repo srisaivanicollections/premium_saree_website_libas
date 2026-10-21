@@ -261,6 +261,12 @@ jobs:
               }
               await route.continue();
             });
+            // The storefront reads the authoritative catalogue through GitHub's Contents API,
+            // while Smart Finder reads the public static JSON files directly. Mock both paths
+            // from the same in-memory fixture so the browser journeys exercise one consistent catalogue.
+            await page.route("http://127.0.0.1:4173/data/products.json*", async route => {
+              await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(state.products) });
+            });
             await page.route("http://127.0.0.1:4173/data/settings.json*", async route => {
               state.settingsReads++;
               await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(state.settings) });
