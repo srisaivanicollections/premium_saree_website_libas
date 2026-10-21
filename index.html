@@ -9929,18 +9929,20 @@ function productImageSrc(value){
     const imageUrl=String(link.dataset.productImage||"").trim();
     if(!imageUrl)return Promise.reject(new Error("No product image."));
     if(!productFiles.has(imageUrl)){
-      const promise=fetch(imageUrl,{mode:"cors",credentials:"omit",cache:"force-cache"})
+      const entry={file:null,promise:null};
+      entry.promise=fetch(imageUrl,{mode:"cors",credentials:"omit",cache:"force-cache"})
         .then(response=>{if(!response.ok)throw new Error("Product image could not be loaded.");return response.blob();})
         .then(blob=>{
           if(!blob.type.startsWith("image/"))throw new Error("Product asset is not an image.");
           const extension=({"image/jpeg":"jpg","image/png":"png","image/webp":"webp","image/gif":"gif"})[blob.type]||"jpg";
           const safeName=String(link.dataset.productName||"product").normalize("NFKD").replace(/[^a-zA-Z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,60)||"product";
-          return new File([blob],safeName+"."+extension,{type:blob.type});
+          entry.file=new File([blob],safeName+"."+extension,{type:blob.type});
+          return entry.file;
         });
-      productFiles.set(imageUrl,promise);
-      promise.catch(()=>{if(productFiles.get(imageUrl)===promise)productFiles.delete(imageUrl);});
+      productFiles.set(imageUrl,entry);
+      entry.promise.catch(()=>{if(productFiles.get(imageUrl)===entry)productFiles.delete(imageUrl);});
     }
-    return productFiles.get(imageUrl);
+    return productFiles.get(imageUrl).promise;
   }
   function warm(link){if(link&&link.matches(".lux-wa-action")&&navigator.share&&typeof File!=="undefined"&&typeof navigator.canShare==="function")loadProductFile(link).catch(()=>{});}
   function watch(root){
@@ -9959,22 +9961,23 @@ function productImageSrc(value){
     if(!link||!navigator.share||typeof File==="undefined"||typeof navigator.canShare!=="function")return;
     const imageUrl=String(link.dataset.productImage||"").trim();
     if(!imageUrl)return;
-    const filePromise=productFiles.get(imageUrl);
-    // Do not intercept a click while the image is still downloading. The
-    // existing link opens WhatsApp in a new tab, without delaying navigation.
-    if(!filePromise)return;
+    const entry=productFiles.get(imageUrl);
+    // Never wait for a download after intercepting a click. If the image is
+    // still loading, the browser follows the original WhatsApp link normally.
+    if(!entry||!entry.file)return;
     event.preventDefault();
-    filePromise.then(file=>{
-      if(!navigator.canShare({files:[file]})){window.open(link.href,"_blank","noopener,noreferrer");return;}
-      const message="Hi Sri Sai Vani Collections! I'm interested in "+(link.dataset.productName||"this product")+" ("+(link.dataset.productPrice||"price not listed")+"). Is it available?";
-      // Call share immediately in this click's promise continuation only after
-      // preloading; if activation has expired, the normal fallback is used.
-      return navigator.share({files:[file],title:link.dataset.productName||"Product enquiry",text:message});
-    }).catch(error=>{
-      if(error&&error.name==="AbortError")return;
-      // Keep the storefront in place and preserve the original new-tab behavior.
-      window.open(link.href,"_blank","noopener,noreferrer");
-    });
+    if(!navigator.canShare({files:[entry.file]})){window.open(link.href,"_blank","noopener,noreferrer");return;}
+    const message="Hi Sri Sai Vani Collections! I'm interested in "+(link.dataset.productName||"this product")+" ("+(link.dataset.productPrice||"price not listed")+"). Is it available?";
+    try{
+      const sharePromise=navigator.share({files:[entry.file],title:link.dataset.productName||"Product enquiry",text:message});
+      Promise.resolve(sharePromise).catch(error=>{
+        if(error&&error.name==="AbortError")return;
+        // Keep the storefront in place and preserve the original new-tab behavior.
+        window.open(link.href,"_blank","noopener,noreferrer");
+      });
+    }catch(error){
+      if(!(error&&error.name==="AbortError"))window.open(link.href,"_blank","noopener,noreferrer");
+    }
   });
 })();
 function apply(){
