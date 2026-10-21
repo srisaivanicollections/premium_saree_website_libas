@@ -29,7 +29,9 @@ test("live GitHub Pages storefront selects the first populated enabled category 
   assert.match(liveSource, /function ssvDefaultStorefrontCategory\(items=products\)/);
   assert.match(liveSource, /if\(category==="__browse_all__"\|\|!isCategoryEnabled\(category\)\)category=ssvDefaultStorefrontCategory\(products\)/);
   assert.match(liveSource, /category=ssvDefaultStorefrontCategory\(products\);window\.dispatchEvent\(new CustomEvent\("ssv:settings-updated"/, "Active inline storefront must select the default category before first render, not rely only on app.js");
-  assert.match(liveSource, /if\(categorySettingsReady&&category!=="__browse_all__"&&\(!enabled\.includes\(category\)\|\|!products\.some/);
+  assert.match(liveSource, /if\(categorySettingsReady&&category!=="__browse_all__"&&!enabled\.includes\(category\)/, "Render tabs must only fall back when the selected category is disabled");
+  assert.match(liveSource, /categoryWasManuallySelected=true/, "A user-selected empty category must not be overridden by settings refresh");
+  assert.match(liveSource, /!categoryWasManuallySelected&&category!=="__browse_all__"&&\(!isCategoryEnabled\(category\)\|\|!products\.some/, "Initial storefront load must choose a populated category without overriding manual selection");
   assert.match(liveSource, /if\(clear\)clear\.onclick=\(\)=>\{category=ssvDefaultStorefrontCategory\(products\)/);
   assert.match(liveSource, /if\(catalogReset\)catalogReset\.onclick=\(\)=>\{\s*category=ssvDefaultStorefrontCategory\(products\);/, "Reset must restore the first populated enabled category");
   assert.match(liveSource, /showAllProducts\(\)\{category="__browse_all__"/);
