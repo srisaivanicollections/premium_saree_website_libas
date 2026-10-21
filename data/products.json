@@ -98,7 +98,9 @@
     "id": 1792607614138,
     "name": "Double shaded floral boarder",
     "category": "Sarees",
-    "occasions": [],
+    "occasions": [
+      "Traditional"
+    ],
     "color": "",
     "price": 3300,
     "originalPrice": 4300,
@@ -106,7 +108,21 @@
     "dateAdded": "2026-10-21T18:33:34.138Z",
     "newArrival": true,
     "bestSeller": false,
-    "availability": true
+    "availability": true,
+    "occasionMetadata": {
+      "source": "ai",
+      "model": "CLIP-ViT-B-32",
+      "score": 0.5329,
+      "margin": 0.3454,
+      "scores": [
+        {
+          "label": "Traditional",
+          "score": 0.5329
+        }
+      ],
+      "image": "assets/products/1792607611212-1b64e2f8789b-file_0000000033ac82119bebe082d7c31285.png",
+      "version": 1
+    }
   },
   {
     "id": 1792607532378,
