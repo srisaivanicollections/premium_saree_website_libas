@@ -9901,16 +9901,12 @@ let settingsWriteQueue=Promise.resolve();
 
 function money(n){return "₹"+Number(n).toLocaleString("en-IN")}
 function waNumber(){const digits=String(settings.whatsapp||"").replace(/\D/g,"");return digits.length===10?"91"+digits:digits}
-function productCatalogueUrl(){
-  const url=new URL(location.href);
-  url.hash="shop";
-  return url.href;
-}
 function wa(p){
   const n=waNumber();
   if(!n)return "#";
   const productName=cleanProductName(p.name);
-  const message="Hi Sri Sai Vani Collections! I'm interested in "+productName+" ("+money(p.price)+"). Is it available?\n\nView the product in our catalogue: "+productCatalogueUrl();
+  const imageUrl=productImageSrc(p.image);
+  const message="Hi Sri Sai Vani Collections! I'm interested in "+productName+" ("+money(p.price)+"). Is it available?"+(imageUrl?"\n\nProduct image: "+imageUrl:"");
   return "https://wa.me/"+n+"?text="+encodeURIComponent(message);
 }
 function productImageSrc(value){
