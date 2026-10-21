@@ -307,44 +307,6 @@
     }
   },
   {
-    "id": 1791751897314,
-    "name": "Blue frock",
-    "category": "Dresses",
-    "color": "Blue",
-    "price": 500,
-    "originalPrice": 800,
-    "image": "assets/products/1791810866317-7cea9017c5e1-asper-viscose-dobby-printed-a-line-maxi-dress-2037737.jpg",
-    "dateAdded": "2026-10-11T20:51:37.314Z",
-    "newArrival": true,
-    "bestSeller": false,
-    "availability": true,
-    "occasions": [
-      "Traditional"
-    ],
-    "occasionMetadata": {
-      "source": "ai",
-      "model": "CLIP-ViT-B-32",
-      "score": 0.3938,
-      "margin": 0.1255,
-      "scores": [
-        {
-          "label": "Traditional",
-          "score": 0.3938
-        }
-      ],
-      "image": "assets/products/1791810866317-7cea9017c5e1-asper-viscose-dobby-printed-a-line-maxi-dress-2037737.jpg",
-      "version": 1
-    },
-    "colourMetadata": {
-      "source": "ai",
-      "model": "CLIP-ViT-B-32",
-      "score": 0.3783,
-      "margin": 0.27,
-      "image": "assets/products/1791810866317-7cea9017c5e1-asper-viscose-dobby-printed-a-line-maxi-dress-2037737.jpg",
-      "version": 1
-    }
-  },
-  {
     "id": 1791744300158,
     "name": "Designer Saree",
     "category": "Sarees",
