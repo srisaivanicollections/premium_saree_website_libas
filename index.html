@@ -15446,6 +15446,32 @@ html body #ssv-festival-greeting button.ssv-festival-greeting-close::before,html
   }
 }
 </style>
+
+
+<style id="ssv-admin-edit-desktop-price-colour-row-20261022">
+@media (min-width: 901px) {
+  /* Explicitly target the row containing colour and price inputs. */
+  #admin.modal:not(.hidden):has(#studio:not(.hidden)) #studioBody:has(#fName) > .admin-row:has(#fColor, #fPrice, #fOriginal) {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1.2fr) minmax(130px, .8fr) minmax(150px, .9fr) !important;
+    gap: 10px !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+  }
+  #admin.modal:not(.hidden):has(#studio:not(.hidden)) #studioBody:has(#fName) #fColor,
+  #admin.modal:not(.hidden):has(#studio:not(.hidden)) #studioBody:has(#fName) #fPrice,
+  #admin.modal:not(.hidden):has(#studio:not(.hidden)) #studioBody:has(#fName) #fOriginal {
+    display: block !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    margin: 0 !important;
+    text-align: left !important;
+  }
+}
+</style>
 </html>
 
 
