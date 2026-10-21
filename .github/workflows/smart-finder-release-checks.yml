@@ -24,6 +24,7 @@ jobs:
           node --check saree-occasion-ai.js
           node --test tests/saree-occasion-ai.test.mjs
           node --test tests/smart-finder-occasion.test.mjs
+          node --test tests/storefront-default-category.test.mjs
           node --test tests/admin-occasion-badges.test.mjs
           node --test tests/festival-greeting-acceptance.test.mjs
           node --input-type=module <<'NODE'
@@ -87,7 +88,7 @@ jobs:
           assert.doesNotMatch(page, /data-tab=["\x27](?:All|Best Seller)["\x27]/i, "All and Best Seller must not be customer-facing catalogue tabs");
           assert.match(page, /if\(!categorySettingsReady\)return false/, "Storefront must fail closed until category settings are verified");
           assert.match(page, /window\.addEventListener\("ssv:settings-updated",event=>\{if\(event\.detail\?\.settings/, "Successful Admin settings refresh must restore storefront category visibility");
-          assert.match(page, /if\(categorySettingsReady\)\{if\(category==="__browse_all__"\|\|!isCategoryEnabled\(category\)\)category=ssvDefaultStorefrontCategory\(products\);window\.dispatchEvent\(new CustomEvent\("ssv:settings-updated"/, "Verified settings select a default category before broadcasting the settings event");
+          assert.match(page, /if\(categorySettingsReady\)\{if\(!categoryWasManuallySelected&&\(category==="__browse_all__"\|\|!isCategoryEnabled\(category\)\)\)category=ssvDefaultStorefrontCategory\(products\);window\.dispatchEvent\(new CustomEvent\("ssv:settings-updated"/, "Verified settings default to the first enabled category without overriding manual selection or skipping empty enabled categories");
           assert.doesNotMatch(page, /selectedCategory==="best seller"|special==="best seller"/, "Best Seller must not be a customer-facing catalogue filter");
           assert.match(checkout, /if\(!categorySettingsReady\)return false/, "Cart must fail closed until category settings are loaded");
           assert.match(checkout, /if\(!categorySettingsReady\)\{showStatus\(/, "Checkout submission must wait for verified category settings");
@@ -146,7 +147,17 @@ jobs:
           node-version: 20
       - name: Install Chromium browser tooling
         run: |
-          npm install --no-save --no-package-lock @playwright/test@1.56.1 playwright@1.56.1
+          for attempt in 1 2 3; do
+            if npm install --no-save --no-package-lock --fetch-retries=3 --fetch-timeout=60000 @playwright/test@1.56.1 playwright@1.56.1; then
+              break
+            fi
+            if [ "$attempt" -eq 3 ]; then
+              echo "Playwright package installation failed after 3 attempts."
+              exit 1
+            fi
+            echo "npm registry request failed; retrying in 10 seconds (attempt $attempt/3)."
+            sleep 10
+          done
           node -e "if (require('playwright/package.json').version !== '1.56.1') throw new Error('Playwright runtime version mismatch')"
           node node_modules/playwright/cli.js install --with-deps chromium
       - name: Start local storefront
@@ -167,11 +178,30 @@ jobs:
 
           const productsFixture = JSON.parse(readFileSync("data/products.json", "utf8"));
           const settingsFixture = JSON.parse(readFileSync("data/settings.json", "utf8"));
+          // Keep browser journeys deterministic even when the real catalogue contains no Dresses.
+          // These synthetic rows exist only in the intercepted browser fixture, never in production data.
+          const dressFixtureTemplate = productsFixture[0] || {};
+          for (const dress of [
+            { id: 990000001, name: "Blue frock", color: "Blue", price: 450 },
+            { id: 990000002, name: "Printed frock", color: "Pink", price: 750 }
+          ]) {
+            if (!productsFixture.some(product => product.name === dress.name && product.category === "Dresses")) {
+              productsFixture.push({ ...structuredClone(dressFixtureTemplate), ...dress, category: "Dresses", originalPrice: dress.price + 100, image: dressFixtureTemplate.image || "assets/products/test-dress.jpg", inStock: true, occasion: ["Casual"] });
+            }
+          }
           const workerPattern = /^https:\/\/ssv-admin-otp\.vinith-paithari\.workers\.dev\/?/;
           const githubPattern = /^https:\/\/api\.github\.com\/repos\/srisaivanicollections\/srisaivanicollections\.github\.io\/contents\/data\/(products|settings)\.json/;
 
           async function installMocks(page) {
-            const state = { products: structuredClone(productsFixture), settings: structuredClone(settingsFixture), workerActions: [], settingsReads: 0 };
+            const state = { products: structuredClone(productsFixture), settings: structuredClone(settingsFixture), workerActions: [], settingsReads: 0, runtimeErrors: [], failedRequests: [], productResponses: [] };
+            page.on("pageerror", error => state.runtimeErrors.push(error.message));
+            page.on("console", message => { if (message.type() === "error") state.runtimeErrors.push("console: " + message.text()); });
+            page.on("requestfailed", request => state.failedRequests.push({ url: request.url(), error: request.failure()?.errorText || "request failed" }));
+            page.on("response", response => {
+              if (/api\.github\.com\/repos\/srisaivanicollections\/srisaivanicollections\.github\.io\/contents\/data\/products\.json/.test(response.url())) {
+                state.productResponses.push({ url: response.url(), status: response.status() });
+              }
+            });
             await page.addInitScript(() => {
               // Observe settings readiness before storefront interactions. The festival
               // greeting opens on this event and can otherwise intercept Finder clicks.
@@ -207,6 +237,7 @@ jobs:
               const url = new URL(request.url());
               const isProducts = url.pathname.endsWith("/data/products.json");
               if (request.method() === "GET") {
+                if (!isProducts) state.settingsReads++;
                 const value = isProducts ? state.products : state.settings;
                 await route.fulfill({
                   status: 200,
@@ -230,11 +261,37 @@ jobs:
               }
               await route.continue();
             });
-            await page.route("**/data/settings.json*", async route => {
+            // The storefront reads the authoritative catalogue through GitHub's Contents API,
+            // while Smart Finder reads the public static JSON files directly. Mock both paths
+            // from the same in-memory fixture so the browser journeys exercise one consistent catalogue.
+            await page.route("http://127.0.0.1:4173/data/products.json*", async route => {
+              await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(state.products) });
+            });
+            await page.route("http://127.0.0.1:4173/data/settings.json*", async route => {
               state.settingsReads++;
               await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(state.settings) });
             });
             return state;
+          }
+
+          async function waitForProductCards(page, state, label) {
+            try {
+              await page.locator("#products [data-product-id]").first().waitFor({ state: "visible", timeout: 15000 });
+            } catch (error) {
+              const dom = await page.evaluate(() => ({
+                readyState: document.readyState,
+                activeCategory: document.querySelector("#tabs button.active")?.getAttribute("data-tab") || null,
+                tabs: [...document.querySelectorAll("#tabs button")].map(button => ({ category: button.dataset.tab, active: button.classList.contains("active") })),
+                productCardCount: document.querySelectorAll("#products [data-product-id]").length,
+                productGridText: document.querySelector("#products")?.innerText?.slice(0, 500) || "",
+                settingsReady: typeof categorySettingsReady === "undefined" ? null : categorySettingsReady,
+                productCount: typeof products === "undefined" ? null : products.length
+              })).catch(domError => ({ domReadError: domError.message }));
+              throw new Error(label + ": product cards did not render. Diagnostics=" + JSON.stringify({
+                dom, productResponses: state.productResponses, runtimeErrors: state.runtimeErrors,
+                failedRequests: state.failedRequests, originalError: error.message
+              }));
+            }
           }
 
           async function runCategoryToggleJourney(label, context, category, previouslyAddedCount) {
@@ -248,7 +305,16 @@ jobs:
               await togglePage.waitForFunction(() => window.__ssvSettingsUpdatedObserved === true, null, { timeout: 10000 });
               const greeting = togglePage.locator("#ssv-festival-greeting");
               if (await greeting.isVisible()) { await greeting.locator(".ssv-festival-greeting-close").click(); await greeting.waitFor({ state: "hidden" }); }
-              await togglePage.locator("#products [data-product-id]").first().waitFor();
+              // This isolated OFF/ON journey may start on an enabled but empty category (for example Dresses).
+              // Choose a populated enabled category for its product/cart setup; the empty-category behavior is tested separately.
+              const setupCategory = ["Sarees", "Dresses", "Jewellery"].find(name =>
+                productsFixture.some(product => String(product.category || "").trim().toLowerCase() === name.toLowerCase()) &&
+                toggleState.settings[({ Sarees: "categorySareesEnabled", Dresses: "categoryDressesEnabled", Jewellery: "categoryJewelryEnabled" })[name]] !== false
+              );
+              if (setupCategory && await togglePage.locator('#tabs button[data-tab="' + setupCategory + '"]').count()) {
+                await togglePage.locator('#tabs button[data-tab="' + setupCategory + '"]').click();
+              }
+              await waitForProductCards(togglePage, toggleState, label + " catalogue reload");
               await togglePage.locator("#ssv-smart-finder-trigger").click();
               await togglePage.locator("#ssv-finder-category").selectOption(category);
               await togglePage.locator("#ssv-finder-budget").fill("");
@@ -264,7 +330,7 @@ jobs:
               toggleState.settings[categorySettingKey] = false;
               const beforeDisabledSettingsRead = toggleState.settingsReads;
               await togglePage.reload();
-              await togglePage.locator("#products [data-product-id]").first().waitFor();
+              await waitForProductCards(togglePage, toggleState, label + " catalogue reload");
               const disabledSettingsDeadline = Date.now() + 5000;
               while (toggleState.settingsReads <= beforeDisabledSettingsRead && Date.now() < disabledSettingsDeadline) await togglePage.waitForTimeout(25);
               assert.ok(toggleState.settingsReads > beforeDisabledSettingsRead, label + ": disabled category settings reloaded");
@@ -274,10 +340,9 @@ jobs:
               const expectedDefaultCategory = ["Sarees", "Dresses", "Jewellery"].find(name => {
                 const key = ({ Sarees: "categorySareesEnabled", Dresses: "categoryDressesEnabled", Jewellery: "categoryJewelryEnabled" })[name];
                 const value = toggleState.settings[key];
-                return !(value === false || value === "false" || value === 0 || value === "0") &&
-                  productsFixture.some(product => String(product.category || "").trim().toLowerCase() === name.toLowerCase());
+                return !(value === false || value === "false" || value === 0 || value === "0");
               }) || "";
-              assert.equal(await togglePage.locator("#tabs button.active").getAttribute("data-tab"), expectedDefaultCategory, label + ": default falls back to first populated enabled category");
+              assert.equal(await togglePage.locator("#tabs button.active").getAttribute("data-tab"), expectedDefaultCategory, label + ": default selects first enabled category, even when empty");
               const expectedVisibleAfterDisable = productsFixture.filter(product => String(product.category || "").trim().toLowerCase() === expectedDefaultCategory.toLowerCase()).length;
               assert.equal(await togglePage.locator('#products [data-product-id]').count(), expectedVisibleAfterDisable, label + ": default catalogue shows only the selected enabled category");
               await togglePage.locator("#ssv-smart-finder-trigger").click();
@@ -291,7 +356,7 @@ jobs:
               toggleState.settings[categorySettingKey] = true;
               const beforeEnabledSettingsRead = toggleState.settingsReads;
               await togglePage.reload();
-              await togglePage.locator("#products [data-product-id]").first().waitFor();
+              await waitForProductCards(togglePage, toggleState, label + " catalogue reload");
               const enabledSettingsDeadline = Date.now() + 5000;
               while (toggleState.settingsReads <= beforeEnabledSettingsRead && Date.now() < enabledSettingsDeadline) await togglePage.waitForTimeout(25);
               assert.ok(toggleState.settingsReads > beforeEnabledSettingsRead, label + ": re-enabled category settings reloaded");
@@ -316,7 +381,7 @@ jobs:
               await safetyPage.waitForFunction(() => window.__ssvSettingsUpdatedObserved === true, null, { timeout: 10000 });
               const greeting = safetyPage.locator("#ssv-festival-greeting");
               if (await greeting.isVisible()) { await greeting.locator(".ssv-festival-greeting-close").click(); await greeting.waitFor({ state: "hidden" }); }
-              await safetyPage.locator("#products [data-product-id]").first().waitFor();
+              await waitForProductCards(safetyPage, safetyState, label + " checkout-safety catalogue");
               await safetyPage.locator("#ssv-smart-finder-trigger").click();
               await safetyPage.locator("#ssv-finder-category").selectOption(category);
               await safetyPage.locator("#ssv-finder-budget").fill("");
@@ -347,6 +412,43 @@ jobs:
             }
           }
 
+          async function runEmptyEnabledCategoryJourney(label, context) {
+            const page = await context.newPage();
+            const state = await installMocks(page);
+            // Simulate a real catalogue with no Dresses while preserving other categories.
+            state.products = state.products.filter(product => String(product.category || "").trim().toLowerCase() !== "dresses");
+            state.settings.categorySareesEnabled = false;
+            state.settings.categoryDressesEnabled = true;
+            state.settings.categoryJewelryEnabled = false;
+            try {
+              await page.goto("http://127.0.0.1:4173/");
+              await page.waitForFunction(() => window.__ssvSettingsUpdatedObserved === true, null, { timeout: 10000 });
+              await page.locator("#tabs button.active[data-tab='Dresses']").waitFor({ state: "visible" });
+              await page.locator("#products .lux-empty").waitFor({ state: "visible" });
+              assert.equal(await page.locator("#products [data-product-id]").count(), 0, label + ": enabled empty Dresses category has no product cards");
+              assert.match(await page.locator("#products .lux-empty").innerText(), /No styles found/i, label + ": empty category shows the empty state");
+              assert.equal(await page.locator('[data-tab="Sarees"]').count(), 0, label + ": disabled Sarees tab is hidden");
+              assert.equal(await page.locator('[data-tab="Jewellery"]').count(), 0, label + ": disabled Jewellery tab is hidden");
+              await page.locator('[data-tab="Dresses"]').click();
+              await page.evaluate(settings => {
+                window.dispatchEvent(new CustomEvent("ssv:settings-updated", { detail: { settings } }));
+                render();
+              }, state.settings);
+              assert.equal(await page.locator("#tabs button.active").getAttribute("data-tab"), "Dresses", label + ": settings refresh preserves manual selection of an empty enabled category");
+              assert.equal(await page.locator("#products [data-product-id]").count(), 0, label + ": settings refresh does not populate or switch away from empty Dresses");
+              state.settings.categorySareesEnabled = true;
+              state.settings.categoryDressesEnabled = false;
+              await page.reload();
+              await page.waitForFunction(() => window.__ssvSettingsUpdatedObserved === true, null, { timeout: 10000 });
+              await page.locator("#products [data-product-id]").first().waitFor({ state: "visible" });
+              assert.equal(await page.locator('[data-tab="Dresses"]').count(), 0, label + ": disabled Dresses tab is hidden");
+              assert.equal(await page.locator("#tabs button.active").getAttribute("data-tab"), "Sarees", label + ": first remaining enabled category becomes default");
+              console.log("PASS " + label + ": empty enabled category remains selectable; disabled categories stay hidden.");
+            } finally {
+              await page.close();
+            }
+          }
+
           async function runJourney(label, viewport, mobile) {
             const browser = await chromium.launch({ headless: true });
             const context = await browser.newContext({ viewport, isMobile: mobile, hasTouch: mobile });
@@ -360,21 +462,20 @@ jobs:
                 await festivalGreeting.locator(".ssv-festival-greeting-close").click();
                 await festivalGreeting.waitFor({ state: "hidden" });
               }
-              await page.locator("#products [data-product-id]").first().waitFor();
+              await waitForProductCards(page, state, label + " main catalogue");
               await page.locator("#ssv-finder-hint").waitFor({ state: "visible" });
               assert.ok(await page.locator("#ssv-smart-finder-trigger").isVisible(), label + ": Finder trigger remains visible with first-load hint");
               const enabledCategoryNames = ["Sarees", "Dresses", "Jewellery"].filter(category => {
                 const key = ({ Sarees: "categorySareesEnabled", Dresses: "categoryDressesEnabled", Jewellery: "categoryJewelryEnabled" })[category];
                 const value = settingsFixture[key];
-                const enabled = !(value === false || value === "false" || value === 0 || value === "0");
-                return enabled && productsFixture.some(product => String(product.category || "").trim().toLowerCase() === category.toLowerCase());
+                return !(value === false || value === "false" || value === 0 || value === "0");
               });
               const expectedDefaultCategory = enabledCategoryNames[0] || "";
               const hasDefaultCategoryBehavior = await page.evaluate(async () => /function ssvDefaultStorefrontCategory/.test(await (await fetch("/index.html")).text()));
               if (hasDefaultCategoryBehavior) {
-                assert.equal(await page.locator("#tabs button.active").getAttribute("data-tab"), expectedDefaultCategory, label + ": first populated enabled category is selected on load");
+                assert.equal(await page.locator("#tabs button.active").getAttribute("data-tab"), expectedDefaultCategory, label + ": first enabled category is selected on load, regardless of product count");
                 const expectedDefaultCount = productsFixture.filter(product => String(product.category || "").trim().toLowerCase() === expectedDefaultCategory.toLowerCase()).length;
-                assert.equal(await page.locator("#products [data-product-id]").count(), expectedDefaultCount, label + ": default catalogue shows only the first populated enabled category");
+                assert.equal(await page.locator("#products [data-product-id]").count(), expectedDefaultCount, label + ": default catalogue shows only products in the selected category, which may be empty");
               } else {
                 const expectedEnabledCount = productsFixture.filter(product => {
                   const category = String(product.category || "").trim().toLowerCase();
@@ -396,6 +497,8 @@ jobs:
                   });
               const expectedBestSellerBadges = expectedBadgeProducts.filter(p => p.bestSeller === true || p.bestSeller === "true" || p.bestSeller === 1 || p.bestSeller === "1").length;
               assert.equal(await page.locator("#products .pill-best").count(), expectedBestSellerBadges, label + ": original Best Seller ribbons remain on the same products");
+
+              await runEmptyEnabledCategoryJourney(label, context);
 
               for (const [index, category] of ["Sarees", "Dresses", "Jewellery"].entries()) {
                 await runCategoryToggleJourney(label, context, category, index);
@@ -541,6 +644,19 @@ jobs:
               await page.locator("#adminEnrichFinderLink").click();
               await page.getByRole("dialog", { name: "Enrich Finder" }).waitFor({ state: "visible" });
               await page.locator("#adminEnrichFinderClose").click();
+
+              // The Admin editor intentionally offers only enabled categories. Enable Jewellery
+              // in this isolated mock fixture before verifying its create/edit persistence path.
+              state.settings.categoryJewelryEnabled = true;
+              await page.reload();
+              if (await page.locator("#menu").isVisible()) { await page.locator("#menu").click(); await page.locator("#nav.open").waitFor(); }
+              await page.locator("#adminOpen").click();
+              await page.locator("#adminEmail").fill("vinith.paithari@gmail.com");
+              await page.locator("#sendOtpBtn").click();
+              await page.locator("#adminOtp").waitFor({ state: "visible" });
+              await page.locator("#adminOtp").fill("123456");
+              await page.locator("#verifyOtpBtn").click();
+              await page.locator("#adminProductResults").waitFor();
 
               await page.locator("#adminAddProduct").click();
               await page.locator("#fName").fill("E2E Jewellery Regression Item");
