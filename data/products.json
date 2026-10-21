@@ -60,15 +60,39 @@
     "id": 1792607688220,
     "name": "Chiniya pattu",
     "category": "Sarees",
-    "occasions": [],
-    "color": "",
+    "occasions": [
+      "Traditional"
+    ],
+    "color": "Gold",
     "price": 4500,
     "originalPrice": 5500,
     "image": "assets/products/1792607684175-f0beb1cb56bb-file_0000000092748211ae7a7d975fac7b62.png",
     "dateAdded": "2026-10-21T18:34:48.220Z",
     "newArrival": true,
     "bestSeller": false,
-    "availability": true
+    "availability": true,
+    "occasionMetadata": {
+      "source": "ai",
+      "model": "CLIP-ViT-B-32",
+      "score": 0.5858,
+      "margin": 0.4347,
+      "scores": [
+        {
+          "label": "Traditional",
+          "score": 0.5858
+        }
+      ],
+      "image": "assets/products/1792607684175-f0beb1cb56bb-file_0000000092748211ae7a7d975fac7b62.png",
+      "version": 1
+    },
+    "colourMetadata": {
+      "source": "ai-pixel",
+      "model": "dominant-pixel+CLIP-ViT-B-32",
+      "score": 0.5674,
+      "margin": 0.3845,
+      "image": "assets/products/1792607684175-f0beb1cb56bb-file_0000000092748211ae7a7d975fac7b62.png",
+      "version": 1
+    }
   },
   {
     "id": 1792607614138,
