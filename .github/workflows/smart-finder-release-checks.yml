@@ -24,6 +24,7 @@ jobs:
           node --check saree-occasion-ai.js
           node --test tests/saree-occasion-ai.test.mjs
           node --test tests/smart-finder-occasion.test.mjs
+          node --test tests/storefront-default-category.test.mjs
           node --test tests/admin-occasion-badges.test.mjs
           node --test tests/festival-greeting-acceptance.test.mjs
           node --input-type=module <<'NODE'
@@ -311,7 +312,7 @@ jobs:
               toggleState.settings[categorySettingKey] = false;
               const beforeDisabledSettingsRead = toggleState.settingsReads;
               await togglePage.reload();
-              await togglePage.locator("#products [data-product-id]").first().waitFor();
+              await waitForProductCards(togglePage, toggleState, label + " catalogue reload");
               const disabledSettingsDeadline = Date.now() + 5000;
               while (toggleState.settingsReads <= beforeDisabledSettingsRead && Date.now() < disabledSettingsDeadline) await togglePage.waitForTimeout(25);
               assert.ok(toggleState.settingsReads > beforeDisabledSettingsRead, label + ": disabled category settings reloaded");
@@ -337,7 +338,7 @@ jobs:
               toggleState.settings[categorySettingKey] = true;
               const beforeEnabledSettingsRead = toggleState.settingsReads;
               await togglePage.reload();
-              await togglePage.locator("#products [data-product-id]").first().waitFor();
+              await waitForProductCards(togglePage, toggleState, label + " catalogue reload");
               const enabledSettingsDeadline = Date.now() + 5000;
               while (toggleState.settingsReads <= beforeEnabledSettingsRead && Date.now() < enabledSettingsDeadline) await togglePage.waitForTimeout(25);
               assert.ok(toggleState.settingsReads > beforeEnabledSettingsRead, label + ": re-enabled category settings reloaded");
