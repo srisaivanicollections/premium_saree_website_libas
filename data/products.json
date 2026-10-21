@@ -1,5 +1,19 @@
 [
   {
+    "id": 1792607532378,
+    "name": "Fancy checks boarder",
+    "category": "Sarees",
+    "occasions": [],
+    "color": "",
+    "price": 1800,
+    "originalPrice": 2500,
+    "image": "assets/products/1792607528735-67cce3542150-file_000000004f9c8211bd06f0ab9c364085.png",
+    "dateAdded": "2026-10-21T18:32:12.378Z",
+    "newArrival": true,
+    "bestSeller": false,
+    "availability": true
+  },
+  {
     "id": 1792607416386,
     "name": "Vintage pattu",
     "category": "Sarees",
