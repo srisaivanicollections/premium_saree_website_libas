@@ -645,6 +645,19 @@ jobs:
               await page.getByRole("dialog", { name: "Enrich Finder" }).waitFor({ state: "visible" });
               await page.locator("#adminEnrichFinderClose").click();
 
+              // The Admin editor intentionally offers only enabled categories. Enable Jewellery
+              // in this isolated mock fixture before verifying its create/edit persistence path.
+              state.settings.categoryJewelryEnabled = true;
+              await page.reload();
+              if (await page.locator("#menu").isVisible()) { await page.locator("#menu").click(); await page.locator("#nav.open").waitFor(); }
+              await page.locator("#adminOpen").click();
+              await page.locator("#adminEmail").fill("vinith.paithari@gmail.com");
+              await page.locator("#sendOtpBtn").click();
+              await page.locator("#adminOtp").waitFor({ state: "visible" });
+              await page.locator("#adminOtp").fill("123456");
+              await page.locator("#verifyOtpBtn").click();
+              await page.locator("#adminProductResults").waitFor();
+
               await page.locator("#adminAddProduct").click();
               await page.locator("#fName").fill("E2E Jewellery Regression Item");
               await page.locator("#fCat").selectOption("Jewellery");
