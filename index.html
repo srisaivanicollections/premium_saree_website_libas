@@ -9920,37 +9920,67 @@ function productImageSrc(value){
   return path;
 }
 
-// Cache product files before a click so navigator.share() is invoked while
-// the browser's user activation is still valid. If a file is not ready, leave
-// the original target="_blank" WhatsApp link untouched as the safe fallback.
+// Prepare product images as soon as catalogue links are rendered. Prefer the
+// same-origin GitHub Pages asset for fetches; use the raw GitHub URL as a
+// fallback for recently uploaded assets that are not published to Pages yet.
 (function(){
   const productFiles=new Map();
-  function loadProductFile(link){
-    const imageUrl=String(link.dataset.productImage||"").trim();
-    if(!imageUrl)return Promise.reject(new Error("No product image."));
-    if(!productFiles.has(imageUrl)){
-      const entry={file:null,promise:null};
-      entry.promise=fetch(imageUrl,{mode:"cors",credentials:"omit",cache:"force-cache"})
-        .then(response=>{if(!response.ok)throw new Error("Product image could not be loaded.");return response.blob();})
-        .then(blob=>{
-          if(!blob.type.startsWith("image/"))throw new Error("Product asset is not an image.");
-          const extension=({"image/jpeg":"jpg","image/png":"png","image/webp":"webp","image/gif":"gif"})[blob.type]||"jpg";
-          const safeName=String(link.dataset.productName||"product").normalize("NFKD").replace(/[^a-zA-Z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,60)||"product";
-          entry.file=new File([blob],safeName+"."+extension,{type:blob.type});
-          return entry.file;
-        });
-      productFiles.set(imageUrl,entry);
-      entry.promise.catch(()=>{if(productFiles.get(imageUrl)===entry)productFiles.delete(imageUrl);});
+  function imageCandidates(link){
+    const primary=String(link.dataset.productImage||"").trim();
+    if(!primary)return [];
+    const candidates=[primary];
+    const marker="/assets/products/";
+    const at=primary.indexOf(marker);
+    if(at>=0){
+      const sameOrigin=marker.slice(1)+primary.slice(at+marker.length);
+      candidates.push(sameOrigin);
     }
-    return productFiles.get(imageUrl).promise;
+    return [...new Set(candidates)];
   }
-  function warm(link){if(link&&link.matches(".lux-wa-action")&&navigator.share&&typeof File!=="undefined"&&typeof navigator.canShare==="function")loadProductFile(link).catch(()=>{});}
+  async function fetchImage(url){
+    const response=await fetch(url,{mode:"cors",credentials:"omit",cache:"force-cache"});
+    if(!response.ok)throw new Error("HTTP "+response.status+" while loading product image.");
+    const blob=await response.blob();
+    if(!blob.type.startsWith("image/"))throw new Error("Product asset is not an image.");
+    return blob;
+  }
+  function loadProductFile(link){
+    const urls=imageCandidates(link);
+    if(!urls.length)return Promise.reject(new Error("No product image URL."));
+    const key=urls[0];
+    if(!productFiles.has(key)){
+      const entry={file:null,promise:null,error:null};
+      entry.promise=(async()=>{
+        let blob=null,lastError=null;
+        for(const url of urls){
+          try{blob=await fetchImage(url);break;}catch(error){lastError=error;}
+        }
+        if(!blob)throw lastError||new Error("Product image could not be loaded.");
+        const extension=({"image/jpeg":"jpg","image/png":"png","image/webp":"webp","image/gif":"gif"})[blob.type]||"jpg";
+        const safeName=String(link.dataset.productName||"product").normalize("NFKD").replace(/[^a-zA-Z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,60)||"product";
+        entry.file=new File([blob],safeName+"."+extension,{type:blob.type});
+        return entry.file;
+      })();
+      entry.promise.catch(error=>{entry.error=error;if(productFiles.get(key)===entry)productFiles.delete(key);});
+      productFiles.set(key,entry);
+    }
+    return productFiles.get(key).promise;
+  }
+  function canShareFiles(){
+    return window.isSecureContext&&typeof navigator.share==="function"&&typeof navigator.canShare==="function"&&typeof File!=="undefined";
+  }
+  function warm(link){
+    if(!link||!link.matches(".lux-wa-action")||!canShareFiles())return;
+    loadProductFile(link).catch(error=>{console.warn("[SSV WhatsApp image share] Product image preload failed:",error);});
+  }
   function watch(root){
     if(!root)return;
     const links=[];
     if(root.matches&&root.matches(".lux-wa-action"))links.push(root);
     if(root.querySelectorAll)links.push(...root.querySelectorAll(".lux-wa-action"));
-    links.forEach(link=>{if("IntersectionObserver" in window){const observer=new IntersectionObserver(entries=>{if(entries.some(entry=>entry.isIntersecting)){observer.disconnect();warm(link);}});observer.observe(link);}else warm(link);});
+    // Start preparing immediately instead of waiting for IntersectionObserver,
+    // which can be delayed on mobile browsers during scroll/paint.
+    links.forEach(warm);
   }
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",()=>watch(document),{once:true});else watch(document);
   if("MutationObserver" in window)new MutationObserver(records=>records.forEach(record=>record.addedNodes.forEach(node=>{if(node.nodeType===1)watch(node);}))).observe(document.documentElement,{childList:true,subtree:true});
@@ -9958,35 +9988,26 @@ function productImageSrc(value){
   document.addEventListener("focusin",event=>{const link=event.target.closest&&event.target.closest(".lux-wa-action");if(link)warm(link);});
   document.addEventListener("click",function(event){
     const link=event.target.closest&&event.target.closest(".lux-wa-action");
-    if(!link||!navigator.share||typeof File==="undefined"||typeof navigator.canShare!=="function")return;
-    const imageUrl=String(link.dataset.productImage||"").trim();
-    if(!imageUrl)return;
-    const entry=productFiles.get(imageUrl);
-    // Never wait for a download after intercepting a click. If the image is
-    // still loading, the browser follows the original WhatsApp link normally.
+    if(!link||!canShareFiles())return;
+    const urls=imageCandidates(link);
+    if(!urls.length)return;
+    const entry=productFiles.get(urls[0]);
+    // Do not silently intercept a click unless the image file is already ready.
+    // If preload failed or is still running, preserve the original WhatsApp link.
     if(!entry||!entry.file)return;
+    let shareable=false;
+    try{shareable=navigator.canShare({files:[entry.file]});}catch(error){console.warn("[SSV WhatsApp image share] File-share capability check failed:",error);}
+    if(!shareable)return;
     event.preventDefault();
-    if(!navigator.canShare({files:[entry.file]})){window.open(link.href,"_blank","noopener,noreferrer");return;}
     const message="Hi Sri Sai Vani Collections! I'm interested in "+(link.dataset.productName||"this product")+" ("+(link.dataset.productPrice||"price not listed")+"). Is it available?";
-    // Reserve a fallback tab during the original click so popup blockers do not
-    // suppress WhatsApp if the asynchronous native share attempt fails.
-    const fallbackWindow=window.open("about:blank","_blank");
-    if(fallbackWindow)fallbackWindow.opener=null;
-    const closeFallback=()=>{if(fallbackWindow&&!fallbackWindow.closed)fallbackWindow.close();};
-    const openFallback=()=>{
-      if(fallbackWindow&&!fallbackWindow.closed)fallbackWindow.location.href=link.href;
-      else if(!fallbackWindow)window.open(link.href,"_blank","noopener,noreferrer");
-    };
     try{
-      const sharePromise=navigator.share({files:[entry.file],title:link.dataset.productName||"Product enquiry",text:message});
-      Promise.resolve(sharePromise).then(closeFallback).catch(error=>{
-        if(error&&error.name==="AbortError"){closeFallback();return;}
-        // Reuse the tab reserved during the click; keep the storefront open.
-        openFallback();
+      // Call share synchronously in the original click handler to retain user activation.
+      const result=navigator.share({files:[entry.file],title:link.dataset.productName||"Product enquiry",text:message});
+      Promise.resolve(result).catch(error=>{
+        if(error&&error.name!=="AbortError")console.warn("[SSV WhatsApp image share] Native share failed:",error);
       });
     }catch(error){
-      if(error&&error.name==="AbortError")closeFallback();
-      else openFallback();
+      if(!(error&&error.name==="AbortError"))console.warn("[SSV WhatsApp image share] Native share failed:",error);
     }
   });
 })();
