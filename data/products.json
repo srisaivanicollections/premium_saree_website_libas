@@ -17,15 +17,44 @@
     "id": 1792607832859,
     "name": "Pure jamdhani floral",
     "category": "Sarees",
-    "occasions": [],
-    "color": "",
+    "occasions": [
+      "Traditional",
+      "Festive"
+    ],
+    "color": "Gold",
     "price": 3500,
     "originalPrice": 4500,
     "image": "assets/products/1792607829359-a4a9360dfa73-file_000000009e608211b2a841274bcb21e1.png",
     "dateAdded": "2026-10-21T18:37:12.859Z",
     "newArrival": true,
     "bestSeller": false,
-    "availability": true
+    "availability": true,
+    "occasionMetadata": {
+      "source": "ai",
+      "model": "CLIP-ViT-B-32",
+      "score": 0.3666,
+      "margin": 0.1041,
+      "scores": [
+        {
+          "label": "Traditional",
+          "score": 0.3666
+        },
+        {
+          "label": "Festive",
+          "score": 0.2625
+        }
+      ],
+      "image": "assets/products/1792607829359-a4a9360dfa73-file_000000009e608211b2a841274bcb21e1.png",
+      "version": 1
+    },
+    "colourMetadata": {
+      "source": "ai-pixel",
+      "model": "dominant-pixel+CLIP-ViT-B-32",
+      "score": 0.6232,
+      "margin": 0.4388,
+      "image": "assets/products/1792607829359-a4a9360dfa73-file_000000009e608211b2a841274bcb21e1.png",
+      "version": 1
+    }
   },
   {
     "id": 1792607688220,
