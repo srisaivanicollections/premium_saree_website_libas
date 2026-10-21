@@ -3,7 +3,9 @@
     "id": 1792607931586,
     "name": "Bandini kalamkari border",
     "category": "Sarees",
-    "occasions": [],
+    "occasions": [
+      "Traditional"
+    ],
     "color": "",
     "price": 1400,
     "originalPrice": 2000,
@@ -11,7 +13,21 @@
     "dateAdded": "2026-10-21T18:38:51.586Z",
     "newArrival": true,
     "bestSeller": false,
-    "availability": true
+    "availability": true,
+    "occasionMetadata": {
+      "source": "ai",
+      "model": "CLIP-ViT-B-32",
+      "score": 0.692,
+      "margin": 0.5642,
+      "scores": [
+        {
+          "label": "Traditional",
+          "score": 0.692
+        }
+      ],
+      "image": "assets/products/1792607928109-578ca438c296-file_00000000bb548211a2306d9bcd39ece6.png",
+      "version": 1
+    }
   },
   {
     "id": 1792607832859,
