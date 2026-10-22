@@ -316,7 +316,7 @@
     "image": "assets/products/1791836094909-ca8e5bd00ae8-file_0000000020e482119ebaebbc53a35053.png",
     "newArrival": true,
     "bestSeller": true,
-    "availability": true,
+    "availability": false,
     "dateAdded": "2026-10-11T18:45:00.158Z",
     "occasions": [
       "Traditional"
